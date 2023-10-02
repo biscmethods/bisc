@@ -4,3 +4,9 @@ Title: Cell clustering wrapper for scRegClust
 Version: 0.0.1.0
 RoxygenNote: 7.2.3
 Encoding: UTF-8
+Depends:
+    R (>= 4.3.1)
+Imports:
+    scregclust,
+    aricode
+Remotes: sven-nelander/scregclust

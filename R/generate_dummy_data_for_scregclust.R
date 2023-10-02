@@ -1,29 +1,28 @@
 #!/usr/bin/Rscript
-# Binary matrix Pi --------------------------------------------------------
-# Which target gene is allocated to which cluster.
-# Here it's randomly generated, for real data it would be smartly guessed.
-# Rows are cluster index.
-# Cols are target gene index.
-
-if (!require(here)) install.packages('aricode')
-library(aricode)  # To calculate rand index
 
 #' Dummy data generation for scRegClust
 #'
-#' Generates dummy data that work with scRegClust
+#' Generates dummy data that work with scRegClust.
+#' Rows are cluster index. Cols are target gene index.
 #' @param n_target_genes The number of target genes
 #' @param n_regulator_genes The number of regulator genes
 #' @param n_cells The number of cells
 #' @param n_target_gene_clusters The number of target gene clusters
 #' @param regulator_mean Mean expression of regulator genes
 #' @param coefficient_mean Mean coefficients in true model, length n_target_gene_clusters
-#' @return list(Z_t, Z_r, Pi, R, S, B)
+#' @return A list with
+#'   \item{Z_t}{a}
+#'   \item{Z_r}{a}
+#'   \item{Pi}{n_target_gene_clusters x n_target_genes. True cell cluster allocation.}
+#'   \item{R}{a}
+#'   \item{S}{a}
+#'   \item{B}{a}
 #' @examples
 #' res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100));
 #' @export
 generate_dummy_data_for_scregclust <- function(
-    n_target_genes = 10,  # Number of target genes
-    n_regulator_genes = 5,  # Number of regulator genes
+    n_target_genes = 50,  # Number of target genes
+    n_regulator_genes = 30,  # Number of regulator genes
     n_cells  = 1000,  # Number of cells
     n_target_gene_clusters  = 3,  # Number of target gene clusters
     regulator_mean   = 1,  # Mean expression of regulator genes
@@ -257,7 +256,7 @@ generate_dummy_data_for_scregclust <- function(
   }
 
   # Check if generated data gives rand index 1. If not stop execution
-  scregclust(
+  scregclust::scregclust(
     expression = rbind(t(Z_t), t(Z_r)),    #scRegClust wants this form
     genesymbols = 1:(n_target_genes+n_regulator_genes),               #gene row numbers
     is_regulator = (1:(n_target_genes+n_regulator_genes) > n_target_genes) + 0, #vector indicating which genes are regulators
@@ -289,9 +288,7 @@ generate_dummy_data_for_scregclust <- function(
 # runs only when script is run by itself
 # || interactive()
 if (sys.nframe() == 0){
-  # ... do main stuff7
-  print("")
-  print(!interactive())
-  print(sys.nframe() == 0 )
-  print("hej")
+  # ... do main stuff
+  res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100))
+  print(str(res))
 }

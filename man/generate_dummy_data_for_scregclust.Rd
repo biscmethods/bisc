@@ -27,10 +27,17 @@ generate_dummy_data_for_scregclust(
 \item{coefficient_mean}{Mean coefficients in true model, length n_target_gene_clusters}
 }
 \value{
-list(Z_t, Z_r, Pi, R, S, B)
+A list with
+  \item{Z_t}{a}
+  \item{Z_r}{a}
+  \item{Pi}{n_target_gene_clusters x n_target_genes. True cell cluster allocation.}
+  \item{R}{a}
+  \item{S}{a}
+  \item{B}{a}
 }
 \description{
-Generates dummy data that work with scRegClust
+Generates dummy data that work with scRegClust.
+Rows are cluster index. Cols are target gene index.
 }
 \examples{
 res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100));
