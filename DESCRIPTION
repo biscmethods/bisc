@@ -1,0 +1,6 @@
+Package: biclust
+Type: Package
+Title: Cell clustering wrapper for scRegClust
+Version: 0.0.1.0
+RoxygenNote: 7.2.3
+Encoding: UTF-8
