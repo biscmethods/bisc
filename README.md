@@ -13,7 +13,14 @@ devtools::install_github("sebfranz/biclust")
 
 ## Example
 
-Run demo/lm_example.R.
+Load package
+
+``` r
+library(devtools)
+load_all(".")
+```
+
+Then run demo/lm_example.R.
 
 ## Development
 
