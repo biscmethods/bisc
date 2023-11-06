@@ -24,9 +24,15 @@ library(devtools)
 load_all(".")
 ```
 
-To generate documentation
+To generate documentation load all and
 
 ``` r
 library(roxygen2) #  Read in the roxygen2 R package
 roxygenise() #  Builds the help files
+```
+
+To check compliance of package load all and
+
+``` r
+check()
 ```

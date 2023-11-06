@@ -32,7 +32,7 @@ scatter_plot_loglikelihood <- function(dat,
     dev.off()
   } else {
     pca_res <- prcomp(data_for_plotting[, seq_len(ncol(data_for_plotting) - 1)], scale. = TRUE)
-    p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
+    p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation', alpha = 0.1)
     png(file.path(output_path, filename_plot))
     plot(p)
     dev.off()
