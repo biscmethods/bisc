@@ -5,12 +5,12 @@
 \title{Dummy data generation for scRegClust}
 \usage{
 generate_dummy_data_for_scregclust(
-  n_target_genes = 10,
-  n_regulator_genes = 5,
+  n_target_genes = 50,
+  n_regulator_genes = 30,
   n_cells = 1000,
   n_target_gene_clusters = 3,
   regulator_mean = 1,
-  coefficient_mean = c(1, 20, 100)
+  coefficient_mean = c(30, 50, 100)
 )
 }
 \arguments{

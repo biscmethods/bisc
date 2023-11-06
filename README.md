@@ -10,3 +10,12 @@ You can install the development version of biclust from
 # install.packages("devtools")
 devtools::install_github("sebfranz/biclust")
 ```
+
+## Development
+
+To generate documentation
+
+``` r
+library(roxygen2) #  Read in the roxygen2 R package
+roxygenise() #  Builds the help files
+```
