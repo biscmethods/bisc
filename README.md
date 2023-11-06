@@ -11,6 +11,10 @@ You can install the development version of biclust from
 devtools::install_github("sebfranz/biclust")
 ```
 
+## Example
+
+Run demo/lm_example.R.
+
 ## Development
 
 To generate documentation
