@@ -18,12 +18,32 @@ biclust(
   penalization_lambda = 0.5
 )
 }
+\arguments{
+\item{dat}{Main data}
+
+\item{max_iter}{Max number of iterations to run}
+
+\item{initial_clustering}{The start clustering}
+
+\item{n_target_genes}{Number of target genes}
+
+\item{n_regulator_genes}{Number of regulator genes}
+
+\item{n_total_cells}{Number of total cells}
+
+\item{n_cell_clusters}{Number of cell clusters}
+
+\item{ind_targetgenes}{Indexes of where the target gene columns in dat are}
+
+\item{ind_reggenes}{Indexes of where the regulator gene columns in dat are}
+
+\item{output_path}{Output path of plots}
+
+\item{penalization_lambda}{The penalization lambda}
+}
 \value{
 Nothing yet, maybe cluster labels
 }
 \description{
 Cluster cells based with Classification EM based on lm with penality
-}
-\examples{
-NULL
 }

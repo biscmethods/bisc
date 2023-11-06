@@ -3,7 +3,7 @@ rm(list = ls())
 
 library(here)  # To work with paths
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
-print("biclust----------")
+
 # Get absolute path where script is located, by using relative paths.
 demo_path <- here::here("demo")
 R_path <- here::here("R")

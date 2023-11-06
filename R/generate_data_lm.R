@@ -4,16 +4,21 @@ library(tidyverse)
 #'
 #' Checks if an input argument is e.g. positive.
 #' @param x The input argument you want to check.
-#' @param one_element
-#' @param atomic
-#' @param numeric
-#' @param positive
-#' @param int
+#' @param one_element Checks if it's just one element.
+#' @param atomic Checks if it's atomic, i.e. it's not a list.
+#' @param numeric Checks if it's numeric.
+#' @param positive Checks if it's positive.
+#' @param int Checks if it's an integer.
 #' @return void, or throws an error message
 #' @examples
-#'   checks(regulator_mean, one_element=TRUE, atomic=TRUE, numeric=TRUE, positive=TRUE, int=FALSE)
-#' @noRd  # Keep this as an internal helper function
-checks <- function(x, one_element = TRUE, atomic = TRUE, numeric = TRUE, positive = TRUE, int = TRUE) {
+#'   checks(x=1, one_element=TRUE, atomic=TRUE, numeric=TRUE, positive=TRUE, int=FALSE)
+#' @noRd
+checks <- function(x,
+                   one_element = TRUE,
+                   atomic = TRUE,
+                   numeric = TRUE,
+                   positive = TRUE,
+                   int = TRUE) {
   error_message <- ""
   if (one_element) {
     if (!(length(x) == 1L)) {

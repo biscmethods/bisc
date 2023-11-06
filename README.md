@@ -17,6 +17,13 @@ Run demo/lm_example.R.
 
 ## Development
 
+Load package
+
+``` r
+library(devtools)
+load_all(".")
+```
+
 To generate documentation
 
 ``` r

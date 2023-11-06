@@ -16,20 +16,18 @@ source(file.path(R_path, "plot_loglikelihood.R"))
 #' Biclust
 #'
 #' Cluster cells based with Classification EM based on lm with penality
-#' @param dat
-#' @param max_iter
-#' @param initial_clustering
-#' @param n_target_genes
-#' @param n_regulator_genes
-#' @param n_total_cells
-#' @param n_cell_clusters
-#' @param ind_targetgenes
-#' @param ind_reggenes
-#' @param output_path
-#' @param penalization_lambda
+#' @param dat Main data
+#' @param max_iter Max number of iterations to run
+#' @param initial_clustering The start clustering
+#' @param n_target_genes Number of target genes
+#' @param n_regulator_genes Number of regulator genes
+#' @param n_total_cells Number of total cells
+#' @param n_cell_clusters Number of cell clusters
+#' @param ind_targetgenes Indexes of where the target gene columns in dat are
+#' @param ind_reggenes Indexes of where the regulator gene columns in dat are
+#' @param output_path Output path of plots
+#' @param penalization_lambda The penalization lambda
 #' @return Nothing yet, maybe cluster labels
-#' @examples
-#' NULL
 #' @export
 biclust <- function(dat = dat,
                     max_iter = 50,
@@ -174,7 +172,6 @@ biclust <- function(dat = dat,
       break
     }
 
-    print(paste("Iteration", i_main))
     scatter_plot_loglikelihood(dat,
                                likelihood,
                                n_cell_clusters,
