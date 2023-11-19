@@ -56,7 +56,7 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
     # ggsave('cell_cluster_history.png', plot=p, dpi = 300, height = 6, width = 12, unit = 'in')
   }else {
     # Doesn't keep track of individual cells
-    ggplot2::ggplot(d, ggplot2::aes(x = iteration, stratum = cluster, alluvium = cell, fill = cluster, label = cluster)) +
+    p <- ggplot2::ggplot(d, ggplot2::aes(x = iteration, stratum = cluster, alluvium = cell, fill = cluster, label = cluster)) +
       ggplot2::scale_fill_brewer(type = "qual", palette = "Set2") +
       ggalluvial::geom_flow() +
       ggalluvial::geom_stratum() +
@@ -65,6 +65,7 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
       ggplot2::labs(fill = "Cluster") +
       ggplot2::theme(legend.position = "bottom") +
       ggplot2::ggtitle(paste0("Log of cluster allocation\nRand index of true vs final: ", round(rand_ind, 2)))
+    print(p)
   }
 
 
