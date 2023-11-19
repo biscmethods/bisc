@@ -258,12 +258,12 @@ biclust <- function(dat = dat,
 
     start.time <- Sys.time()
     likelihood <- loglikelihood_calc_matrix(dat,
-                                                   models,
-                                                   target_genes_residual_var,
-                                                   penalization_lambda,
-                                                   n_cell_clusters,
-                                                   ind_reggenes,
-                                                   ind_targetgenes)
+                                            models,
+                                            target_genes_residual_var,
+                                            penalization_lambda,
+                                            n_cell_clusters,
+                                            ind_reggenes,
+                                            ind_targetgenes)
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste("Iteration", i_main, "likelihood matrix form", time_taken))
 
@@ -309,27 +309,32 @@ biclust <- function(dat = dat,
       break
     }
 
-    scatter_plot_loglikelihood(dat,
-                               likelihood,
-                               n_cell_clusters,
-                               penalization_lambda,
-                               output_path,
-                               i_main)
-    hist_plot_loglikelihood(dat,
-                            likelihood,
-                            n_cell_clusters,
-                            penalization_lambda,
-                            output_path,
-                            i_main)
+    # scatter_plot_loglikelihood(dat,
+    #                            likelihood,
+    #                            n_cell_clusters,
+    #                            penalization_lambda,
+    #                            output_path,
+    #                            i_main)
+    # hist_plot_loglikelihood(dat,
+    #                         likelihood,
+    #                         n_cell_clusters,
+    #                         penalization_lambda,
+    #                         output_path,
+    #                         i_main)
   }
 
   start.time <- Sys.time()
+
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          dat$true_cell_cluster_allocation,
                                          cell_cluster_history[, c(2, 3, 4)])
   png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")))
-  plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting)
+  plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = TRUE)
   dev.off()
   time_taken <- round(Sys.time() - start.time, 2)
   print(paste("Iterations complete, Alluvial plot", time_taken))
+
+  rand_index <- round(RI(cell_cluster_history_plotting[, 2],
+                         cell_cluster_history_plotting[, ncol(cell_cluster_history)]), 2)
+  return(rand_index)
 }

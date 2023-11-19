@@ -15,7 +15,8 @@ source(file.path(R_path, "randomise_cluster_labels.R"))
 
 # RI <- vector(length = 100)
 # for (i in 1:100) {
-i <- 20
+cat(rep("\n", 100))  # Clear console
+i <- 5
 modded_output_path <- file.path(output_path, paste("percent_randomised_", i))
 dir.create(modded_output_path, showWarnings = FALSE)
 
@@ -23,8 +24,8 @@ dir.create(modded_output_path, showWarnings = FALSE)
 set.seed(1234)
 
 dat <- generate_data_lm(n_cell_clusters = 3,
-                        n_target_gene_type = 20,  # We have x named target genes that have one expression per cell
-                        n_regulator_gene_type = 100,  # We have x named regulator genes that have one expression per cell
+                        n_target_gene_type = 10,  # We have x named target genes that have one expression per cell
+                        n_regulator_gene_type = 200,  # We have x named regulator genes that have one expression per cell
                         n_cells = c(1000, 2000, 3000),
                         regulator_means = c(1, 2, 3),  # Regulator mean expression in each cell cluster.
                         regulator_standard_deviations = c(0.1, 0.2, 0.2),  # Regulator sd for expression in each cell cluster.
@@ -47,7 +48,7 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes <- length(ind_targetgenes)
 n_regulator_genes <- length(ind_reggenes)
 
-biclust(dat = dat,
+biclust_2(dat = dat,
         max_iter = 50,
         initial_clustering = disturbed_initial_cell_clust,
         n_target_genes = n_target_genes,

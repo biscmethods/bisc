@@ -13,15 +13,21 @@ source(file.path(R_path, "generate_data_lm.R"))
 source(file.path(R_path, "biclust.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
+# RI <- vector(length = 100)
+# for (i in 1:100) {
+# i = 66
+modded_output_path <- file.path(output_path, paste("percent_randomised_", i))
+dir.create(modded_output_path)
+
 # Set seed for example
 set.seed(1234)
 
-dat <- generate_data_lm(n_cell_clusters = 5,
+dat <- generate_data_lm(n_cell_clusters = 3,
                         n_target_gene_type = 20,  # We have x named target genes that have one expression per cell
                         n_regulator_gene_type = 100,  # We have x named regulator genes that have one expression per cell
-                        n_cells = c(1000, 5000, 4000, 100, 10000),
-                        regulator_means = c(1, 2, 3, 3.3, 40),  # Regulator mean expression in each cell cluster.
-                        regulator_standard_deviations = c(0.1, 0.2, 0.2, 0.1, 1.0),  # Regulator sd for expression in each cell cluster.
+                        n_cells = c(1000, 2000, 3000),
+                        regulator_means = c(1, 2, 3),  # Regulator mean expression in each cell cluster.
+                        regulator_standard_deviations = c(0.1, 0.2, 0.2),  # Regulator sd for expression in each cell cluster.
                         coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
                         target_gene_type_standard_deviation = 3
 )
@@ -33,7 +39,8 @@ n_total_cells <- nrow(dat)
 ind_targetgenes <- which(str_detect(colnames(dat), "t\\d"))
 ind_reggenes <- which(str_detect(colnames(dat), "r\\d"))
 
-disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation)
+disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation,
+                                                         fraction_randomised = i / 100)
 
 # Set up some variables
 n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
@@ -49,5 +56,7 @@ biclust(dat = dat,
         n_cell_clusters = n_cell_clusters,
         ind_targetgenes = ind_targetgenes,
         ind_reggenes = ind_reggenes,
-        output_path = output_path,
+        output_path = modded_output_path,
         penalization_lambda = 0.5)
+#   print(RI)
+# }
