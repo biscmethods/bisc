@@ -16,30 +16,6 @@ R_path <- here::here("R")
 source(file.path(R_path, "plot_cluster_history.R"))
 source(file.path(R_path, "plot_loglikelihood.R"))
 
-
-# Compare two matrixes of floats
-matequal_2 <- function(x, y, tol = 1e-5) {
-  both_matrices_same_dim <- is.matrix(x) &&
-    is.matrix(y) &&
-    all(dim(x) == dim(y))
-  if (both_matrices_same_dim) {
-    m <- abs(x - y) <= tol
-    all_equal_floats <- all(m)
-    print(paste("Number of equal floats:", sum(m), "/", length(m)))
-    print("Start of first matrix")
-    print(x[1:10, 1:3])
-    print("Start of second matrix")
-    print(y[1:10, 1:3])
-    if (all_equal_floats) {
-      print("Matrices are equal.")
-      return(TRUE)
-    }
-  }else {
-    print("Matrices are not equal.")
-  }
-  return(FALSE)
-}
-
 loglikelihood_calc_2 <- function(dat,
                                  models,
                                  target_genes_residual_var,
@@ -124,69 +100,6 @@ loglikelihood_calc_2 <- function(dat,
   return(likelihood)
 }
 
-loglikelihood_calc_matrix_2 <- function(dat,
-                                        models,
-                                        target_genes_residual_var,
-                                        penalization_lambda,
-                                        n_cell_clusters,
-                                        ind_reggenes,
-                                        ind_targetgenes) {
-  # For all cells, calculate the likelihood of coming from the model corresponding to each
-  n_cells <- nrow(dat)
-  likelihood <- matrix(data = 0, nrow = n_cells, ncol = n_cell_clusters)
-  for (i_cell_cluster in seq_len(n_cell_clusters)) {
-    cell_regulator_genes <- as.matrix(dat[, ind_reggenes])  # 1x20 -> c x 20
-    cell_cluster_betas <- models[[i_cell_cluster]]$coefficients  # 20x4
-    observed_value <- as.matrix(dat[, ind_targetgenes])  # 1x4 -> cx4
-    cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1x4
-    predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1x4 -> cx4
-    cell_cluster_betas_vector_1norm <- sum(abs(cell_cluster_betas))  # 1x1
-    cell_squared_error <- (observed_value - predicted_value)^2  # 1x4 -> cx4
-    penalization <- penalization_lambda * cell_cluster_betas_vector_1norm / cell_cluster_target_genes_residual_var  # 1x4
-    # Extrude matrix so we can divide them by element and such
-    cell_cluster_target_genes_residual_var <- do.call(rbind, replicate(n_cells, cell_cluster_target_genes_residual_var, simplify = FALSE))  # cx4
-    penalization <- do.call(rbind, replicate(n_cells, penalization, simplify = FALSE))  #  cx4
-
-    # Here we are optimizing the penalized NEGATIVE likelyhood, so penalty is positive
-    temp_likelihood <- log(cell_cluster_target_genes_residual_var) / 2 +
-      cell_squared_error / (2 * cell_cluster_target_genes_residual_var) +
-      penalization  # 1x4 -> cx4
-    # print("")
-    # print("")
-    # print("")
-    # print("")
-    # print("")
-    # print("")
-    # print("cell_regulator_genes")
-    # print(str(cell_regulator_genes))
-    # print("cell_cluster_betas")
-    # print(str(cell_cluster_betas))
-    # print("observed_value")
-    # print(str(observed_value))
-    # print("cell_cluster_target_genes_residual_var")
-    # print(str(cell_cluster_target_genes_residual_var))
-    # print("predicted_value")
-    # print(str(predicted_value))
-    # print("cell_cluster_betas_vector_1norm")
-    # print(str(cell_cluster_betas_vector_1norm))
-    # print("cell_squared_error")
-    # print(str(cell_squared_error))
-    # print("penalization")
-    # print(str(penalization))
-    # print("target_genes_residual_var")
-    # print(str(target_genes_residual_var))
-    # print("log(cell_cluster_target_genes_residual_var)/2")
-    # print(log(cell_cluster_target_genes_residual_var)/2)
-    # print("temp_likelihood")
-    # print(str(temp_likelihood))
-    # stop("STOP")
-
-    likelihood[, i_cell_cluster] <- rowSums(temp_likelihood)
-
-  }
-
-  return(likelihood)
-}
 
 #' Biclust
 #'
@@ -311,18 +224,7 @@ biclust_2 <- function(dat = dat,
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste("Iteration", i_main, "likelihood", time_taken))
 
-    # start.time <- Sys.time()
-    # likelihood <- loglikelihood_calc_matrix_2(dat,
-    #                                                models,
-    #                                                target_genes_residual_var,
-    #                                                penalization_lambda,
-    #                                                n_cell_clusters,
-    #                                                ind_reggenes,
-    #                                                ind_targetgenes)
-    # time_taken <- round(Sys.time() - start.time, 2)
-    # print(paste("Iteration", i_main, "likelihood matrix form", time_taken))
-    #
-    # matequal_2(likelihood, likelihood_matrix)
+
     print(likelihood)
     likelihood[is.nan(likelihood)] <- .Machine$double.eps
     likelihood[likelihood <= .Machine$double.eps] <- .Machine$double.eps
@@ -335,14 +237,6 @@ biclust_2 <- function(dat = dat,
     weigths <- likelihood
     likelihood_all[[i_main]] <- likelihood
     print(likelihood)
-
-
-    # r2plot(iteration = i_main,
-    #      r2 = likelihood,
-    #      prev_cell_clust = dat$true_cell_cluster_allocation)
-
-    # scatter_plot_loglikelihood()
-    # hist_plot_loglikelihood()
 
     # Update cluster allocations
     updated_cell_clust <- sapply(seq_len(nrow(likelihood)), function(row) which.max(likelihood[row,]))
@@ -381,12 +275,7 @@ biclust_2 <- function(dat = dat,
                                penalization_lambda,
                                output_path,
                                i_main)
-    # hist_plot_loglikelihood(dat,
-    #                         likelihood,
-    #                         n_cell_clusters,
-    #                         penalization_lambda,
-    #                         output_path,
-    #                         i_main)
+
   }
 
   start.time <- Sys.time()
