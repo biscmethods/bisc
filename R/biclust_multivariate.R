@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+#multivariate normal distrubution in probability calculation
+
 library(tidyverse)
 library(aricode)  # To calculate rand index
 library(ggplot2)  # To plot things

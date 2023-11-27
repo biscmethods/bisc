@@ -222,8 +222,8 @@ if (sys.nframe() == 0) {
   set.seed(1234)
 
   dat <- generate_data_lm(n_cell_clusters = 3,
-                          n_target_gene_type = 5,  # We have x named target genes that have one expression per cell
-                          n_regulator_gene_type = 20,  # We have x named regulator genes that have one expression per cell
+                          n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
+                          n_regulator_gene_type = 4,  # We have x named regulator genes that have one expression per cell
                           n_cells = c(1000, 5000, 10000),
                           regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
                           regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
