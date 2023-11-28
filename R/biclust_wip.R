@@ -7,7 +7,7 @@
 
 dat <- generate_data_lm(n_cell_clusters = 3,
                           n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
-                          n_regulator_gene_type = 4,  # We have x named regulator genes that have one expression per cell
+                          n_regulator_gene_type = 2,  # We have x named regulator genes that have one expression per cell
                           n_cells = c(1000, 5000, 10000),
                           regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
                           regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
@@ -15,15 +15,30 @@ dat <- generate_data_lm(n_cell_clusters = 3,
                           target_gene_type_standard_deviation = 3
   )
 
-  dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))  # These needs to be strings for discrete labels in pca plot
+  # dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))
+  # These needs to be strings for discrete labels in pca plot
+        # that fucks up the code, though
   pca_res <- prcomp(dat[, 3:ncol(dat)], scale. = TRUE)
   p <- ggplot2::autoplot(pca_res, data = dat, colour = 'true_cell_cluster_allocation')
+
+
+n_total_cells <- nrow(dat)
+ind_targetgenes <- which(str_detect(colnames(dat), "t\\d"))
+ind_reggenes <- which(str_detect(colnames(dat), "r\\d"))
+
+disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation,
+                                                         fraction_randomised = 10 / 100)
+
+# Set up some variables
+n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
+n_target_genes <- length(ind_targetgenes)
+n_regulator_genes <- length(ind_reggenes)
 
 
 
 library(tidyverse)
 library(aricode)     # To calculate rand index
-library(ggplot2)     # To plot things #TODO: What things?
+library(ggplot2)     # To plot things #TODO: What things? literally anything
 library(ggalluvial)  # To plot thingsv #TODO: What things?
 library(reshape2)
 library(here)        # To work with paths
@@ -70,10 +85,10 @@ ridge_weighted_lm_ <- function(X, Y, W = diag(nrow(X)), lambda = 1/nrow(X) ){
   return(BETAS_ridge)
 }
 
-test_weighted_lm <- function(X,Y_){
+test_weighted_lm <- function(X, Y){
 
-  lm_result <- lm(Y_ ~ 0 + X)$coefficients #intercept-free method
-  my_result <- weighted_lm(X, Y_, W = diag(nrow(X)))
+  lm_result <- lm(Y ~ 0 + X)$coefficients #intercept-free method
+  my_result <- weighted_lm(X, Y, W = diag(nrow(X)))
 
   mean(abs(unlist(lm_result) - my_result))
 }
@@ -119,7 +134,7 @@ likelihood_calc <- function(dat,
       # get regulators and targets and coefficients
       cell_regulator_genes <- as.matrix(dat[i_cell, ind_reggenes])  # 1xr
       observed_value <- as.matrix(dat[i_cell, ind_targetgenes]) # 1xt
-      cell_cluster_betas <- models[[i_cell_cluster]]$coefficients  # rxt
+      cell_cluster_betas <- models[[i_cell_cluster]]   # rxt
 
       #get residual variances and predicted values
       cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
@@ -135,7 +150,10 @@ likelihood_calc <- function(dat,
       #                               penalization)  # 1xt
       # temp_likelihood <- sum(temp_likelihood)
 
-      # Calcualte probability that each observation comes from the
+      # Calcualte probability that each observation comes from each cluster given the current model
+
+      # should triple-check this math
+
       term1 <- log(2*pi)                                                         # constant
       term2 <- log(cell_cluster_target_genes_residual_var) / 2                   # vector of length t
       term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2) # vector of length t
@@ -254,6 +272,23 @@ loglikelihood_calc_matrix <- function(dat,
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
+
+
+max_iter = 50
+initial_clustering = disturbed_initial_cell_clust
+n_target_genes = n_target_genes
+n_regulator_genes = n_regulator_genes
+n_total_cells = n_total_cells
+n_cell_clusters = n_cell_clusters
+ind_targetgenes = ind_targetgenes
+ind_reggenes = ind_reggenes
+# output_path = modded_output_path
+penalization_lambda = 0.000000001
+i_cell_cluster = 1
+i_main = 1
+
+sum(dat[,2] != as.numeric(initial_clustering))
+
 biclust <- function(dat = dat,
                     max_iter = 50,
                     initial_clustering,
@@ -289,23 +324,50 @@ biclust <- function(dat = dat,
     # Fit model to each cell cluster
     models <- vector(mode = "list", length = n_cell_clusters)
 
+    #dev
+    models2 <- vector(mode = "list", length = n_cell_clusters)
+    models_eval <- vector(mode = "list", length = n_cell_clusters)
+
     for (i_cell_cluster in 1:n_cell_clusters) {
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes])
-      models[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
-                                     data = environment())
+
+      models2[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
+                                      data = environment())$coefficients
+
+      # here we use a ridge weighted LM, BUT IT COULD BE ANYTHING,
+      #    the only important part is that it allows for assignment of cluster probabilities to observations.
+      # this returns the parameters as a matrix
+      models[[i_cell_cluster]] <- ridge_weighted_lm_(
+        X = as.matrix(dat[cell_cluster_rows, ind_reggenes]),
+        Y = as.matrix(dat[cell_cluster_rows, ind_targetgenes]),
+        lambda = penalization_lambda
+      )
+
+    #  cat(
+    #    mean(dat[cell_cluster_rows,2] != as.numeric(initial_clustering[cell_cluster_rows])), '\n'
+    #  )
+
+
+      # models_eval[[i_cell_cluster]]  <- test_weighted_lm(
+      #   X = as.matrix(dat[cell_cluster_rows, ind_reggenes]),
+      #   Y = as.matrix(dat[cell_cluster_rows, ind_targetgenes]))
+
     }
 
-
     # Calculate the residual target gene variance for each gene and cluster
-    # (so just one gene).
 
     # Pre-allocate residual variance estimates
     target_genes_residual_var <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
+
+    #dev
+    target_genes_residual_var2 <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
+
+
     # dat is dat <- cbind(target_expression, regulator_expression), e.g. a 2x100, with e.g. the first 50 rows being true cell cluster 1
     # 100x2 * 2x1
-
+#
     # This calculates one variance value for each and every target gene type for every cell cluster. Is that correct?
     # yazzz
     # Output: n_cell_clusters x n_target_genes
@@ -314,13 +376,20 @@ biclust <- function(dat = dat,
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes])
-      cell_cluster_betas <- models[[i_cell_cluster]]$coefficients
+      cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
+
 
       predicted_values <- current_regulator_genes %*% cell_cluster_betas
 
       residuals <- current_target_genes - predicted_values
-      # TODO: calculate residual variance manually instead, as mean squared error
-      target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
+      #target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
+      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals**2)/(length(current_rows) - 1)
+      #dev
+      # cell_cluster_betas2 <- models2[[i_cell_cluster]]
+      # predicted_values2 <- current_regulator_genes %*% cell_cluster_betas2
+      # residuals2 <- current_target_genes - predicted_values2
+      # target_genes_residual_var2[i_cell_cluster,] <- diag(var(residuals2))
+
     }
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste("Iteration", i_main, "res var", time_taken))
