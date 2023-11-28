@@ -177,7 +177,7 @@ generate_data_lm <- function(n_cell_clusters = 3,
 
 
   # Calculate target gene expressions for each cell cluster ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  cell_cluster_target_gene_expression <- sapply(1:n_cell_clusters,
+  cell_cluster_target_gene_expression <- lapply(1:n_cell_clusters,
                                                 function(i_cell_cluster) {
                                                   current_betas <- betas[[i_cell_cluster]]  # This picks out the relevant betas, as many as there are target gene types in this cell cluster
                                                   current_regulator_gene_index <- which(true_cell_cluster_allocation == i_cell_cluster)
@@ -188,6 +188,7 @@ generate_data_lm <- function(n_cell_clusters = 3,
                                                   return(as.matrix(current_regulator_gene_expressions) %*% as.matrix(current_betas) + residuals)
                                                 }
   )
+
   # Put it into a tibble
   target_gene_expression <- do.call(rbind, cell_cluster_target_gene_expression)
   colnames(target_gene_expression) <- paste0("t", 1:n_target_gene_type)
@@ -224,7 +225,7 @@ if (sys.nframe() == 0) {
   dat <- generate_data_lm(n_cell_clusters = 3,
                           n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
                           n_regulator_gene_type = 4,  # We have x named regulator genes that have one expression per cell
-                          n_cells = c(1000, 5000, 10000),
+                          n_cells = c(1000, 2000, 30000),
                           regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
                           regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
                           coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
