@@ -1,25 +1,45 @@
 #!/usr/bin/Rscript
 
+library(tidyverse)
+library(aricode)     # To calculate rand index
+library(ggplot2)     # To plot things #TODO: What things? literally anything
+library(ggalluvial)  # To plot thingsv #TODO: What things?
+library(reshape2)
+library(here)        # To work with paths
+library(ggfortify)   # For pca-plot
+
+
+
+# Get absolute path where script is located, by using relative paths.
+R_path <- here::here("R")
+source(file.path(R_path, "plot_cluster_history.R"))
+source(file.path(R_path, "plot_loglikelihood.R"))
+
 
 #############################################
 ############ data for dev ###################
 #############################################
 
-dat <- generate_data_lm(n_cell_clusters = 3,
-                          n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
-                          n_regulator_gene_type = 2,  # We have x named regulator genes that have one expression per cell
-                          n_cells = c(1000, 5000, 10000),
-                          regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
-                          regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
-                          coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
-                          target_gene_type_standard_deviation = 3
-  )
 
-  # dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))
-  # These needs to be strings for discrete labels in pca plot
-        # that fucks up the code, though
-  pca_res <- prcomp(dat[, 3:ncol(dat)], scale. = TRUE)
-  p <- ggplot2::autoplot(pca_res, data = dat, colour = 'true_cell_cluster_allocation')
+source(file.path(R_path, "generate_data_lm.R"))
+source(file.path(R_path, "randomise_cluster_labels.R"))
+
+
+dat <- generate_data_lm(n_cell_clusters = 3,
+                        n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
+                        n_regulator_gene_type = 2,  # We have x named regulator genes that have one expression per cell
+                        n_cells = c(1000, 5000, 10000),
+                        regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
+                        regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
+                        coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
+                        target_gene_type_standard_deviation = 3
+)
+
+# dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))
+# These needs to be strings for discrete labels in pca plot
+# that fucks up the code, though
+pca_res <- prcomp(dat[, 3:ncol(dat)], scale. = TRUE)
+p <- ggplot2::autoplot(pca_res, data = dat, colour = 'true_cell_cluster_allocation')
 
 
 n_total_cells <- nrow(dat)
@@ -36,18 +56,10 @@ n_regulator_genes <- length(ind_reggenes)
 
 
 
-library(tidyverse)
-library(aricode)     # To calculate rand index
-library(ggplot2)     # To plot things #TODO: What things? literally anything
-library(ggalluvial)  # To plot thingsv #TODO: What things?
-library(reshape2)
-library(here)        # To work with paths
-library(ggfortify)   # For pca-plot
+#############################################
+############ end data for dev ###############
+#############################################
 
-# Get absolute path where script is located, by using relative paths.
-R_path <- here::here("R")
-source(file.path(R_path, "plot_cluster_history.R"))
-source(file.path(R_path, "plot_loglikelihood.R"))
 
 
 # some help function
@@ -126,8 +138,6 @@ likelihood_calc <- function(dat,
   # For all cells, calculate the likelihood of coming from the model corresponding to each
   likelihood <- matrix(data = 0, nrow = nrow(dat), ncol = n_cell_clusters)
 
-  # TODO: calculate the different cluster proportions
-
   for (i_cell in seq_len(nrow(dat))) {
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
 
@@ -158,7 +168,8 @@ likelihood_calc <- function(dat,
       term2 <- log(cell_cluster_target_genes_residual_var) / 2                   # vector of length t
       term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2) # vector of length t
       # sum up and exponentiate back. remove exp for sum of loglikes
-      temp_likelihood <- exp(sum( - term1 - term2 - term3))                      #scalar
+
+      temp_likelihood <- (sum( - term1 - term2 - term3))  #scalar
 
       # print("")
       # print("")
@@ -185,6 +196,8 @@ likelihood_calc <- function(dat,
       # print("temp_likelihood")
       # print(str(temp_likelihood))
       # stop("STOP")
+
+      #actually loglikelihood
       likelihood[i_cell, i_cell_cluster] <- temp_likelihood
     }
   }
@@ -274,6 +287,10 @@ loglikelihood_calc_matrix <- function(dat,
 #'
 
 
+###########################################
+####initialise variables for dev ##########
+##########################################
+
 max_iter = 50
 initial_clustering = disturbed_initial_cell_clust
 n_target_genes = n_target_genes
@@ -287,7 +304,6 @@ penalization_lambda = 0.000000001
 i_cell_cluster = 1
 i_main = 1
 
-sum(dat[,2] != as.numeric(initial_clustering))
 
 biclust <- function(dat = dat,
                     max_iter = 50,
@@ -320,6 +336,12 @@ biclust <- function(dat = dat,
 
   stop_iterating_flag <- 0  # Flag if we have converged
   for (i_main in 1:max_iter) {
+
+    #calculate cluster proportions
+    cluster_proportions <- unname(table(current_cell_cluster_allocation) /
+                                    length(current_cell_cluster_allocation))
+    long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
+
 
     # Fit model to each cell cluster
     models <- vector(mode = "list", length = n_cell_clusters)
@@ -382,7 +404,7 @@ biclust <- function(dat = dat,
       predicted_values <- current_regulator_genes %*% cell_cluster_betas
 
       residuals <- current_target_genes - predicted_values
-      #target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
+      # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
       target_genes_residual_var[i_cell_cluster,] <- colSums(residuals**2)/(length(current_rows) - 1)
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
@@ -423,7 +445,8 @@ biclust <- function(dat = dat,
 
     # Update cluster allocations
     # TODO:make sure this one is correct given the likelihood calculations done
-    updated_cell_clust <- sapply(seq_len(nrow(likelihood)), function(row) which.min(likelihood[row,]))
+    updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
+                                 function(row) which.max(likelihood[row,]))
 
     # Update data in cell_cluster_history
     cell_cluster_history[, i_main + initial_column_padding] <- updated_cell_clust
