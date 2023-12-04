@@ -54,7 +54,7 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- round(0:100 / 100, digits=2)
+penalization_lambdas <- c(0, 0.5, 1.0)
 RI <- vector(length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
