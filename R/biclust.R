@@ -523,18 +523,18 @@ if (sys.nframe() == 0) {
   ####initialise variables for dev ##########
   ##########################################
 
-  max_iter = 50
-  initial_clustering = disturbed_initial_cell_clust
-  n_target_genes = n_target_genes
-  n_regulator_genes = n_regulator_genes
-  n_total_cells = n_total_cells
-  n_cell_clusters = n_cell_clusters
-  ind_targetgenes = ind_targetgenes
-  ind_reggenes = ind_reggenes
-  # output_path = modded_output_path
-  penalization_lambda = 0.000000001
-  i_cell_cluster = 1
-  i_main = 1
+  max_iter <- 50
+  initial_clustering <- disturbed_initial_cell_clust
+  n_target_genes <- n_target_genes
+  n_regulator_genes <- n_regulator_genes
+  n_total_cells <- n_total_cells
+  n_cell_clusters <- n_cell_clusters
+  ind_targetgenes <- ind_targetgenes
+  ind_reggenes <- ind_reggenes
+  # output_path <- modded_output_path
+  penalization_lambda <- 0.000000001
+  i_cell_cluster <- 1
+  i_main <- 1
 
   demo_path <- here::here("demo")
   output_path <- demo_path
