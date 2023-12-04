@@ -135,6 +135,9 @@ likelihood_calc <- function(dat,
                             n_cell_clusters,
                             ind_reggenes,
                             ind_targetgenes) {
+
+  # actually calculates loglikelihoods atm
+
   # For all cells, calculate the likelihood of coming from the model corresponding to each
   likelihood <- matrix(data = 0, nrow = nrow(dat), ncol = n_cell_clusters)
 
@@ -167,9 +170,12 @@ likelihood_calc <- function(dat,
       term1 <- log(2*pi)                                                         # constant
       term2 <- log(cell_cluster_target_genes_residual_var) / 2                   # vector of length t
       term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2) # vector of length t
-      # sum up and exponentiate back. remove exp for sum of loglikes
 
+
+      # sum up and exponentiate back. add/remove exp for likelihoods/loglikelihoods
       temp_likelihood <- (sum( - term1 - term2 - term3))  #scalar
+
+
 
       # print("")
       # print("")
@@ -304,6 +310,14 @@ penalization_lambda = 0.000000001
 i_cell_cluster = 1
 i_main = 1
 
+demo_path <- here::here("demo")
+output_path <- demo_path
+
+
+###########################################
+###END initialise variables for dev #######
+###########################################
+
 
 biclust <- function(dat = dat,
                     max_iter = 50,
@@ -315,7 +329,7 @@ biclust <- function(dat = dat,
                     ind_targetgenes,
                     ind_reggenes,
                     output_path,
-                    penalization_lambda = 0.5) {
+                    penalization_lambda = 0.05) {
 
   # Preallocate cluster history
   cell_cluster_history <- tibble::tibble(dat$cell_id, dat$true_cell_cluster_allocation, initial_clustering)
@@ -337,26 +351,25 @@ biclust <- function(dat = dat,
   stop_iterating_flag <- 0  # Flag if we have converged
   for (i_main in 1:max_iter) {
 
-    #calculate cluster proportions
-    cluster_proportions <- unname(table(current_cell_cluster_allocation) /
-                                    length(current_cell_cluster_allocation))
-    long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
+    ################################################################
+    ##### M-step, compute estimates for \pi_k and model parameters #
+    ################################################################
 
-
-    # Fit model to each cell cluster
+    ###### Fit model to each cell cluster ####
+    ###### M.1                           ####
     models <- vector(mode = "list", length = n_cell_clusters)
 
-    #dev
-    models2 <- vector(mode = "list", length = n_cell_clusters)
-    models_eval <- vector(mode = "list", length = n_cell_clusters)
+    # #dev
+    # models2 <- vector(mode = "list", length = n_cell_clusters)
+    # models_eval <- vector(mode = "list", length = n_cell_clusters)
 
     for (i_cell_cluster in 1:n_cell_clusters) {
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes])
 
-      models2[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
-                                      data = environment())$coefficients
+      # models2[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
+      #                                 data = environment())$coefficients
 
       # here we use a ridge weighted LM, BUT IT COULD BE ANYTHING,
       #    the only important part is that it allows for assignment of cluster probabilities to observations.
@@ -378,20 +391,21 @@ biclust <- function(dat = dat,
 
     }
 
-    # Calculate the residual target gene variance for each gene and cluster
 
-    # Pre-allocate residual variance estimates
-    target_genes_residual_var <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
 
-    #dev
-    target_genes_residual_var2 <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
+    # dev
+    # target_genes_residual_var2 <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
 
 
     # dat is dat <- cbind(target_expression, regulator_expression), e.g. a 2x100, with e.g. the first 50 rows being true cell cluster 1
     # 100x2 * 2x1
-#
-    # This calculates one variance value for each and every target gene type for every cell cluster. Is that correct?
-    # yazzz
+
+    #### calculate one variance for each target gene given each model ####
+    ###### M.2                                                        ####
+
+    # Pre-allocate residual variance estimates
+    target_genes_residual_var <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
+
     # Output: n_cell_clusters x n_target_genes
     start.time <- Sys.time()
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
@@ -406,17 +420,20 @@ biclust <- function(dat = dat,
       residuals <- current_target_genes - predicted_values
       # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
       target_genes_residual_var[i_cell_cluster,] <- colSums(residuals**2)/(length(current_rows) - 1)
+
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
       # predicted_values2 <- current_regulator_genes %*% cell_cluster_betas2
       # residuals2 <- current_target_genes - predicted_values2
       # target_genes_residual_var2[i_cell_cluster,] <- diag(var(residuals2))
-
     }
-    time_taken <- round(Sys.time() - start.time, 2)
-    print(paste("Iteration", i_main, "res var", time_taken))
 
-    # Now to actually calculate predicted or 'predicted' r2
+    time_taken <- round(Sys.time() - start.time, 2)
+    print(paste("Iteration", i_main, "res var calculation took", time_taken, "seconds? or smth"))
+
+
+    # Calculated loglikelihoods
+    # M.3
     start.time <- Sys.time()
     likelihood <- likelihood_calc(dat,
                                   models,
@@ -426,7 +443,7 @@ biclust <- function(dat = dat,
                                   ind_reggenes,
                                   ind_targetgenes)
     time_taken <- round(Sys.time() - start.time, 2)
-    print(paste("Iteration", i_main, "likelihood", time_taken))
+    print(paste("Iteration", i_main, "likelihood calculation took", time_taken, "seconds? or smth"))
 
     # start.time <- Sys.time()
     # likelihood <- loglikelihood_calc_matrix(dat,
@@ -443,10 +460,29 @@ biclust <- function(dat = dat,
 
     likelihood_all[[i_main]] <- likelihood
 
-    # Update cluster allocations
-    # TODO:make sure this one is correct given the likelihood calculations done
-    updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
-                                 function(row) which.max(likelihood[row,]))
+
+    ######################################
+    ####  Calculate cluster proportions ##
+    ######  Step  M.4 ####################
+
+    cluster_proportions <- unname(table(current_cell_cluster_allocation) /
+                                    length(current_cell_cluster_allocation))
+    long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
+
+    ####################################################################
+    ##### E-step #######################################################
+    ####### Compute posterior probabilities ############################
+    ####### For each cell to belong to each cluster ####################
+
+    weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
+
+    weights <- sweep(weights, 2, colSums(weights), "/")
+
+    ####################################################################
+    ##### E-step #######################################################
+    ##### update cluster allocations ###################################
+    updated_cell_clust <- sapply(seq_len(nrow(weights)),
+                                 function(row) which.max(weights[row,]))
 
     # Update data in cell_cluster_history
     cell_cluster_history[, i_main + initial_column_padding] <- updated_cell_clust
@@ -496,7 +532,7 @@ biclust <- function(dat = dat,
                                          dat$true_cell_cluster_allocation,
                                          cell_cluster_history[, c(2, 3, 4)])
   png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")))
-  plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = TRUE)
+  plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
   time_taken <- round(Sys.time() - start.time, 2)
   print(paste("Iterations complete, Alluvial plot", time_taken))
@@ -505,3 +541,17 @@ biclust <- function(dat = dat,
                          cell_cluster_history_plotting[, ncol(cell_cluster_history)]), 2)
   return(rand_index)
 }
+
+
+
+biclust (dat = dat,
+         max_iter = 50,
+         initial_clustering,
+         n_target_genes,
+         n_regulator_genes,
+         n_total_cells,
+         n_cell_clusters,
+         ind_targetgenes,
+         ind_reggenes,
+         output_path,
+         penalization_lambda = 0.5)
