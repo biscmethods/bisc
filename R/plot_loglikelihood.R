@@ -2,8 +2,8 @@
 
 library(tidyverse)
 library(aricode)  # To calculate rand index
-library(ggplot2)  # To plot things #TODO: What things?
-library(ggalluvial)  # To plot thingsv #TODO: What things?
+library(ggplot2)
+library(ggalluvial)
 library(reshape2)
 library(ggfortify)  # For pca-plot
 
@@ -64,8 +64,8 @@ hist_plot_loglikelihood <- function(dat,
     plots[[cell_cluster]] <- ggplot2::ggplot(cell_cluster_likelihood, ggplot2::aes(x = value, color = variable)) +
       ggplot2::geom_histogram(fill = "white", position = "dodge", bins = 100) +
       ggplot2::theme(legend.position = "top") +
-      ggplot2::ggtitle(label = paste("True cell cluster", cell_cluster)) +
-      ggplot2::coord_trans(x = "log2")
+      ggplot2::ggtitle(label = paste("True cell cluster", cell_cluster)) #+
+      #ggplot2::coord_trans(x = "log2")
   }
   title <- cowplot::ggdraw() + cowplot::draw_label("Likelihoods for the cells belonging in each true cell cluster.", fontface = 'bold')
   p <- cowplot::plot_grid(
