@@ -54,7 +54,7 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- c(0, 0.5, 1.0)
+penalization_lambdas <- c(0.0, 0.5, 1.0)
 RI <- vector(length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
@@ -63,7 +63,7 @@ for (i in seq_along(penalization_lambdas)) {
   dir.create(modded_output_path, showWarnings = FALSE)
 
   ri <- biclust(dat = dat_train,
-                max_iter = 50,
+                max_iter = 5,
                 initial_clustering = disturbed_initial_cell_clust_train,
                 n_target_genes = n_target_genes_train,
                 n_regulator_genes = n_regulator_genes_train,
@@ -72,7 +72,8 @@ for (i in seq_along(penalization_lambdas)) {
                 ind_targetgenes = ind_targetgenes_train,
                 ind_reggenes = ind_reggenes_train,
                 output_path = modded_output_path,
-                penalization_lambda = penalization_lambda)
+                penalization_lambda = penalization_lambda,
+                use_weights = TRUE)
   RI[i] <- ri
-  print(paste(penalization_lambda, ri))
+  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", ri, "\n"))
 }
