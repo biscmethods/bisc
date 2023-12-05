@@ -162,7 +162,7 @@ loglikelihood_calc_matrix <- function(dat,
     term2 <- log(cell_cluster_target_genes_residual_var) / 2                     # 1xt -> cxt
     term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2)   # 1xt -> cxt
 
-    temp_loglikelihood <- rowSums(-term1 - term2 - term3)  # Scalar
+    temp_loglikelihood <- rowSums(-term1 - term2 - term3)  # cx1
 
     loglikelihood[, i_cell_cluster] <- temp_loglikelihood
   }
@@ -332,7 +332,6 @@ biclust <- function(dat = dat,
 
     cluster_proportions <- unname(table(current_cell_cluster_allocation) /
                                     length(current_cell_cluster_allocation))
-    # long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
 
     ####################################################################
     ##### E-step #######################################################
