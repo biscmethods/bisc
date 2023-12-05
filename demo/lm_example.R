@@ -56,31 +56,40 @@ n_regulator_genes_train <- length(ind_reggenes_train)
 
 penalization_lambdas <- c(0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0)
 rand_indexes_all <- vector(length = length(penalization_lambdas))
+n_iterations_all <- vector(length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
   penalization_lambda_str <- sprintf("%.5f", penalization_lambda)
   modded_output_path <- file.path(output_path, paste("penalization_lambda_", penalization_lambda_str))
   dir.create(modded_output_path, showWarnings = FALSE)
 
-  ri <- biclust(dat = dat_train,
-                max_iter = 10,
-                initial_clustering = disturbed_initial_cell_clust_train,
-                n_target_genes = n_target_genes_train,
-                n_regulator_genes = n_regulator_genes_train,
-                n_total_cells = n_total_cells_train,
-                n_cell_clusters = n_cell_clusters,
-                ind_targetgenes = ind_targetgenes_train,
-                ind_reggenes = ind_reggenes_train,
-                output_path = modded_output_path,
-                penalization_lambda = penalization_lambda,
-                use_weights = TRUE)
-  rand_indexes_all[i] <- ri
-  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", ri), quote=FALSE)
-  print("", quote=FALSE)
+  res <- biclust(dat = dat_train,
+                 max_iter = 15,
+                 initial_clustering = disturbed_initial_cell_clust_train,
+                 n_target_genes = n_target_genes_train,
+                 n_regulator_genes = n_regulator_genes_train,
+                 n_total_cells = n_total_cells_train,
+                 n_cell_clusters = n_cell_clusters,
+                 ind_targetgenes = ind_targetgenes_train,
+                 ind_reggenes = ind_reggenes_train,
+                 output_path = modded_output_path,
+                 penalization_lambda = penalization_lambda,
+                 use_weights = TRUE)
+  rand_indexes_all[i] <- res$rand_index
+  n_iterations_all[i] <- res$n_iterations
+  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)
+  print("", quote = FALSE)
 }
 
 # Basic scatterplots of Penalization Lambdas vs Rand index
-par(mfrow = c(1, 2))
+
+png(file.path(output_path, paste0("final_plot.png")),
+    width = 1024, height = 1024, units = "px")
+par(mfrow = c(2, 2))
 plot(x = penalization_lambdas, y = rand_indexes_all, main = "Penalization λ vs Rand Index")
 plot(x = penalization_lambdas, y = rand_indexes_all, log = 'x', main = "Penalization λ vs Rand Index, logged x axis")
+plot(x = penalization_lambdas, y = n_iterations_all, main = "Penalization λ vs Number of iterations")
+plot(x = penalization_lambdas, y = n_iterations_all, log = 'x', main = "Penalization λ vs Number of iterations, logged x axis")
+dev.off()
+
 

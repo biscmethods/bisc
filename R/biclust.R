@@ -90,7 +90,7 @@ likelihood_calc <- function(dat,
                             ind_reggenes,
                             ind_targetgenes) {
 
-  # actually calculates loglikelihoods atm
+  # Actually calculates loglikelihoods at the moment
 
   # For all cells, calculate the likelihood of coming from the model corresponding to each
   likelihood <- matrix(data = 0, nrow = nrow(dat), ncol = n_cell_clusters)
@@ -98,18 +98,18 @@ likelihood_calc <- function(dat,
   for (i_cell in seq_len(nrow(dat))) {
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
 
-      # get regulators and targets and coefficients
-      cell_regulator_genes <- as.matrix(dat[i_cell, ind_reggenes])  # 1xr
-      observed_value <- as.matrix(dat[i_cell, ind_targetgenes]) # 1xt
+      # Get regulators and targets and coefficients
+      cell_regulator_genes <- as.matrix(dat[i_cell, ind_reggenes, drop = FALSE])  # 1xr
+      observed_value <- as.matrix(dat[i_cell, ind_targetgenes, drop = FALSE]) # 1xt
       cell_cluster_betas <- models[[i_cell_cluster]]   # rxt
 
-      #get residual variances and predicted values
+      # Get residual variances and predicted values
       cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
       predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1xt
 
-      cell_cluster_betas_vector_1norm <- sum(abs(cell_cluster_betas))  # 1x1
+      # Cell_cluster_betas_vector_1norm <- sum(abs(cell_cluster_betas))  # 1x1
       cell_squared_error <- (observed_value - predicted_value)^2  # 1xt
-      penalization <- penalization_lambda * cell_cluster_betas_vector_1norm / cell_cluster_target_genes_residual_var  # 1xt
+      # penalization <- penalization_lambda * cell_cluster_betas_vector_1norm / cell_cluster_target_genes_residual_var  # 1xt
 
       # Here we are optimizing the penalized NEGATIVE likelyhood, so penalty is positive
       # temp_likelihood <- as.numeric(log(cell_cluster_target_genes_residual_var) / 2 +
@@ -126,10 +126,10 @@ likelihood_calc <- function(dat,
       term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2) # vector of length t
 
 
-      # sum up and exponentiate back. add/remove exp for likelihoods/loglikelihoods
+      # Sum up and exponentiate back. Add/remove exp for likelihoods/loglikelihoods
       temp_likelihood <- (sum(-term1 - term2 - term3))  # Scalar
 
-      #actually loglikelihood
+      # Actually loglikelihood
       likelihood[i_cell, i_cell_cluster] <- temp_likelihood
     }
   }
@@ -139,36 +139,34 @@ likelihood_calc <- function(dat,
 loglikelihood_calc_matrix <- function(dat,
                                       models,
                                       target_genes_residual_var,
-                                      penalization_lambda,
                                       n_cell_clusters,
                                       ind_reggenes,
                                       ind_targetgenes) {
   # For all cells, calculate the likelihood of coming from the model corresponding to each
   n_cells <- nrow(dat)
-  likelihood <- matrix(data = 0, nrow = n_cells, ncol = n_cell_clusters)
+  loglikelihood <- matrix(data = 0, nrow = n_cells, ncol = n_cell_clusters)
   for (i_cell_cluster in seq_len(n_cell_clusters)) {
-    cell_regulator_genes <- as.matrix(dat[, ind_reggenes])  # 1x20 -> c x 20
-    cell_cluster_betas <- models[[i_cell_cluster]]$coefficients  # 20x4
-    observed_value <- as.matrix(dat[, ind_targetgenes])  # 1x4 -> cx4
-    cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1x4
-    predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1x4 -> cx4
-    cell_cluster_betas_vector_1norm <- sum(abs(cell_cluster_betas))  # 1x1
-    cell_squared_error <- (observed_value - predicted_value)^2  # 1x4 -> cx4
-    penalization <- penalization_lambda * cell_cluster_betas_vector_1norm / cell_cluster_target_genes_residual_var  # 1x4
-    # Extrude matrix so we can divide them by element and such
-    cell_cluster_target_genes_residual_var <- do.call(rbind, replicate(n_cells, cell_cluster_target_genes_residual_var, simplify = FALSE))  # cx4
-    penalization <- do.call(rbind, replicate(n_cells, penalization, simplify = FALSE))  #  cx4
+    cell_regulator_genes <- as.matrix(dat[, ind_reggenes, drop = FALSE])  # 1xr -> cxr
+    observed_value <- as.matrix(dat[, ind_targetgenes, drop = FALSE])  # 1xt -> cxt
+    cell_cluster_betas <- models[[i_cell_cluster]] # rxt
 
-    # Here we are optimizing the penalized NEGATIVE likelyhood, so penalty is positive
-    temp_likelihood <- log(cell_cluster_target_genes_residual_var) / 2 +
-      cell_squared_error / (2 * cell_cluster_target_genes_residual_var) +
-      penalization  # 1x4 -> cx4
+    predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1xt -> cxt
+    cell_squared_error <- (observed_value - predicted_value)^2  # 1xt -> cxt
 
-    likelihood[, i_cell_cluster] <- rowSums(temp_likelihood)
+    # Extrude 1xt to cxt so we can divide element wise
+    cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
+    cell_cluster_target_genes_residual_var <- do.call(rbind, replicate(n_cells, cell_cluster_target_genes_residual_var, simplify = FALSE))  # cxt
 
+    term1 <- log(2 * pi)                                                         # scalar
+    term2 <- log(cell_cluster_target_genes_residual_var) / 2                     # 1xt -> cxt
+    term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2)   # 1xt -> cxt
+
+    temp_loglikelihood <- rowSums(-term1 - term2 - term3)  # Scalar
+
+    loglikelihood[, i_cell_cluster] <- temp_loglikelihood
   }
 
-  return(likelihood)
+  return(loglikelihood)
 }
 
 #' Biclust
@@ -221,7 +219,7 @@ biclust <- function(dat = dat,
 
   stop_iterating_flag <- 0  # Flag if we have converged
   for (i_main in 1:max_iter) {
-
+    start.time <- Sys.time()
     ################################################################
     ##### M-step, compute estimates for \pi_k and model parameters #
     ################################################################
@@ -284,7 +282,6 @@ biclust <- function(dat = dat,
     target_genes_residual_var <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
 
     # Output: n_cell_clusters x n_target_genes
-    start.time <- Sys.time()
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes])
@@ -305,35 +302,26 @@ biclust <- function(dat = dat,
       # target_genes_residual_var2[i_cell_cluster,] <- diag(var(residuals2))
     }
 
-    time_taken <- round(Sys.time() - start.time, 2)
-    print(paste0(" Iteration ", i_main, ", calculating the residual variance took ", time_taken, " seconds"), quote = FALSE)
-
 
     # Calculated loglikelihoods
     # M.3
-    start.time <- Sys.time()
-    likelihood <- likelihood_calc(dat,
-                                  models,
-                                  target_genes_residual_var,
-                                  penalization_lambda,
-                                  n_cell_clusters,
-                                  ind_reggenes,
-                                  ind_targetgenes)
-    time_taken <- round(Sys.time() - start.time, 2)
-    print(paste0(" Iteration ", i_main, ", calculating the likelihood took ", time_taken, " seconds"), quote = FALSE)
 
-    # start.time <- Sys.time()
-    # likelihood <- loglikelihood_calc_matrix(dat,
-    #                                         models,
-    #                                         target_genes_residual_var,
-    #                                         penalization_lambda,
-    #                                         n_cell_clusters,
-    #                                         ind_reggenes,
-    #                                         ind_targetgenes)
-    # time_taken <- round(Sys.time() - start.time, 2)
-    # print(paste("Iteration", i_main, "likelihood matrix form", time_taken), quote=FALSE)
+    # likelihood <- likelihood_calc(dat,
+    #                               models,
+    #                               target_genes_residual_var,
+    #                               penalization_lambda,
+    #                               n_cell_clusters,
+    #                               ind_reggenes,
+    #                               ind_targetgenes)
 
-    # matequal(likelihood, likelihood_matrix)
+    likelihood <- loglikelihood_calc_matrix(dat,
+                                            models,
+                                            target_genes_residual_var,
+                                            n_cell_clusters,
+                                            ind_reggenes,
+                                            ind_targetgenes)
+
+    # matequal(likelihood, loglikelihood_matrix)
 
     likelihood_all[[i_main]] <- likelihood
 
@@ -363,7 +351,6 @@ biclust <- function(dat = dat,
 
     # Update data in cell_cluster_history
     cell_cluster_history[, i_main + initial_column_padding] <- updated_cell_clust
-    aricode::RI(dat$true_cell_cluster_allocation, updated_cell_clust)
 
     # Check convergence of cluster labels
     # Compare clusters with with previous iterations so we can exit if we seen this allocation before
@@ -380,6 +367,11 @@ biclust <- function(dat = dat,
         break
       }
     }
+
+    rand_index_true_cluster <- aricode::RI(dat$true_cell_cluster_allocation, updated_cell_clust)
+    time_taken <- round(Sys.time() - start.time, 2)
+    print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
+
 
     if (stop_iterating_flag) {
       # Clean up cluster history
@@ -407,15 +399,15 @@ biclust <- function(dat = dat,
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = dat$true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
-  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")))
+  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")),
+      width = 1024 + ncol(cell_cluster_history_plotting) * 25, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
   time_taken <- round(Sys.time() - start.time, 2)
   print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."), quote = FALSE)
 
-  rand_index <- round(aricode::RI(cell_cluster_history_plotting[, 2],
-                                  cell_cluster_history_plotting[, ncol(cell_cluster_history_plotting)]), 2)
-  return(rand_index)
+  return(list("rand_index" = rand_index_true_cluster,
+              "n_iterations" = i_main))
 }
 
 
