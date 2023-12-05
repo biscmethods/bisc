@@ -8,6 +8,7 @@ library(reshape2)
 library(here)        # To work with paths
 library(ggfortify)   # For pca-plot
 library(pracma)      # For pseudo inverse
+library(stats)       # For kmeans
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
@@ -197,7 +198,8 @@ biclust <- function(dat = dat,
                     ind_reggenes,
                     output_path,
                     penalization_lambda = 0.05,
-                    use_weights = TRUE) {
+                    use_weights = TRUE,
+                    use_complex_cluster_allocation = FALSE) {
 
   # Preallocate cluster history
   cell_cluster_history <- tibble::tibble(dat$cell_id, dat$true_cell_cluster_allocation, initial_clustering)
@@ -234,8 +236,8 @@ biclust <- function(dat = dat,
 
     for (i_cell_cluster in 1:n_cell_clusters) {
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
-      cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes])
-      cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes])
+      cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
+      cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
       if (use_weights == FALSE || i_main == 1) {
         current_weights <- diag(nrow(cell_cluster_regulator_genes))
       }
@@ -270,8 +272,6 @@ biclust <- function(dat = dat,
 
     # dev
     # target_genes_residual_var2 <- matrix(data = 0, nrow = n_cell_clusters, ncol = n_target_genes)
-
-
     # dat is dat <- cbind(target_expression, regulator_expression), e.g. a 2x100, with e.g. the first 50 rows being true cell cluster 1
     # 100x2 * 2x1
 
@@ -293,7 +293,7 @@ biclust <- function(dat = dat,
 
       residuals <- current_target_genes - predicted_values
       # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
-      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals**2) / (length(current_rows) - 1)
+      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
 
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
@@ -332,7 +332,7 @@ biclust <- function(dat = dat,
 
     cluster_proportions <- unname(table(current_cell_cluster_allocation) /
                                     length(current_cell_cluster_allocation))
-    long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
+    # long_cluster_proportions <- cluster_proportions[current_cell_cluster_allocation]
 
     ####################################################################
     ##### E-step #######################################################
@@ -346,8 +346,12 @@ biclust <- function(dat = dat,
     ####################################################################
     ##### E-step #######################################################
     ##### update cluster allocations ###################################
-    updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
-                                 function(row) which.max(likelihood[row,]))
+    if (use_complex_cluster_allocation) {
+      updated_cell_clust <- stats::kmeans(x = likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
+    }else {
+      updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
+                                   function(row) which.max(likelihood[row,]))
+    }
 
     # Update data in cell_cluster_history
     cell_cluster_history[, i_main + initial_column_padding] <- updated_cell_clust
