@@ -26,8 +26,8 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
 
   rand_ind <- vector(length = (ncol(cell_cluster_history) - 1))
   for (i in 2:ncol(cell_cluster_history)) {
-    rand_ind[i - 1] <- round(RI(cell_cluster_history[, 2],
-                                cell_cluster_history[, i]), 2)
+    rand_ind[i - 1] <- round(aricode::RI(cell_cluster_history[, 2],
+                                              cell_cluster_history[, i]), 2)
     new_colnames[i] <- paste0(new_colnames[i], "\nRI:", rand_ind[i - 1])
   }
 

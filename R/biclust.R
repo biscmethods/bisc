@@ -67,17 +67,17 @@ matequal <- function(x, y, tol = 1e-5) {
   if (both_matrices_same_dim) {
     m <- abs(x - y) <= tol
     all_equal_floats <- all(m)
-    print(paste(" Number of equal floats:", sum(m), "/", length(m)))
-    print(" Start of first matrix")
-    print(x[1:10, 1:3])
-    print(" Start of second matrix")
-    print(y[1:10, 1:3])
+    print(paste(" Number of equal floats:", sum(m), "/", length(m)), quote = FALSE)
+    print(" Start of first matrix", quote = FALSE)
+    print(x[1:10, 1:3], quote = FALSE)
+    print(" Start of second matrix", quote = FALSE)
+    print(y[1:10, 1:3], quote = FALSE)
     if (all_equal_floats) {
-      print(" Matrices are equal.")
+      print(" Matrices are equal.", quote = FALSE)
       return(TRUE)
     }
   }else {
-    print(" Matrices are not equal.")
+    print(" Matrices are not equal.", quote = FALSE)
   }
   return(FALSE)
 }
@@ -306,7 +306,7 @@ biclust <- function(dat = dat,
     }
 
     time_taken <- round(Sys.time() - start.time, 2)
-    print(paste0(" Iteration ", i_main, ", calculating the residual variance took ", time_taken, " seconds"))
+    print(paste0(" Iteration ", i_main, ", calculating the residual variance took ", time_taken, " seconds"), quote = FALSE)
 
 
     # Calculated loglikelihoods
@@ -320,7 +320,7 @@ biclust <- function(dat = dat,
                                   ind_reggenes,
                                   ind_targetgenes)
     time_taken <- round(Sys.time() - start.time, 2)
-    print(paste0(" Iteration ", i_main, ", calculating the likelihood took ", time_taken, " seconds"))
+    print(paste0(" Iteration ", i_main, ", calculating the likelihood took ", time_taken, " seconds"), quote = FALSE)
 
     # start.time <- Sys.time()
     # likelihood <- loglikelihood_calc_matrix(dat,
@@ -331,7 +331,7 @@ biclust <- function(dat = dat,
     #                                         ind_reggenes,
     #                                         ind_targetgenes)
     # time_taken <- round(Sys.time() - start.time, 2)
-    # print(paste("Iteration", i_main, "likelihood matrix form", time_taken))
+    # print(paste("Iteration", i_main, "likelihood matrix form", time_taken), quote=FALSE)
 
     # matequal(likelihood, likelihood_matrix)
 
@@ -368,15 +368,14 @@ biclust <- function(dat = dat,
     # Check convergence of cluster labels
     # Compare clusters with with previous iterations so we can exit if we seen this allocation before
     for (prev_clustering in ((i_main - 1):0)) {
-      print(paste0(" Comparing with iteration ", prev_clustering))
       rand_index <- aricode::RI(updated_cell_clust,
                                 as.matrix(cell_cluster_history)[, prev_clustering + initial_column_padding]
       )
       if (rand_index == 1) {
-        print(" Cell clustering from iteration same as some previous iteration. Exiting.")
-        print(paste0(" RI of ", rand_index,
+        print(" Cell clustering from iteration same as some previous iteration. Exiting.", quote = FALSE)
+        print(paste0(" Rand Index of ", rand_index,
                      " when comparing iteration ", i_main,
-                     " to iteration ", prev_clustering))
+                     " to iteration ", prev_clustering), quote = FALSE)
         stop_iterating_flag <- T
         break
       }
@@ -412,10 +411,10 @@ biclust <- function(dat = dat,
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
   time_taken <- round(Sys.time() - start.time, 2)
-  print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."))
+  print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."), quote = FALSE)
 
-  rand_index <- round(RI(cell_cluster_history_plotting[, 2],
-                         cell_cluster_history_plotting[, ncol(cell_cluster_history_plotting)]), 2)
+  rand_index <- round(aricode::RI(cell_cluster_history_plotting[, 2],
+                                  cell_cluster_history_plotting[, ncol(cell_cluster_history_plotting)]), 2)
   return(rand_index)
 }
 

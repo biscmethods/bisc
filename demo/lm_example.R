@@ -36,7 +36,7 @@ dat_train <- dat[train_indices,]
 dat_test <- dat[test_indices,]
 
 disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation,
-                                                         fraction_randomised = 0.2)
+                                                         fraction_randomised = 0.4)
 
 print(str(disturbed_initial_cell_clust))
 
@@ -54,16 +54,16 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- c(0.0, 0.5, 1.0)
-RI <- vector(length = length(penalization_lambdas))
+penalization_lambdas <- c(0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0)
+rand_indexes_all <- vector(length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
-  penalization_lambda_str <- sprintf("%.2f", penalization_lambda)
+  penalization_lambda_str <- sprintf("%.5f", penalization_lambda)
   modded_output_path <- file.path(output_path, paste("penalization_lambda_", penalization_lambda_str))
   dir.create(modded_output_path, showWarnings = FALSE)
 
   ri <- biclust(dat = dat_train,
-                max_iter = 5,
+                max_iter = 10,
                 initial_clustering = disturbed_initial_cell_clust_train,
                 n_target_genes = n_target_genes_train,
                 n_regulator_genes = n_regulator_genes_train,
@@ -74,6 +74,13 @@ for (i in seq_along(penalization_lambdas)) {
                 output_path = modded_output_path,
                 penalization_lambda = penalization_lambda,
                 use_weights = TRUE)
-  RI[i] <- ri
-  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", ri, "\n"))
+  rand_indexes_all[i] <- ri
+  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", ri), quote=FALSE)
+  print("", quote=FALSE)
 }
+
+# Basic scatterplots of Penalization Lambdas vs Rand index
+par(mfrow = c(1, 2))
+plot(x = penalization_lambdas, y = rand_indexes_all, main = "Penalization λ vs Rand Index")
+plot(x = penalization_lambdas, y = rand_indexes_all, log = 'x', main = "Penalization λ vs Rand Index, logged x axis")
+
