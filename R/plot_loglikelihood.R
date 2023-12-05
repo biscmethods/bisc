@@ -6,6 +6,7 @@ library(ggplot2)
 library(ggalluvial)
 library(reshape2)
 library(ggfortify)  # For pca-plot
+library(stats)  # For prcomp
 
 
 # Scatter-plot the log-liklihood on each axis, color with true allocation
@@ -31,7 +32,7 @@ scatter_plot_loglikelihood <- function(dat,
     p + ggplot2::labs(color = "True cell cluster")
     dev.off()
   } else {
-    pca_res <- prcomp(data_for_plotting[, seq_len(ncol(data_for_plotting) - 1)], scale. = TRUE)
+    pca_res <- stats::prcomp(data_for_plotting[, seq_len(ncol(data_for_plotting) - 1)], scale. = TRUE)
     p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation', alpha = 0.1)
     png(file.path(output_path, filename_plot))
     plot(p)

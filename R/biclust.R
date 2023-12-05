@@ -9,6 +9,7 @@ library(here)        # To work with paths
 library(ggfortify)   # For pca-plot
 library(pracma)      # For pseudo inverse
 library(stats)       # For kmeans
+library(ppclust)
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
@@ -346,7 +347,11 @@ biclust <- function(dat = dat,
     ##### E-step #######################################################
     ##### update cluster allocations ###################################
     if (use_complex_cluster_allocation) {
-      updated_cell_clust <- stats::kmeans(x = likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
+      pca_likelihood <- stats::prcomp(likelihood, center = TRUE, scale. = TRUE)$x
+      fcm_res <- ppclust::fcm(x = pca_likelihood, centers = n_cell_clusters)
+      weights_all[[i_main]] <- fcm_res$u
+      updated_cell_clust <- fcm_res$cluster
+      # updated_cell_clust <- stats::kmeans(x = pca_likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
     }else {
       updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
                                    function(row) which.max(likelihood[row,]))
