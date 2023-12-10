@@ -336,10 +336,12 @@ biclust <- function(dat = dat,
     ####### For each cell to belong to each cluster ####################
 
     weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
-    big_Lhat_in_BIC <- prod(rowSums(weights))
+
+    big_logLhat_in_BIC <- sum(log(rowSums(weights)))
     k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
     n_in_BIC <- n_total_cells
-    BIC <- k_in_BIC * log(n_in_BIC) - 2 * log(big_Lhat_in_BIC)
+    BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+
     weights <- sweep(weights, 1, rowSums(weights), "/")
 
     # weights_2 <- sweep((likelihood), 2, cluster_proportions, "*")
@@ -356,9 +358,10 @@ biclust <- function(dat = dat,
     BIC_all[[i_main]] <- BIC
 
     likelihood_all[[i_main]] <- likelihood
+
     if (i_main == 1) {
       no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
-      print(str(no_factor_cluster))
+      print(str(no_factor_cluster), quote = FALSE)
       db <- index.DB(likelihood, no_factor_cluster)$DB
     }
 

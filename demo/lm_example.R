@@ -56,10 +56,12 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- sort(c(0, 10^(linspace(-6, 0, 10)), c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 ,0.8,0.9,2.0)))
+penalization_lambdas <- sort(c(0, 10^(linspace(-6, 0, 10)), c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0)))
 rand_indexes_all <- vector(length = length(penalization_lambdas))
 n_iterations_all <- vector(length = length(penalization_lambdas))
 cluster_complexity_all <- vector(length = length(penalization_lambdas))
+max_iter <- 15
+BIC_all <- matrix(ncol=max_iter, nrow = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
   penalization_lambda_str <- sprintf("%.6f", penalization_lambda)
@@ -68,7 +70,7 @@ for (i in seq_along(penalization_lambdas)) {
 
 
   res <- biclust(dat = dat_train,
-                 max_iter = 15,
+                 max_iter = max_iter,
                  initial_clustering = disturbed_initial_cell_clust_train,
                  n_target_genes = n_target_genes_train,
                  n_regulator_genes = n_regulator_genes_train,
@@ -82,16 +84,20 @@ for (i in seq_along(penalization_lambdas)) {
   rand_indexes_all[i] <- res$rand_index
   n_iterations_all[i] <- res$n_iterations
   cluster_complexity_all[i] <- res$db
+  temp_BIC <- unlist(res$BIC)
+  BIC_all[i, seq_along(temp_BIC)] <- temp_BIC
   print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)
   print("", quote = FALSE)
 }
 
 # Basic scatterplots of Penalization Lambdas vs Rand index
+last_iteration_BIC <- unlist(apply(BIC_all, MARGIN = 1, FUN = function(x) x[max(which(!is.na(x)))][[1]], simplify = TRUE))
 
 df <- data.frame("cluster_complexity" = as.numeric(as.character(cluster_complexity_all)),
                  "penalization_lambdas" = as.numeric(as.character(penalization_lambdas)),
-                 "number_of_iterations" = (as.numeric(as.character(n_iterations_all))),
-                 "rand_index_result_vs_true" = (as.numeric(as.character(rand_indexes_all)))
+                 "number_of_iterations" = as.numeric(as.character(n_iterations_all)),
+                 "rand_index_result_vs_true" = as.numeric(as.character(rand_indexes_all)),
+                 "BIC" = as.numeric(as.character(last_iteration_BIC))
 )
 
 
@@ -122,7 +128,12 @@ p5 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_t
   geom_point() +
   scale_x_log10() +
   labs(x = "Penalization Lambda", y = "Rand Index, result vs true")
-p1 + p2 + p3 + p4 + p5
+p6 <- ggplot(data = df, aes(x = penalization_lambdas, y = BIC, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "Penalization Lambda", y = "Last iteration BIC")
+p1 + p2 + p3 + p4 + p5 + p6
 dev.off()
 
 
