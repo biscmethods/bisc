@@ -94,6 +94,7 @@ df <- data.frame("cluster_complexity" = as.numeric(as.character(cluster_complexi
                  "rand_index_result_vs_true" = (as.numeric(as.character(rand_indexes_all)))
 )
 
+
 df <- df[order(df$cluster_complexity, decreasing = TRUE),]
 
 png(file.path(output_path, paste0("final_plot.png")),
