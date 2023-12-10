@@ -2,6 +2,8 @@
 rm(list = ls())
 
 library(here)  # To work with paths
+library(patchwork)
+
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
 # Get absolute path where script is located, by using relative paths.
@@ -54,14 +56,16 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- c(0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0)
+penalization_lambdas <- sort(c(0, 10^(linspace(-6, 0, 10)), c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 ,0.8,0.9,2.0)))
 rand_indexes_all <- vector(length = length(penalization_lambdas))
 n_iterations_all <- vector(length = length(penalization_lambdas))
+cluster_complexity_all <- vector(length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
-  penalization_lambda_str <- sprintf("%.5f", penalization_lambda)
+  penalization_lambda_str <- sprintf("%.6f", penalization_lambda)
   modded_output_path <- file.path(output_path, paste("penalization_lambda_", penalization_lambda_str))
   dir.create(modded_output_path, showWarnings = FALSE)
+
 
   res <- biclust(dat = dat_train,
                  max_iter = 15,
@@ -77,19 +81,47 @@ for (i in seq_along(penalization_lambdas)) {
                  use_weights = TRUE)
   rand_indexes_all[i] <- res$rand_index
   n_iterations_all[i] <- res$n_iterations
+  cluster_complexity_all[i] <- res$db
   print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)
   print("", quote = FALSE)
 }
 
 # Basic scatterplots of Penalization Lambdas vs Rand index
 
+df <- data.frame("cluster_complexity" = as.numeric(as.character(cluster_complexity_all)),
+                 "penalization_lambdas" = as.numeric(as.character(penalization_lambdas)),
+                 "number_of_iterations" = (as.numeric(as.character(n_iterations_all))),
+                 "rand_index_result_vs_true" = (as.numeric(as.character(rand_indexes_all)))
+)
+
+df <- df[order(df$cluster_complexity, decreasing = TRUE),]
+
 png(file.path(output_path, paste0("final_plot.png")),
-    width = 1024, height = 1024, units = "px")
-par(mfrow = c(2, 2))
-plot(x = penalization_lambdas, y = rand_indexes_all, main = "Penalization λ vs Rand Index")
-plot(x = penalization_lambdas, y = rand_indexes_all, log = 'x', main = "Penalization λ vs Rand Index, logged x axis")
-plot(x = penalization_lambdas, y = n_iterations_all, main = "Penalization λ vs Number of iterations")
-plot(x = penalization_lambdas, y = n_iterations_all, log = 'x', main = "Penalization λ vs Number of iterations, logged x axis")
+    width = 1024, height = 480, units = "px")
+
+p1 <- ggplot(data = df, aes(x = penalization_lambdas, y = cluster_complexity, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "Penalization Lambda", y = "Davies–Bouldin index")
+p2 <- ggplot(data = df, aes(x = number_of_iterations, y = cluster_complexity, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  labs(x = "Number of iterations", y = "Davies–Bouldin index")
+p3 <- ggplot(data = df, aes(x = rand_index_result_vs_true, y = cluster_complexity, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  labs(x = "Rand Index, result vs true", y = "Davies–Bouldin index")
+p4 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_true, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  labs(x = "Penalization Lambda", y = "Rand Index, result vs true")
+p5 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_true, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "Penalization Lambda", y = "Rand Index, result vs true")
+p1 + p2 + p3 + p4 + p5
 dev.off()
 
 

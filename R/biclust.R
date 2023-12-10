@@ -10,6 +10,7 @@ library(ggfortify)   # For pca-plot
 library(pracma)      # For pseudo inverse
 library(stats)       # For kmeans
 library(ppclust)
+library(clusterSim)  # for db
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
@@ -244,7 +245,9 @@ biclust <- function(dat = dat,
       }
       else {
         # Current weights is a n_cell x n_cell matrix with the weigths on the diagonal
-        current_weights <- diag(weights_all[[i_main - 1]][cell_cluster_rows])
+        current_weights <- weights_all[[i_main - 1]][cell_cluster_rows]
+        # current_weights <- current_weights / sum(current_weights)
+        current_weights <- diag(current_weights)
       }
       # models2[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
       #                                 data = environment())$coefficients
@@ -323,14 +326,6 @@ biclust <- function(dat = dat,
                                             ind_targetgenes)
 
     # matequal(likelihood, loglikelihood_matrix)
-
-    likelihood_all[[i_main]] <- likelihood
-
-
-    ######################################
-    ####  Calculate cluster proportions ##
-    ######  Step  M.4 ####################
-
     cluster_proportions <- unname(table(current_cell_cluster_allocation) /
                                     length(current_cell_cluster_allocation))
 
@@ -340,8 +335,48 @@ biclust <- function(dat = dat,
     ####### For each cell to belong to each cluster ####################
 
     weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
-    weights <- sweep(weights, 2, colSums(weights), "/")
+    weights <- sweep(weights, 1, rowSums(weights), "/")
+
+    # weights_2 <- sweep(exp(likelihood), 2, cluster_proportions, "*")
+    # weights_2 <- sweep(weights_2, 1, rowSums(weights_2), "/")
+    likelihood <- weights
+
+    #
+    # weights_2 <- sweep(likelihood, 2, cluster_proportions, "+")
+    # weights_2 <- sweep(weights_2, 2, colSums(weights_2), "-")
+    # # print(str(weights_2))
+    # # print(str(weights))
+    #
     weights_all[[i_main]] <- weights
+
+    likelihood_all[[i_main]] <- likelihood
+    if (i_main == 1) {
+      no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
+      print(str(no_factor_cluster))
+      db <- index.DB(likelihood, no_factor_cluster)$DB
+    }
+
+    ######################################
+    ####  Calculate cluster proportions ##
+    ######  Step  M.4 ####################
+
+    # cluster_proportions <- unname(table(current_cell_cluster_allocation) /
+    #                                 length(current_cell_cluster_allocation))
+    #
+    # ####################################################################
+    # ##### E-step #######################################################
+    # ####### Compute posterior probabilities ############################
+    # ####### For each cell to belong to each cluster ####################
+    #
+    # weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
+    # weights <- sweep(weights, 2, colSums(weights), "/")
+    # #
+    # # # weights_2 <- sweep(likelihood, 2, cluster_proportions, "+")
+    # # # weights_2 <- sweep(weights_2, 2, colSums(weights_2), "-")
+    # # # print(str(weights_2))
+    # # # print(str(weights))
+    # #
+    # weights_all[[i_main]] <- weights
 
     ####################################################################
     ##### E-step #######################################################
@@ -415,7 +450,8 @@ biclust <- function(dat = dat,
   print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."), quote = FALSE)
 
   return(list("rand_index" = rand_index_true_cluster,
-              "n_iterations" = i_main))
+              "n_iterations" = i_main,
+              "db" = db))
 }
 
 
