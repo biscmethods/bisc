@@ -241,8 +241,8 @@ biclust <- function(dat = dat,
         cluster_proportions[i_cell_cluster] <- current_cluster_proportion
     }
 
-    if (use_weights == FALSE || i_main == 1) {
-      # initialise weights, will be overwritten later in this iteration
+    if (use_weights == TRUE && i_main == 1) {
+      # Initialise weights, will be overwritten later in this iteration
       weights <- t(matrix(cluster_proportions, n_cell_clusters, nrow(dat)))
     }
 
@@ -258,9 +258,11 @@ biclust <- function(dat = dat,
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
-      if (use_weights == FALSE || i_main == 1) {
-        # current_weights <- diag(nrow(cell_cluster_regulator_genes))
-        current_weights <- diag(nrow(cell_cluster_regulator_genes)) *  cluster_proportions[i_cell_cluster]
+      if (use_weights == FALSE) {
+        current_weights <- diag(nrow(cell_cluster_regulator_genes))
+      }
+      else if (use_weights == TRUE && i_main == 1) {
+        current_weights <- diag(nrow(cell_cluster_regulator_genes)) * cluster_proportions[i_cell_cluster]
       }
       else {
         # Current weights is a n_cell x n_cell matrix with the weigths on the diagonal
@@ -316,13 +318,13 @@ biclust <- function(dat = dat,
 
       residuals <- current_target_genes - predicted_values
       # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
-      if (use_weights == FALSE ) {
-      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
+      if (use_weights == FALSE) {
+        target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
       }
       else {
         current_weights <- weights[current_rows]
 
-        target_genes_residual_var[i_cell_cluster,] <- colSums( current_weights * residuals^2) / sum(current_weights) #  / (length(current_rows) - 1)
+        target_genes_residual_var[i_cell_cluster,] <- colSums(current_weights * residuals^2) / sum(current_weights) #  / (length(current_rows) - 1)
       }
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
@@ -396,7 +398,8 @@ biclust <- function(dat = dat,
     if (i_main == 1) {
       no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
       print(str(no_factor_cluster), quote = FALSE)
-      db <- index.DB(likelihood, no_factor_cluster)$DB
+      # db <- index.DB(likelihood, no_factor_cluster)$DB
+      db <- mean(silhouette(no_factor_cluster, dist(likelihood))[, 3])
     }
 
     ######################################
