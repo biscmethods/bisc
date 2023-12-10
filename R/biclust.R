@@ -501,6 +501,8 @@ if (sys.nframe() == 0) {
                           target_gene_type_standard_deviation = 3
   )
 
+  true_betas <- dat$true_betas
+  dat <- dat$dat
   # dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))
   # These needs to be strings for discrete labels in pca plot
   # that fucks up the code, though
@@ -541,6 +543,9 @@ if (sys.nframe() == 0) {
   penalization_lambda <- 0.000000001
   i_cell_cluster <- 1
   i_main <- 1
+
+  use_weights = TRUE
+  use_complex_cluster_allocation = FALSE
 
   demo_path <- here::here("demo")
   output_path <- demo_path

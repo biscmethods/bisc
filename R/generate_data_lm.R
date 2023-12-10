@@ -201,7 +201,7 @@ generate_data_lm <- function(n_cell_clusters = 3,
                         target_gene_expression,
                         regulator_gene_expression)
 
-  return(dat)
+  return(list(dat = dat, true_betas = betas))
   # return indexes of different gene types?
   # list(dat = dat,
   #      Z_r = Z_r,
@@ -231,6 +231,8 @@ if (sys.nframe() == 0) {
                           coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
                           target_gene_type_standard_deviation = 3
   )
+  true_betas <- dat$true_betas
+  dat <- dat$dat
 
   dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))  # These needs to be strings for discrete labels in pca plot
   pca_res <- prcomp(dat[, 3:ncol(dat)], scale. = TRUE)
