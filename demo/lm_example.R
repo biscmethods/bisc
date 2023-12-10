@@ -29,6 +29,7 @@ dat <- generate_data_lm(n_cell_clusters = 3,
                         target_gene_type_standard_deviation = 3
 )
 
+
 # Split data into train/test
 cell_data_split <- sample(c(1, 2), nrow(dat), replace = T)
 train_indices <- which(cell_data_split == 1)
@@ -61,7 +62,8 @@ rand_indexes_all <- vector(length = length(penalization_lambdas))
 n_iterations_all <- vector(length = length(penalization_lambdas))
 cluster_complexity_all <- vector(length = length(penalization_lambdas))
 max_iter <- 15
-BIC_all <- matrix(ncol=max_iter, nrow = length(penalization_lambdas))
+BIC_all <- matrix(ncol = max_iter, nrow = length(penalization_lambdas))
+target_genes_residual_var_all <- vector(mode = "list", length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
   penalization_lambda <- penalization_lambdas[i]
   penalization_lambda_str <- sprintf("%.6f", penalization_lambda)
@@ -84,6 +86,7 @@ for (i in seq_along(penalization_lambdas)) {
   rand_indexes_all[i] <- res$rand_index
   n_iterations_all[i] <- res$n_iterations
   cluster_complexity_all[i] <- res$db
+  target_genes_residual_var_all[[i]] <- res$taget_genes_residual_var
   temp_BIC <- unlist(res$BIC)
   BIC_all[i, seq_along(temp_BIC)] <- temp_BIC
   print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)

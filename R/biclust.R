@@ -34,7 +34,6 @@ weighted_lm <- function(X, Y, W = diag(nrow(X))) {
 
   # make sure X,Y,W either are or can be coerced to matrices and if not return error
   check(X); check(Y); check(W)
-
   BETAS <- pracma::pinv(t(X) %*% W %*% X) %*%
     t(X) %*%
     W %*%
@@ -159,7 +158,6 @@ loglikelihood_calc_matrix <- function(dat,
     # Extrude 1xt to cxt so we can divide element wise
     cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
     cell_cluster_target_genes_residual_var <- do.call(rbind, replicate(n_cells, cell_cluster_target_genes_residual_var, simplify = FALSE))  # cxt
-
     term1 <- log(2 * pi)                                                         # scalar
     term2 <- log(cell_cluster_target_genes_residual_var) / 2                     # 1xt -> cxt
     term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2)   # 1xt -> cxt
@@ -218,13 +216,14 @@ biclust <- function(dat = dat,
   likelihood_all <- vector(mode = "list", length = max_iter)
   weights_all <- vector(mode = "list", length = max_iter)
   BIC_all <- vector(mode = "list", length = max_iter)
-
+  target_genes_residual_var_all <- vector(mode = "list", length = max_iter)
   # Set the current cell clustering
   current_cell_cluster_allocation <- initial_clustering
 
   stop_iterating_flag <- 0  # Flag if we have converged
   for (i_main in 1:max_iter) {
     start.time <- Sys.time()
+
     ################################################################
     ##### M-step, compute estimates for \pi_k and model parameters #
     ################################################################
@@ -289,8 +288,8 @@ biclust <- function(dat = dat,
     # Output: n_cell_clusters x n_target_genes
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
-      current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes])
-      current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes])
+      current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
+      current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
 
 
@@ -306,6 +305,7 @@ biclust <- function(dat = dat,
       # residuals2 <- current_target_genes - predicted_values2
       # target_genes_residual_var2[i_cell_cluster,] <- diag(var(residuals2))
     }
+    target_genes_residual_var_all[[i_main]] <- target_genes_residual_var
 
 
     # Calculated loglikelihoods
@@ -400,8 +400,14 @@ biclust <- function(dat = dat,
       updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
                                    function(row) which.max(likelihood[row,]))
     }
+    # print("updated_cell_clust")
+    # print((str(unlist(updated_cell_clust))))
+    #
+    # print("current_cell_cluster_allocation")
+    # print(str(current_cell_cluster_allocation))
 
     # Update data in cell_cluster_history
+
     cell_cluster_history[, i_main + initial_column_padding] <- updated_cell_clust
 
     # Check convergence of cluster labels
@@ -424,6 +430,7 @@ biclust <- function(dat = dat,
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
+    current_cell_cluster_allocation <- as.factor(unlist(updated_cell_clust))
 
     if (stop_iterating_flag) {
       # Clean up cluster history
@@ -461,7 +468,8 @@ biclust <- function(dat = dat,
   return(list("rand_index" = rand_index_true_cluster,
               "n_iterations" = i_main,
               "db" = db,
-              "BIC" = BIC_all))
+              "BIC" = BIC_all,
+              "taget_genes_residual_var" = target_genes_residual_var_all))
 }
 
 
