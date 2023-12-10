@@ -327,8 +327,17 @@ biclust <- function(dat = dat,
                                             ind_targetgenes)
 
     # matequal(likelihood, loglikelihood_matrix)
-    cluster_proportions <- unname(table(current_cell_cluster_allocation) /
-                                    length(current_cell_cluster_allocation))
+    cluster_proportions <- vector(length = n_cell_clusters)
+    for (i_cell_cluster in seq_len(n_cell_clusters)) {
+      current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
+      if (current_cluster_proportion == 0) {
+        cluster_proportions[i_cell_cluster] <- 0.0001
+        stop_iterating_flag <- T
+      }else
+        cluster_proportions[i_cell_cluster] <- current_cluster_proportion
+    }
+    # cluster_proportions <- unname(table(current_cell_cluster_allocation) /
+    #                                 length(current_cell_cluster_allocation))
 
     ####################################################################
     ##### E-step #######################################################
@@ -400,6 +409,7 @@ biclust <- function(dat = dat,
       updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
                                    function(row) which.max(likelihood[row,]))
     }
+    updated_cell_clust <- unlist(updated_cell_clust)
     # print("updated_cell_clust")
     # print((str(unlist(updated_cell_clust))))
     #
@@ -430,7 +440,7 @@ biclust <- function(dat = dat,
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
-    current_cell_cluster_allocation <- as.factor(unlist(updated_cell_clust))
+    current_cell_cluster_allocation <- as.factor(updated_cell_clust)
 
     if (stop_iterating_flag) {
       # Clean up cluster history
@@ -459,7 +469,7 @@ biclust <- function(dat = dat,
                                          'True cell cluster allocation' = dat$true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
   png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")),
-      width = 1024 + ncol(cell_cluster_history_plotting) * 25, height = 1024, units = "px", res = 150)
+      width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
   time_taken <- round(Sys.time() - start.time, 2)
