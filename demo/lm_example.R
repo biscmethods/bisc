@@ -19,7 +19,7 @@ source(file.path(R_path, "randomise_cluster_labels.R"))
 # Set seed for example
 set.seed(1234)
 
-dat <- generate_data_lm(n_cell_clusters = 3,
+res <- generate_data_lm(n_cell_clusters = 3,
                         n_target_gene_type = 20,  # We have x named target genes that have one expression per cell
                         n_regulator_gene_type = 100,  # We have x named regulator genes that have one expression per cell
                         n_cells = c(1000, 2000, 3000),
@@ -29,12 +29,12 @@ dat <- generate_data_lm(n_cell_clusters = 3,
                         target_gene_type_standard_deviation = 3
 )
 
-dat = dat$dat
+dat <- res$dat
 
 # Split data into train/test
-cell_data_split <- sample(x = c(1, 2), size = nrow(dat), replace = T)
-train_indices   <- which(cell_data_split == 1)
-test_indices    <- which(cell_data_split == 2)
+cell_data_split <- sample(c(1, 2), nrow(dat), replace = T)
+train_indices <- which(cell_data_split == 1)
+test_indices <- which(cell_data_split == 2)
 
 dat_train <- dat[train_indices,]
 dat_test <- dat[test_indices,]
@@ -114,15 +114,15 @@ p1 <- ggplot(data = df, aes(x = penalization_lambdas, y = cluster_complexity, gr
   geom_line(color = "red") +
   geom_point() +
   scale_x_log10() +
-  labs(x = "Penalization Lambda", y = "Davies–Bouldin index")
+  labs(x = "Penalization Lambda", y = "Silhoutte")
 p2 <- ggplot(data = df, aes(x = number_of_iterations, y = cluster_complexity, group = 1)) +
   geom_line(color = "red") +
   geom_point() +
-  labs(x = "Number of iterations", y = "Davies–Bouldin index")
+  labs(x = "Number of iterations", y = "Silhoutte")
 p3 <- ggplot(data = df, aes(x = rand_index_result_vs_true, y = cluster_complexity, group = 1)) +
   geom_line(color = "red") +
   geom_point() +
-  labs(x = "Rand Index, result vs true", y = "Davies–Bouldin index")
+  labs(x = "Rand Index, result vs true", y = "Silhoutte")
 p4 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_true, group = 1)) +
   geom_line(color = "red") +
   geom_point() +

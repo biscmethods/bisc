@@ -228,24 +228,6 @@ biclust <- function(dat = dat,
     ##### M-step, compute estimates for \pi_k and model parameters #
     ################################################################
 
-    ######################################
-    ####  Calculate cluster proportions ##
-    ######  Step  M.0 ####################
-    cluster_proportions <- vector(length = n_cell_clusters)
-    for (i_cell_cluster in seq_len(n_cell_clusters)) {
-      current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
-      if (current_cluster_proportion == 0) {
-        cluster_proportions[i_cell_cluster] <- 0.0001
-        stop_iterating_flag <- T
-      }else
-        cluster_proportions[i_cell_cluster] <- current_cluster_proportion
-    }
-
-    if (use_weights == TRUE && i_main == 1) {
-      # Initialise weights, will be overwritten later in this iteration
-      weights <- t(matrix(cluster_proportions, n_cell_clusters, nrow(dat)))
-    }
-
     ###### Fit model to each cell cluster ####
     ###### M.1                           ####
     models <- vector(mode = "list", length = n_cell_clusters)
@@ -258,11 +240,8 @@ biclust <- function(dat = dat,
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
-      if (use_weights == FALSE) {
+      if (use_weights == FALSE || i_main == 1) {
         current_weights <- diag(nrow(cell_cluster_regulator_genes))
-      }
-      else if (use_weights == TRUE && i_main == 1) {
-        current_weights <- diag(nrow(cell_cluster_regulator_genes)) * cluster_proportions[i_cell_cluster]
       }
       else {
         # Current weights is a n_cell x n_cell matrix with the weigths on the diagonal
@@ -318,14 +297,8 @@ biclust <- function(dat = dat,
 
       residuals <- current_target_genes - predicted_values
       # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
-      if (use_weights == FALSE) {
-        target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
-      }
-      else {
-        current_weights <- weights[current_rows]
+      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
 
-        target_genes_residual_var[i_cell_cluster,] <- colSums(current_weights * residuals^2) / sum(current_weights) #  / (length(current_rows) - 1)
-      }
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
       # predicted_values2 <- current_regulator_genes %*% cell_cluster_betas2
@@ -531,7 +504,7 @@ if (sys.nframe() == 0) {
 
   dat <- generate_data_lm(n_cell_clusters = 3,
                           n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
-                          n_regulator_gene_type = 3,  # We have x named regulator genes that have one expression per cell
+                          n_regulator_gene_type = 2,  # We have x named regulator genes that have one expression per cell
                           n_cells = c(1000, 5000, 10000),
                           regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
                           regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
