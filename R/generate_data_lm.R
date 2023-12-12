@@ -161,17 +161,31 @@ generate_data_lm <- function(n_cell_clusters = 3,
 
   # Generate betas --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   # One per target gene type in each cell cluster meaning:
-  # Two cell clusters with one target gene type in each: total number of betas=2
-  # Two cell clusters with 3 respectively 4 target gene types: total number of betas=7
+  # One column in beta for each target gene. one row for each beta
+  # each column contains the linear model for that target gene.
+  # To make the data more complex,
+  # TODO: duplicate some target genees, so they have the same model and
+  # TODO: make it so that different regulators can be shut off in different clusters
   betas <- vector(mode = 'list', length = n_cell_clusters)
   for (i_cell_cluster in 1:n_cell_clusters) {
-    temp_betas_for_cell_cluster <- rnorm(n_target_gene_type,
+
+
+    #assuming different targets can have different regulatory models this is more accurate
+    temp_betas_for_cell_cluster <- rnorm(n_regulator_gene_type * n_target_gene_type,
                                          mean = 0,
                                          sd = coefficients_standard_deviation)
+
     # We want the different betas for each target gene type in the cell cluster, but the same across all regulator genes
     # Produces a matrix (Target gene types) x (Regulator gene types)
-    temp_betas <- t(matrix(rep(temp_betas_for_cell_cluster, n_regulator_gene_type), ncol = n_regulator_gene_type))
-    colnames(temp_betas) <- paste0("b", 1:n_target_gene_type)
+
+    temp_betas <- matrix(data = temp_betas_for_cell_cluster,
+                         nrow = n_regulator_gene_type,
+                         ncol = n_target_gene_type)
+
+
+    colnames(temp_betas) <- paste0("t", 1:n_target_gene_type)
+    rownames(temp_betas) <- paste0("r", 1:n_regulator_gene_type)
+
     betas[[i_cell_cluster]] <- tibble::as_tibble(temp_betas)
   }
 
@@ -179,7 +193,8 @@ generate_data_lm <- function(n_cell_clusters = 3,
   # Calculate target gene expressions for each cell cluster ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   cell_cluster_target_gene_expression <- lapply(1:n_cell_clusters,
                                                 function(i_cell_cluster) {
-                                                  current_betas <- betas[[i_cell_cluster]]  # This picks out the relevant betas, as many as there are target gene types in this cell cluster
+                                                  current_betas <- betas[[i_cell_cluster]]
+                                                  # This picks out the relevant betas, as many as there are target gene types in this cell cluster
                                                   current_regulator_gene_index <- which(true_cell_cluster_allocation == i_cell_cluster)
                                                   current_regulator_gene_expressions <- regulator_gene_expression[current_regulator_gene_index,]
                                                   residuals <- rnorm(n_cells[i_cell_cluster],
@@ -223,11 +238,11 @@ if (sys.nframe() == 0) {
   set.seed(1234)
 
   dat <- generate_data_lm(n_cell_clusters = 3,
-                          n_target_gene_type = 2,  # We have x named target genes that have one expression per cell
-                          n_regulator_gene_type = 4,  # We have x named regulator genes that have one expression per cell
+                          n_target_gene_type = 5,  # We have x named target genes that have one expression per cell
+                          n_regulator_gene_type = 10,  # We have x named regulator genes that have one expression per cell
                           n_cells = c(1000, 2000, 30000),
-                          regulator_means = c(1, 2, 5),  # Regulator mean expression in each cell cluster.
-                          regulator_standard_deviations = c(0.1, 0.2, 0.3),  # Regulator sd for expression in each cell cluster.
+                          regulator_means = linspace(1, 10, n = 3),  # Regulator mean expression in each cell cluster.
+                          regulator_standard_deviations = linspace(0.1, 2, n = 3),  # Regulator sd for expression in each cell cluster.
                           coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
                           target_gene_type_standard_deviation = 3
   )
@@ -239,4 +254,5 @@ if (sys.nframe() == 0) {
   p <- ggplot2::autoplot(pca_res, data = dat, colour = 'true_cell_cluster_allocation')
   plot(p)
   print(dat)
+  print(true_betas)
 }

@@ -29,11 +29,12 @@ dat <- generate_data_lm(n_cell_clusters = 3,
                         target_gene_type_standard_deviation = 3
 )
 
+dat = dat$dat
 
 # Split data into train/test
-cell_data_split <- sample(c(1, 2), nrow(dat), replace = T)
-train_indices <- which(cell_data_split == 1)
-test_indices <- which(cell_data_split == 2)
+cell_data_split <- sample(x = c(1, 2), size = nrow(dat), replace = T)
+train_indices   <- which(cell_data_split == 1)
+test_indices    <- which(cell_data_split == 2)
 
 dat_train <- dat[train_indices,]
 dat_test <- dat[test_indices,]
