@@ -243,6 +243,9 @@ biclust <- function(dat = dat,
       if (use_weights == FALSE || i_main == 1) {
         current_weights <- diag(nrow(cell_cluster_regulator_genes))
       }
+      else if (use_weights == TRUE && i_main == 1) {
+        current_weights <- diag(nrow(cell_cluster_regulator_genes)) * cluster_proportions[i_cell_cluster]
+      }
       else {
         # Current weights is a n_cell x n_cell matrix with the weigths on the diagonal
         current_weights <- weights_all[[i_main - 1]][cell_cluster_rows]
@@ -497,7 +500,7 @@ if (sys.nframe() == 0) {
   ############ data for dev ###################
   #############################################
 
-
+  R_path <- here::here("R")
   source(file.path(R_path, "generate_data_lm.R"))
   source(file.path(R_path, "randomise_cluster_labels.R"))
 
