@@ -494,7 +494,7 @@ if (sys.nframe() == 0) {
   ############ data for dev ###################
   #############################################
 
-
+  R_path <- here::here("R")
   source(file.path(R_path, "generate_data_lm.R"))
   source(file.path(R_path, "randomise_cluster_labels.R"))
 
@@ -505,6 +505,15 @@ if (sys.nframe() == 0) {
   n_target_genes = 20
   n_regulator_genes = 200
   n_cells = c(1000,5000)
+  # #
+  # n_cell_clusters = n_cell_clusters
+  # n_target_gene_clusters = c(2,3)  # Number of target gene clusters in each cell cluster
+  # n_target_genes = n_target_genes
+  # n_regulator_genes = n_regulator_genes
+  # n_cells = n_cells
+  # regulator_means = c(1,2)  # For generating dummy data, regulator mean in each cell cluster
+  # coefficient_means = list(c(1,10), c(2,20,200)) # For generating dummy data, coefficient means in each cell cluster
+  # disturbed_fraction=0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
 
   dat <- generate_dummy_data_for_cell_clustering(
     n_cell_clusters = n_cell_clusters,

@@ -275,6 +275,26 @@ generate_dummy_data_for_scregclust <- function(
     penalization = 0.001,
     verbose = TRUE
   )-> scRegOut
+  #
+  # str(scRegOut)
+  # str(scRegOut$results)
+  # str(scRegOut$results[[1]])
+  # str(scRegOut$results[[1]]$output)
+  # scRegOut$results[[1]]$output[[1]]$coeffs
+  # scRegOut$results[[1]]$output[[1]]$models
+  # scRegOut$results[[1]]$output[[1]]$cluster[!is_regulator]
+  #
+  # beta2scregcoeffmat <- function(mat){
+  #    mat[, colSums(mat != 0) > 0]
+  # }
+  #
+  # ncol(beta2scregcoeffmat(Beta_with_signs[[1]]))
+  # beta2scregcoeffmat(Beta_with_signs[[2]])
+  # ncol(scRegOut$results[[1]]$output[[1]]$coeffs[[1]])
+  # scRegOut$results[[1]]$output[[1]]$coeffs[[1]] - beta2scregcoeffmat(Beta_with_signs[[2]])
+
+
+  #TODO: somehow compare Beta_with_signs and scRegOut$results[[1]]$output[[1]]$coeffs
 
   true_clust_allocation <- apply(X=Pi, MARGIN=2, FUN=function(x) which(x==1))
   predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$cluster[1:n_target_genes]

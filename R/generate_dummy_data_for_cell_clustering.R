@@ -1,5 +1,5 @@
-execution_path <- dirname(rstudioapi::getSourceEditorContext()$path)
-source(paste0(execution_path,"/generate_dummy_data_for_scregclust.R"))
+R_path <- here::here("R")
+source(paste0(R_path,"/generate_dummy_data_for_scregclust.R"))
 library(plyr)
 
 generate_dummy_data_for_cell_clustering <- function(
@@ -20,19 +20,48 @@ generate_dummy_data_for_cell_clustering <- function(
   # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   dummy_data <- vector(mode = "list", length = n_cell_clusters)
+  betas  <- dummy_data
   for(i_cluster in 1:n_cell_clusters){
     print(paste("Generating data for cell cluster", i_cluster))
     dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
                                                                   n_regulator_genes,
-                                                                  n_cells = n_cells[i_cluster],
-                                                                  n_target_gene_clusters[i_cluster],
-                                                                  regulator_mean = regulator_means[i_cluster],
-                                                                  coefficient_mean = coefficient_means[[i_cluster]])
+                                                                  n_cells                = n_cells[i_cluster],
+                                                                  n_target_gene_clusters = n_target_gene_clusters[i_cluster],
+                                                                  regulator_mean         = regulator_means[i_cluster],
+                                                                  coefficient_mean       = coefficient_means[[i_cluster]])
+    # list of list of models. with dimension regulators x targets
+    # Top level list is each cell cluster
+      # in each of those elements is the model generating each target gene cluster in that cell cluster
+    betas[[i_cluster]]  <- dummy_data[[i_cluster]]$B
   }
+
+  names(dummy_data[[1]])
+
+  dim(dummy_data[[1]]$B)
 
   # Create Z_r and Z_t from dummy data
   Z_t <- dummy_data[[1]]$Z_t
   Z_r <- dummy_data[[1]]$Z_r
+
+  #
+  scregclust::scregclust(
+    expression = rbind(t(Z_t), t(Z_r)),    #scRegClust wants this form
+    genesymbols = 1:(n_target_genes+n_regulator_genes),               #gene row numbers
+    is_regulator = (1:(n_target_genes+n_regulator_genes) > n_target_genes) + 0, #vector indicating which genes are regulators
+    n_cl        = n_target_gene_clusters,
+    penalization = 0.001,
+    verbose = TRUE
+  )-> scRegOut
+
+  str(scRegOut)
+  str(scRegOut$results)
+  str(scRegOut$results[[1]])
+  str(scRegOut$results[[1]]$output)
+  scRegOut$results[[1]]$output[[1]]$coeffs
+  scRegOut$results[[1]]$output[[1]]$models
+  scRegOut$results[[1]]$output[[1]]$cluster[!is_regulator]
+  betas_screg <-
+
   if (n_cell_clusters>1){
     for(i_cluster in 2:n_cell_clusters){
       Z_t <- rbind(Z_t, dummy_data[[i_cluster]]$Z_t)
@@ -66,5 +95,6 @@ generate_dummy_data_for_cell_clustering <- function(
   return(list(disturbed_initial_cell_clust=disturbed_initial_cell_clust,
               initial_cell_clust=initial_cell_clust,
               true_cell_clust = true_cell_clust,
+              true_betas =  betas,
               dat=dat))
 }
