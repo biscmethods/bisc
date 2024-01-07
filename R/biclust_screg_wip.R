@@ -246,11 +246,20 @@ biclust <- function(dat = dat,
       screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
       target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
       n_target_gene_cluster_names <- length(unique(target_gene_cluster_names))
-      if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]] ||
-        any(target_gene_cluster_names == -1) ||
-        any(is.na(target_gene_cluster_names))) {
+
+      if (any(target_gene_cluster_names == -1)) {
+        stop(paste("Number of target genes put into the rubbish cluster are", sum(target_gene_cluster_names == -1), "out of", length(target_gene_cluster_names)))
+      }
+
+      if (any(is.na(target_gene_cluster_names))) {
+        stop("For some reason there are NAs in the target gene cluster allocation vector.")
+      }
+
+      if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]]) {
         stop(paste("Number of found clusters by scregclust was", n_target_gene_cluster_names, "but should be", n_target_gene_clusters[[i_cell_cluster]]))
       }
+
+
 
       # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
       # target_gene_cluster_names, e.g. 2 2 1 3 1 3,

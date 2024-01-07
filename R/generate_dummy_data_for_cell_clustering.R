@@ -88,7 +88,7 @@ generate_dummy_data_for_cell_clustering <- function(
     for (i_cluster in 1:n_cell_clusters) {
       indexes_of_cluster <- which(true_cluster_allocation == i_cluster)
       some_of_those_indexes <- sample(indexes_of_cluster, size = as.integer(length(indexes_of_cluster) * disturbed_fraction), replace = F)
-      disturbed_initial_cell_clust[some_of_those_indexes] <- sample(1:n_cell_clusters[-i_cluster], size = length(some_of_those_indexes), replace = T)
+      disturbed_initial_cell_clust[some_of_those_indexes] <- sample((1:n_cell_clusters)[-i_cluster], size = length(some_of_those_indexes), replace = T)
     }
   }
 
