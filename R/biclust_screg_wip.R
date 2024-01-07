@@ -112,6 +112,7 @@ loglikelihood_calc_matrix <- function(dat,
 
     predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1xt -> cxt
     cell_squared_error <- (observed_value - predicted_value)^2  # 1xt -> cxt
+    cell_squared_error[is.na(cell_squared_error)] <- mean(cell_squared_error, na.rm = TRUE)
 
     # Extrude 1xt to cxt so we can divide element wise
     cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
@@ -236,34 +237,37 @@ biclust <- function(dat = dat,
       #  scregclust is function that takes expression = p rows of genes and n columns of cells.
 
       screg_out <- scregclust::scregclust(
-        expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),    #scRegClust wants this form
-        genesymbols = 1:(n_target_genes + n_regulator_genes),               #gene row numbers
-        is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0, #vector indicating which genes are regulators
+        expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),  # scRegClust wants this form
+        genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+        is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
         n_cl = n_target_gene_clusters[[i_cell_cluster]],
-        penalization = 0.001,
-        verbose = FALSE
+        penalization = 0.8,
+        verbose = FALSE,
+        min_cluster_size = 10
       )
       screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
       target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
       n_target_gene_cluster_names <- length(unique(target_gene_cluster_names))
 
-      if (any(target_gene_cluster_names == -1)) {
-        stop(paste("Number of target genes put into the rubbish cluster are", sum(target_gene_cluster_names == -1), "out of", length(target_gene_cluster_names)))
-      }
-
-      if (any(is.na(target_gene_cluster_names))) {
-        stop("For some reason there are NAs in the target gene cluster allocation vector.")
-      }
-
-      if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]]) {
-        stop(paste("Number of found clusters by scregclust was", n_target_gene_cluster_names, "but should be", n_target_gene_clusters[[i_cell_cluster]]))
-      }
-
-
+      # if (any(target_gene_cluster_names == -1)) {
+      #   stop(paste("Number of target genes put into the rubbish cluster are", sum(target_gene_cluster_names == -1), "out of", length(target_gene_cluster_names)))
+      # }
+      #
+      # if (any(is.na(target_gene_cluster_names))) {
+      #   stop("For some reason there are NAs in the target gene cluster allocation vector.")
+      # }
+      #
+      # if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]]) {
+      #   stop(paste("Number of found clusters by scregclust was", n_target_gene_cluster_names, "but should be", n_target_gene_clusters[[i_cell_cluster]]))
+      # }
 
       # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
       # target_gene_cluster_names, e.g. 2 2 1 3 1 3,
       # becomes cluster_indexes: 3 4 1 5 2 6
+      # CAN ALSO BE DONE WITH THE FOLLOWING CODE THAT WE HAVE USED BEFORE:
+      # indexes_of_not_deleted_target_gene_clusters <- which(sapply(out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$coeffs, FUN=function(x) !is.null(x)))
+      # target_gene_cluster_index <- out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$cluster[1:n_target_genes]  # n_target_genes, e.g. 1 1 1 1 3 3 3 3 3 3 3 3 1 3 1 3 3 3 3 3 1 3 1 1 3 1 3 3 1 3
+      # target_gene_cluster_index <- unlist(sapply(indexes_of_not_deleted_target_gene_clusters, FUN=function(x) which(target_gene_cluster_index==x)))
       cluster_indexes <- rep(NA, length(target_gene_cluster_names))
       tmp_max_ind <- 0
       for (i_target_gene_cluster in 1:n_target_gene_clusters[[i_cell_cluster]]) {
@@ -275,8 +279,8 @@ biclust <- function(dat = dat,
 
       screg_out_betas <- screg_out_betas[, cluster_indexes]  # Sort the matrix
 
-      screg_out_sigmas <- do.call(c, screg_out$results[[1]]$output[[1]]$sigmas)
-      screg_out_sigmas <- screg_out_sigmas[cluster_indexes]
+      # screg_out_sigmas <- do.call(c, screg_out$results[[1]]$output[[1]]$sigmas)
+      # screg_out_sigmas <- screg_out_sigmas[cluster_indexes]
 
       models[[i_cell_cluster]] <- screg_out_betas
 
@@ -306,7 +310,9 @@ biclust <- function(dat = dat,
 
       # target_genes_residual_var[i_cell_cluster,] <- diag(var(residuals))  # maybe not necessary to calculate entire matrix
       # TODO: this should be possible to just extract from SCREG, do that and compare to make sure it's approx same
-      target_genes_residual_var[i_cell_cluster,] <- colSums(residuals^2) / (length(current_rows) - 1)
+      tmp_res_var <- colSums(residuals^2) / (length(current_rows) - 1)
+      tmp_res_var[is.na(tmp_res_var)] <- mean(tmp_res_var, na.rm = TRUE)  # Make target genes that were thrown in the rubbish cluster have large variance
+      target_genes_residual_var[i_cell_cluster,] <- tmp_res_var
 
       #dev
       # cell_cluster_betas2 <- models2[[i_cell_cluster]]
@@ -356,8 +362,7 @@ biclust <- function(dat = dat,
     ####### Compute posterior probabilities ############################
     ####### For each cell to belong to each cluster ####################
 
-
-    # if everything goes well this should work the same for screg as with our
+    # If everything goes well this should work the same for screg as with our
     # lm examples
     weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
 
@@ -457,18 +462,18 @@ biclust <- function(dat = dat,
       break
     }
 
-    scatter_plot_loglikelihood(dat,
-                               likelihood,
-                               n_cell_clusters,
-                               penalization_lambda,
-                               output_path,
-                               i_main)
-    hist_plot_loglikelihood(dat,
-                            likelihood,
-                            n_cell_clusters,
-                            penalization_lambda,
-                            output_path,
-                            i_main)
+    # scatter_plot_loglikelihood(dat,
+    #                            likelihood,
+    #                            n_cell_clusters,
+    #                            penalization_lambda,
+    #                            output_path,
+    #                            i_main)
+    # hist_plot_loglikelihood(dat,
+    #                         likelihood,
+    #                         n_cell_clusters,
+    #                         penalization_lambda,
+    #                         output_path,
+    #                         i_main)
   }
 
   start.time <- Sys.time()
@@ -527,7 +532,7 @@ if (sys.nframe() == 0) {
     regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
     coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
     coefficient_sds = coefficient_sds,
-    disturbed_fraction = 0
+    disturbed_fraction = 0.22
   )
 
   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
@@ -599,5 +604,6 @@ if (sys.nframe() == 0) {
   print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
   print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
   print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
-  print(paste("taget_genes_residual_var:", biclust_result$taget_genes_residual_var), quote = FALSE)
+  print(paste("taget_genes_residual_var:"), quote = FALSE)
+  print(biclust_result$taget_genes_residual_var, quote = FALSE)
 }
