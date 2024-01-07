@@ -23,7 +23,7 @@ generate_dummy_data_for_cell_clustering <- function(
   dummy_data <- vector(mode = "list", length = n_cell_clusters)
   betas <- dummy_data
   for (i_cluster in 1:n_cell_clusters) {
-    print(paste("Generating data for cell cluster", i_cluster))
+    print(paste(" Generating data for cell cluster", i_cluster), quote = FALSE)
     dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
                                                                   n_regulator_genes,
                                                                   n_cells = n_cells[i_cluster],
@@ -37,13 +37,16 @@ generate_dummy_data_for_cell_clustering <- function(
     betas[[i_cluster]] <- dummy_data[[i_cluster]]$B
   }
 
-  names(dummy_data[[1]])
-
-  dim(dummy_data[[1]]$B)
 
   # Create Z_r and Z_t from dummy data
-  Z_t <- dummy_data[[1]]$Z_t
-  Z_r <- dummy_data[[1]]$Z_r
+  Z_t <- dummy_data[[1]]$Z_t  # cells x genes
+  Z_r <- dummy_data[[1]]$Z_r  # cells x genes
+  if (n_cell_clusters > 1) {
+    for (i_cluster in 2:n_cell_clusters) {
+      Z_t <- rbind(Z_t, dummy_data[[i_cluster]]$Z_t)
+      Z_r <- rbind(Z_r, dummy_data[[i_cluster]]$Z_r)
+    }
+  }
 
   #
   # regulator_genes_index <- (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0
@@ -64,13 +67,7 @@ generate_dummy_data_for_cell_clustering <- function(
   # scRegOut$results[[1]]$output[[1]]$coeffs
   # scRegOut$results[[1]]$output[[1]]$models
   # scRegOut$results[[1]]$output[[1]]$cluster[!regulator_genes_index]
-  # betas_screg <-
-  #   if (n_cell_clusters > 1) {
-  #     for (i_cluster in 2:n_cell_clusters) {
-  #       Z_t <- rbind(Z_t, dummy_data[[i_cluster]]$Z_t)
-  #       Z_r <- rbind(Z_r, dummy_data[[i_cluster]]$Z_r)
-  #     }
-  #   }
+
   dat <- cbind(Z_t, Z_r)
 
   # Split into train and test data for cell clustering
