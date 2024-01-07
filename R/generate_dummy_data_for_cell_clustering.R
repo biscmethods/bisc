@@ -46,16 +46,16 @@ generate_dummy_data_for_cell_clustering <- function(
   Z_r <- dummy_data[[1]]$Z_r
 
   #
-  regulator_genes_index <- (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0
+  # regulator_genes_index <- (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0
 
-  scregclust::scregclust(
-    expression = rbind(t(Z_t), t(Z_r)),    #scRegClust wants this form
-    genesymbols = 1:(n_target_genes + n_regulator_genes),               #gene row numbers
-    is_regulator = regulator_genes_index, #vector indicating which genes are regulators
-    n_cl = n_target_gene_clusters[i_cluster],
-    penalization = 0.001,
-    verbose = TRUE
-  ) -> scRegOut
+  # scregclust::scregclust(
+  #   expression = rbind(t(Z_t), t(Z_r)),    #scRegClust wants this form
+  #   genesymbols = 1:(n_target_genes + n_regulator_genes),               #gene row numbers
+  #   is_regulator = regulator_genes_index, #vector indicating which genes are regulators
+  #   n_cl = n_target_gene_clusters[i_cluster],
+  #   penalization = 0.001,
+  #   verbose = FALSE
+  # ) -> scRegOut
 
   # str(scRegOut)
   # str(scRegOut$results)
@@ -86,12 +86,12 @@ generate_dummy_data_for_cell_clustering <- function(
 
 
   # Kod för att flytta 1% av cellerna i varje kluster till ett annat kluster.
-  disturbed_initial_cell_clust <- initial_cell_clust
+  disturbed_initial_cell_clust <- true_cluster_allocation
   if (disturbed_fraction > 0) {
     for (i_cluster in 1:n_cell_clusters) {
-      indexes_of_cluster <- which(initial_cell_clust == i_cluster)
+      indexes_of_cluster <- which(true_cluster_allocation == i_cluster)
       some_of_those_indexes <- sample(indexes_of_cluster, size = as.integer(length(indexes_of_cluster) * disturbed_fraction), replace = F)
-      disturbed_initial_cell_clust[some_of_those_indexes] <- sample(c(1:n_cell_clusters)[-i_cluster], size = length(some_of_those_indexes), replace = T)
+      disturbed_initial_cell_clust[some_of_those_indexes] <- sample(1:n_cell_clusters[-i_cluster], size = length(some_of_those_indexes), replace = T)
     }
   }
 

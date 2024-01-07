@@ -283,7 +283,7 @@ generate_dummy_data_for_scregclust <- function(
     is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0, #vector indicating which genes are regulators
     n_cl = n_target_gene_clusters,
     penalization = 0.001,
-    verbose = TRUE
+    verbose = FALSE
   ) -> scRegOut
   #
   # str(scRegOut)

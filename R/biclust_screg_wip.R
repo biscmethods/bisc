@@ -189,6 +189,8 @@ loglikelihood_calc_matrix <- function(dat,
 #' @export
 #'
 biclust <- function(dat = dat,
+                    cell_id,
+                    true_cell_cluster_allocation,
                     max_iter = 50,
                     initial_clustering,
                     n_target_genes,
@@ -203,7 +205,8 @@ biclust <- function(dat = dat,
                     use_complex_cluster_allocation = FALSE) {
 
   # Preallocate cluster history
-  cell_cluster_history <- tibble::tibble(dat$cell_id, dat$true_cell_cluster_allocation, initial_clustering)
+
+  cell_cluster_history <- tibble::tibble(cell_id, true_cell_cluster_allocation, initial_clustering)
   colnames(cell_cluster_history) <- c("cell_id", "True allocation", "Disturbed allocation")
   initial_column_padding <- ncol(as.matrix(initial_clustering)) + 1  # +1 Because we have an index column that is not an index column it's an ID column
   cell_cluster_history <- data.frame(matrix(NA, nrow = nrow(as.matrix(initial_clustering)), ncol = max_iter + initial_column_padding))
@@ -438,7 +441,7 @@ biclust <- function(dat = dat,
       }
     }
 
-    rand_index_true_cluster <- aricode::RI(dat$true_cell_cluster_allocation, updated_cell_clust)
+    rand_index_true_cluster <- aricode::RI(true_cell_cluster_allocation, updated_cell_clust)
     time_taken <- round(Sys.time() - start.time, 2)
     print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
@@ -468,7 +471,7 @@ biclust <- function(dat = dat,
   start.time <- Sys.time()
 
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
-                                         'True cell cluster allocation' = dat$true_cell_cluster_allocation,
+                                         'True cell cluster allocation' = true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
   png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")),
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
@@ -509,7 +512,7 @@ if (sys.nframe() == 0) {
   coefficient_means <- list(c(1, 20), c(5, 20, 100))  # For generating dummy data, coefficient means in each cell cluster
   coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
   true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
-  total_n_cells <- sum(n_cells)
+  n_total_cells <- sum(n_cells)
 
   # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   generated_data <- generate_dummy_data_for_cell_clustering(
@@ -526,20 +529,20 @@ if (sys.nframe() == 0) {
 
   names(generated_data)
   dim(generated_data$dat)
+  ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+  ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
 
   disturbed_initial_cell_clust <- generated_data$disturbed_initial_cell_clust
-  dat <- generated_data$dat
-  # dat[, 'true_cell_cluster_allocation'] <- paste("Cluster", pull(dat, 'true_cell_cluster_allocation'))
-  # These needs to be strings for discrete labels in pca plot
-  # that fucks up the code, though
-  pca_res <- prcomp(dat[, 3:ncol(dat)], scale. = TRUE)
-  p <- ggplot2::autoplot(pca_res, data = dat, colour = 'true_cell_cluster_allocation')
 
+  biclust_input_data <- generated_data$dat
+  colnames(biclust_input_data) <- c(paste0("r", 1:n_target_genes), paste0("t", 1:n_regulator_genes))
+  biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
-  n_total_cells <- nrow(dat)
-  ind_targetgenes <- which(str_detect(colnames(dat), "t\\d"))
-  ind_reggenes <- which(str_detect(colnames(dat), "r\\d"))
-
+  # # These needs to be strings for discrete labels in pca plot
+  # data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
+  #                                        biclust_input_data)
+  # pca_res <- prcomp(biclust_input_data, scale. = TRUE)
+  # p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
 
   # Set up some variables
   n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
@@ -568,8 +571,8 @@ if (sys.nframe() == 0) {
   i_cell_cluster <- 1
   i_main <- 1
 
-  use_weights = TRUE
-  use_complex_cluster_allocation = FALSE
+  use_weights <- TRUE
+  use_complex_cluster_allocation <- FALSE
 
   demo_path <- here::here("demo")
   output_path <- demo_path
@@ -578,7 +581,9 @@ if (sys.nframe() == 0) {
   ###########################################
   ###END initialise variables for dev #######
   ###########################################
-  biclust(dat = generated_data,
+  biclust(dat = biclust_input_data,
+          cell_id = 1:n_total_cells,
+          true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
           max_iter = 50,
           initial_clustering,
           n_target_genes,
