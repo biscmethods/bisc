@@ -242,8 +242,7 @@ biclust <- function(dat = dat,
         is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
         n_cl = n_target_gene_clusters[[i_cell_cluster]],
         penalization = 0.8,
-        verbose = FALSE,
-        min_cluster_size = 10
+        verbose = FALSE
       )
       screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
       target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
