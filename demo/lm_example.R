@@ -12,7 +12,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 
 source(file.path(R_path, "generate_data_lm.R"))
-source(file.path(R_path, "biclust.R"))
+source(file.path(R_path, "biclust_lm.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
 

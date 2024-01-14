@@ -472,7 +472,7 @@ biclust <- function(dat = dat,
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = dat$true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
-  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")),
+  png(file.path(output_path, paste0("lm_Alluvial_diagram_lambda_", round(penalization_lambda, 3), ".png")),
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
