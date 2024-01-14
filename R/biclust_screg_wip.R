@@ -235,13 +235,16 @@ biclust <- function(dat = dat,
       #  lambda = penalization_lambda
       #)
       #  scregclust is function that takes expression = p rows of genes and n columns of cells.
-
+      if (nrow(cell_cluster_target_genes) == 0) {
+        stop(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"))
+      }
       screg_out <- scregclust::scregclust(
         expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),  # scRegClust wants this form
         genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
         is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
         n_cl = n_target_gene_clusters[[i_cell_cluster]],
-        penalization = 0.8,
+        penalization = penalization_lambda,
+        noise_threshold = 0.00001,
         verbose = FALSE
       )
       screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
@@ -461,18 +464,20 @@ biclust <- function(dat = dat,
       break
     }
 
-    # scatter_plot_loglikelihood(dat,
-    #                            likelihood,
-    #                            n_cell_clusters,
-    #                            penalization_lambda,
-    #                            output_path,
-    #                            i_main)
-    # hist_plot_loglikelihood(dat,
-    #                         likelihood,
-    #                         n_cell_clusters,
-    #                         penalization_lambda,
-    #                         output_path,
-    #                         i_main)
+    scatter_plot_loglikelihood(dat,
+                               likelihood,
+                               n_cell_clusters,
+                               penalization_lambda,
+                               output_path,
+                               i_main,
+                               true_cell_cluster_allocation)
+    hist_plot_loglikelihood(dat,
+                            likelihood,
+                            n_cell_clusters,
+                            penalization_lambda,
+                            output_path,
+                            i_main,
+                            true_cell_cluster_allocation)
   }
 
   start.time <- Sys.time()
@@ -572,7 +577,7 @@ if (sys.nframe() == 0) {
   ind_targetgenes <- ind_targetgenes
   ind_reggenes <- ind_reggenes
   # output_path <- modded_output_path
-  penalization_lambda <- 0.000000001
+  penalization_lambda <- 0.8
   i_cell_cluster <- 1
   i_main <- 1
 
@@ -581,6 +586,11 @@ if (sys.nframe() == 0) {
 
   demo_path <- here::here("demo")
   output_path <- demo_path
+  # initial_clustering[1:14900] <- rep(1, 14900)
+  # initial_clustering[14901:15000] <- rep(2, 100)
+  # print(length(initial_clustering))
+  # stop("hej")
+
 
   ###########################################
   ###END initialise variables for dev #######
@@ -598,7 +608,7 @@ if (sys.nframe() == 0) {
                             ind_targetgenes,
                             ind_reggenes,
                             output_path,
-                            penalization_lambda = 0.5)
+                            penalization_lambda = penalization_lambda)
   print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
   print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
   print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
