@@ -256,7 +256,7 @@ biclust <- function(dat = dat,
 
         screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
         if (is.null(screg_out_betas)) {
-          stop(paste("Cell cluster ", i_cell_cluster, "is NULL for scregclust"))
+          stop(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."))
         }
 
         target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
