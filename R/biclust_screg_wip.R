@@ -207,12 +207,10 @@ biclust <- function(dat = dat,
     # models_eval <- vector(mode = "list", length = n_cell_clusters)
 
     for (i_cell_cluster in 1:n_cell_clusters) {
-      print(paste("  Calculating betas for cell cluster", i_cell_cluster), quote = FALSE)
-
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
-
+      print(paste("  Calculating betas for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "target genes."), quote = FALSE)
       # For SCREG we can skip weights for now as it involves updating the screg function
       #
       #if (use_weights == FALSE || i_main == 1) {
@@ -235,52 +233,62 @@ biclust <- function(dat = dat,
       #  lambda = penalization_lambda
       #)
       #  scregclust is function that takes expression = p rows of genes and n columns of cells.
-      if (nrow(cell_cluster_target_genes) == 0) {
-        stop(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"))
+      screg_out_betas <- matrix(data = 0, nrow = n_regulator_genes, ncol = n_target_genes)
+      # if (nrow(cell_cluster_target_genes) == 0) {
+      #   # stop(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"))
+      #   screg_out_betas <- matrix(data = 0, nrow = n_regulator_genes, ncol = n_target_genes)
+      if (!nrow(cell_cluster_target_genes) == 0) {
+
+        screg_out <- scregclust::scregclust(
+          expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),  # scRegClust wants this form
+          genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+          is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
+          n_cl = n_target_gene_clusters[[i_cell_cluster]],
+          penalization = penalization_lambda,
+          noise_threshold = 0.00001,
+          verbose = FALSE,
+          n_cycles = 3000,
+        )
+        # if (i_cell_cluster == 1) {
+        #   print(str(screg_out), quote = FALSE)
+        # }
+        screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
+
+        target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
+        n_target_gene_cluster_names <- length(unique(target_gene_cluster_names))
+
+        # if (any(target_gene_cluster_names == -1)) {
+        #   stop(paste("Number of target genes put into the rubbish cluster are", sum(target_gene_cluster_names == -1), "out of", length(target_gene_cluster_names)))
+        # }
+        #
+        # if (any(is.na(target_gene_cluster_names))) {
+        #   stop("For some reason there are NAs in the target gene cluster allocation vector.")
+        # }
+        #
+        # if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]]) {
+        #   stop(paste("Number of found clusters by scregclust was", n_target_gene_cluster_names, "but should be", n_target_gene_clusters[[i_cell_cluster]]))
+        # }
+
+        # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
+        # target_gene_cluster_names, e.g. 2 2 1 3 1 3,
+        # becomes cluster_indexes: 3 4 1 5 2 6
+        # CAN ALSO BE DONE WITH THE FOLLOWING CODE THAT WE HAVE USED BEFORE:
+        # indexes_of_not_deleted_target_gene_clusters <- which(sapply(out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$coeffs, FUN=function(x) !is.null(x)))
+        # target_gene_cluster_index <- out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$cluster[1:n_target_genes]  # n_target_genes, e.g. 1 1 1 1 3 3 3 3 3 3 3 3 1 3 1 3 3 3 3 3 1 3 1 1 3 1 3 3 1 3
+        # target_gene_cluster_index <- unlist(sapply(indexes_of_not_deleted_target_gene_clusters, FUN=function(x) which(target_gene_cluster_index==x)))
+        cluster_indexes <- rep(NA, length(target_gene_cluster_names))
+        tmp_max_ind <- 0
+        for (i_target_gene_cluster in 1:n_target_gene_clusters[[i_cell_cluster]]) {
+          ind_tmp <- which(target_gene_cluster_names == i_target_gene_cluster)
+          n_target_genes_in_cluster <- length(ind_tmp)
+          cluster_indexes[ind_tmp] <- 1:n_target_genes_in_cluster + tmp_max_ind  # Get names of clusters for each target gene
+          tmp_max_ind <- n_target_genes_in_cluster
+        }
+
+        screg_out_betas <- screg_out_betas[, cluster_indexes]  # Sort the matrix
+
+
       }
-      screg_out <- scregclust::scregclust(
-        expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),  # scRegClust wants this form
-        genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
-        is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
-        n_cl = n_target_gene_clusters[[i_cell_cluster]],
-        penalization = penalization_lambda,
-        noise_threshold = 0.00001,
-        verbose = FALSE
-      )
-      screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
-      target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
-      n_target_gene_cluster_names <- length(unique(target_gene_cluster_names))
-
-      # if (any(target_gene_cluster_names == -1)) {
-      #   stop(paste("Number of target genes put into the rubbish cluster are", sum(target_gene_cluster_names == -1), "out of", length(target_gene_cluster_names)))
-      # }
-      #
-      # if (any(is.na(target_gene_cluster_names))) {
-      #   stop("For some reason there are NAs in the target gene cluster allocation vector.")
-      # }
-      #
-      # if (n_target_gene_cluster_names != n_target_gene_clusters[[i_cell_cluster]]) {
-      #   stop(paste("Number of found clusters by scregclust was", n_target_gene_cluster_names, "but should be", n_target_gene_clusters[[i_cell_cluster]]))
-      # }
-
-      # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
-      # target_gene_cluster_names, e.g. 2 2 1 3 1 3,
-      # becomes cluster_indexes: 3 4 1 5 2 6
-      # CAN ALSO BE DONE WITH THE FOLLOWING CODE THAT WE HAVE USED BEFORE:
-      # indexes_of_not_deleted_target_gene_clusters <- which(sapply(out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$coeffs, FUN=function(x) !is.null(x)))
-      # target_gene_cluster_index <- out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$cluster[1:n_target_genes]  # n_target_genes, e.g. 1 1 1 1 3 3 3 3 3 3 3 3 1 3 1 3 3 3 3 3 1 3 1 1 3 1 3 3 1 3
-      # target_gene_cluster_index <- unlist(sapply(indexes_of_not_deleted_target_gene_clusters, FUN=function(x) which(target_gene_cluster_index==x)))
-      cluster_indexes <- rep(NA, length(target_gene_cluster_names))
-      tmp_max_ind <- 0
-      for (i_target_gene_cluster in 1:n_target_gene_clusters[[i_cell_cluster]]) {
-        ind_tmp <- which(target_gene_cluster_names == i_target_gene_cluster)
-        n_target_genes_in_cluster <- length(ind_tmp)
-        cluster_indexes[ind_tmp] <- 1:n_target_genes_in_cluster + tmp_max_ind  # Get names of clusters for each target gene
-        tmp_max_ind <- n_target_genes_in_cluster
-      }
-
-      screg_out_betas <- screg_out_betas[, cluster_indexes]  # Sort the matrix
-
       # screg_out_sigmas <- do.call(c, screg_out$results[[1]]$output[[1]]$sigmas)
       # screg_out_sigmas <- screg_out_sigmas[cluster_indexes]
 
@@ -305,6 +313,12 @@ biclust <- function(dat = dat,
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
+
+      for (i_target_gene_cluster in seq_along(models)) {
+        if (is.null(models[[i_target_gene_cluster]])) {
+          stop(paste("Target gene cluster,", i_target_gene_cluster, "is NULL for scregclust output in cell cluster", i_cell_cluster))
+        }
+      }
 
       predicted_values <- current_regulator_genes %*% cell_cluster_betas
 
@@ -517,9 +531,9 @@ if (sys.nframe() == 0) {
 
   n_cell_clusters <- 2
   n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
-  n_target_genes <- 50
-  n_regulator_genes <- 30
-  n_cells <- c(10000, 5000)
+  n_target_genes <- 30
+  n_regulator_genes <- 70
+  n_cells <- c(10000, 10000)
   regulator_means <- c(5, 1)  # For generating dummy data, regulator mean in each cell cluster
   coefficient_means <- list(c(1, 20), c(5, 20, 100))  # For generating dummy data, coefficient means in each cell cluster
   coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
@@ -595,8 +609,34 @@ if (sys.nframe() == 0) {
   ###########################################
   ###END initialise variables for dev #######
   ###########################################
+  # Split data into train/test
+  cell_data_split <- sample(c(1, 2), nrow(biclust_input_data), prob = c(1, 0), replace = T)
+  train_indices <- which(cell_data_split == 1)
+  test_indices <- which(cell_data_split == 2)
+
+  biclust_input_data_train <- biclust_input_data[train_indices,]
+  biclust_input_data_test <- biclust_input_data[test_indices,]
+
+  # TODO: Put this inside generate_data_lm or something
+  # Setup variables that will be used throughout the script
+  # We assume target genes start with t then a number. And likewise for regulator genes.
+  n_total_cells_train <- length(train_indices)
+  cell_id <- 1:n_total_cells
+  cell_id_train <- cell_id[train_indices]
+
+  initial_clustering_train <- initial_clustering[train_indices]
+  if (length(unique(initial_clustering)) != length(unique(initial_clustering_train))) {
+    stop("Training set doesn't have all the clusters")
+  }
+
+  # Set up some variables
+  n_cell_clusters_train <- length(unique(initial_clustering_train))
+
+  # true_cell_cluster_allication <- factor(generated_data$true_cell_clust)
+  # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
+
   biclust_result <- biclust(dat = biclust_input_data,
-                            cell_id = 1:n_total_cells,
+                            cell_id = cell_id,
                             true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
                             max_iter = 50,
                             n_target_gene_clusters,
