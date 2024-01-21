@@ -611,7 +611,7 @@ if (sys.nframe() == 0) {
   ###END initialise variables for dev #######
   ###########################################
   # Split data into train/test
-  cell_data_split <- sample(c(1, 2), nrow(biclust_input_data), prob = c(1, 0), replace = T)
+  cell_data_split <- sample(c(1, 2), nrow(biclust_input_data), prob = c(0.5, 0.5), replace = T)
   train_indices <- which(cell_data_split == 1)
   test_indices <- which(cell_data_split == 2)
 
