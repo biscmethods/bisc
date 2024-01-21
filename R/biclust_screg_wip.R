@@ -252,7 +252,12 @@ biclust <- function(dat = dat,
         # if (i_cell_cluster == 1) {
         #   print(str(screg_out), quote = FALSE)
         # }
+
+
         screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
+        if (is.null(screg_out_betas)) {
+          stop(paste("Cell cluster ", i_cell_cluster, "is NULL for scregclust"))
+        }
 
         target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
         n_target_gene_cluster_names <- length(unique(target_gene_cluster_names))
@@ -293,9 +298,7 @@ biclust <- function(dat = dat,
       # screg_out_sigmas <- screg_out_sigmas[cluster_indexes]
 
       models[[i_cell_cluster]] <- screg_out_betas
-      if (is.null(screg_out_betas)) {
-        stop(paste("Cell cluster ", i_cell_cluster, "is NULL for scregclust"))
-      }
+
 
       # TODO: alternatively write some predict function and use extracted variance estimates
 
