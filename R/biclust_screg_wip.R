@@ -245,9 +245,9 @@ biclust <- function(dat = dat,
           is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
           n_cl = n_target_gene_clusters[[i_cell_cluster]],
           penalization = penalization_lambda,
-          noise_threshold = 0.000000001,
+          noise_threshold = 0.00001,
           verbose = FALSE,
-          n_cycles = 3000,
+          # n_cycles = 3000,
         )
         # if (i_cell_cluster == 1) {
         #   print(str(screg_out), quote = FALSE)
