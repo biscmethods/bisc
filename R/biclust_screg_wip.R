@@ -245,7 +245,7 @@ biclust <- function(dat = dat,
           is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
           n_cl = n_target_gene_clusters[[i_cell_cluster]],
           penalization = penalization_lambda,
-          noise_threshold = 0.00001,
+          noise_threshold = 0.000000001,
           verbose = FALSE,
           n_cycles = 3000,
         )
@@ -293,6 +293,9 @@ biclust <- function(dat = dat,
       # screg_out_sigmas <- screg_out_sigmas[cluster_indexes]
 
       models[[i_cell_cluster]] <- screg_out_betas
+      if (is.null(screg_out_betas)) {
+        stop(paste("Cell cluster ", i_cell_cluster, "is NULL for scregclust"))
+      }
 
       # TODO: alternatively write some predict function and use extracted variance estimates
 
@@ -313,12 +316,6 @@ biclust <- function(dat = dat,
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
-
-      for (i_target_gene_cluster in seq_along(models)) {
-        if (is.null(models[[i_target_gene_cluster]])) {
-          stop(paste("Target gene cluster,", i_target_gene_cluster, "is NULL for scregclust output in cell cluster", i_cell_cluster))
-        }
-      }
 
       predicted_values <- current_regulator_genes %*% cell_cluster_betas
 
@@ -550,7 +547,7 @@ if (sys.nframe() == 0) {
     regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
     coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
     coefficient_sds = coefficient_sds,
-    disturbed_fraction = 0.22
+    disturbed_fraction = 0.10  # TODO: Add size disturbance too
   )
 
   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
@@ -591,7 +588,7 @@ if (sys.nframe() == 0) {
   ind_targetgenes <- ind_targetgenes
   ind_reggenes <- ind_reggenes
   # output_path <- modded_output_path
-  penalization_lambda <- 0.8
+  penalization_lambda <- 0.3
   i_cell_cluster <- 1
   i_main <- 1
 
