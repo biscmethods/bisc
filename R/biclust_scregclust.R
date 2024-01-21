@@ -47,6 +47,24 @@ loglikelihood_calc_matrix <- function(dat,
   return(loglikelihood)
 }
 
+
+standardize_like_scregclust <- function(xvals, yvals, CELL_DATA_SPLIT) {
+  training_data_ind <- which(CELL_DATA_SPLIT == 1)
+  test_data_ind <- which(CELL_DATA_SPLIT == 2)
+
+  org_yvals <- yvals
+  org_xvals <- xvals
+
+  yvals[training_data_ind,] <- scale(yvals[training_data_ind,], scale = FALSE)
+  xvals[training_data_ind,] <- scale(xvals[training_data_ind,])
+
+  yvals[test_data_ind,] <- scale(yvals[test_data_ind,], colMeans(org_yvals[training_data_ind,]), scale = FALSE)
+  xvals[test_data_ind,] <- scale(xvals[test_data_ind,], colMeans(org_xvals[training_data_ind,]), apply(org_xvals[training_data_ind,], 2, sd))
+
+  return(list("xvals" = xvals, "yvals" = yvals))
+}
+
+
 #' Biclust
 #'
 #' Cluster cells based with Classification EM based on lm with penality
@@ -119,11 +137,13 @@ biclust <- function(dat = dat,
     ###### Fit model to each cell cluster ####
     ###### M.1                           ####
     models <- vector(mode = "list", length = n_cell_clusters)
-
+    data_split_for_scregclust <- vector(mode = "list", length = n_cell_clusters)
     for (i_cell_cluster in 1:n_cell_clusters) {
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
+
+
       print(paste("  Calculating betas for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "target genes."), quote = FALSE)
 
       if (nrow(cell_cluster_target_genes) == 0) {
@@ -135,8 +155,14 @@ biclust <- function(dat = dat,
       screg_out_betas <- matrix(data = 0, nrow = n_regulator_genes, ncol = n_target_genes)
 
       if (!nrow(cell_cluster_target_genes) == 0) {
+        indata_for_scregclust <- rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes))
+
+        # Training data are represented by 1 and test data by 2
+        data_split_for_scregclust[[i_cell_cluster]] <- sample(rep(1:2, length.out = ncol(indata_for_scregclust)))
+
         screg_out <- scregclust::scregclust(
-          expression = rbind(t(cell_cluster_target_genes), t(cell_cluster_regulator_genes)),  # scRegClust wants this form
+          expression = indata_for_scregclust,  # scRegClust wants this form
+          split_indices = data_split_for_scregclust[[i_cell_cluster]],
           genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
           is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # Vector indicating which genes are regulators
           n_cl = n_target_gene_clusters[[i_cell_cluster]],
@@ -196,6 +222,12 @@ biclust <- function(dat = dat,
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
+
+      # res <- standardize_like_scregclust(xvals = current_regulator_genes, yvals = current_target_genes, CELL_DATA_SPLIT = data_split_for_scregclust[[i_cell_cluster]])
+      # current_regulator_genes <- res[['xvals']]
+      # current_target_genes <- res[['yvals']]
+
+
       cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
 
       predicted_values <- current_regulator_genes %*% cell_cluster_betas
