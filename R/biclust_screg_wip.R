@@ -247,7 +247,7 @@ biclust <- function(dat = dat,
           penalization = penalization_lambda,
           noise_threshold = 0.00001,
           verbose = FALSE,
-          # n_cycles = 3000,
+          n_cycles = 3000,
         )
         # if (i_cell_cluster == 1) {
         #   print(str(screg_out), quote = FALSE)
@@ -256,8 +256,8 @@ biclust <- function(dat = dat,
 
         screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
         if (is.null(screg_out_betas)) {
-          print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."))
-          return(NULL)
+          print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."), quote = FALSE)
+          return(NA)
         }
 
         target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
@@ -636,7 +636,7 @@ if (sys.nframe() == 0) {
   # true_cell_cluster_allication <- factor(generated_data$true_cell_clust)
   # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-  penalization_lambdas <- c(0.00001, 0.001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+  penalization_lambdas <- c(0.0000001, 0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
   BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print(paste("RUNNING biclust FOR penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
@@ -656,11 +656,14 @@ if (sys.nframe() == 0) {
                                                         penalization_lambda = penalization_lambdas[i_penalization_lambda])
 
   }
+
+  print("", quote = FALSE)
+  print("", quote = FALSE)
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-    if (!is.null(BICLUST_RESULTS[[i_penalization_lambda]])) {
-      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", biclust_result$rand_index))
+    if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
+      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
     }else {
-      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"))
+      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS[[i_penalization_lambda]]$rand_index), quote = FALSE)
     }
   }
 
