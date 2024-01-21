@@ -256,7 +256,8 @@ biclust <- function(dat = dat,
 
         screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
         if (is.null(screg_out_betas)) {
-          stop(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."))
+          print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."))
+          return(NULL)
         }
 
         target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
@@ -525,7 +526,7 @@ if (sys.nframe() == 0) {
   #############################################
 
   # Set seed for example
-  set.seed(231)
+  set.seed(214)
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -550,7 +551,7 @@ if (sys.nframe() == 0) {
     regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
     coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
     coefficient_sds = coefficient_sds,
-    disturbed_fraction = 0.10  # TODO: Add size disturbance too
+    disturbed_fraction = 0.21  # TODO: Add size disturbance too
   )
 
   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
@@ -591,7 +592,7 @@ if (sys.nframe() == 0) {
   ind_targetgenes <- ind_targetgenes
   ind_reggenes <- ind_reggenes
   # output_path <- modded_output_path
-  penalization_lambda <- 0.3
+
   i_cell_cluster <- 1
   i_main <- 1
 
@@ -635,24 +636,38 @@ if (sys.nframe() == 0) {
   # true_cell_cluster_allication <- factor(generated_data$true_cell_clust)
   # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-  biclust_result <- biclust(dat = biclust_input_data,
-                            cell_id = cell_id,
-                            true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
-                            max_iter = 50,
-                            n_target_gene_clusters,
-                            initial_clustering,
-                            n_target_genes,
-                            n_regulator_genes,
-                            n_total_cells,
-                            n_cell_clusters,
-                            ind_targetgenes,
-                            ind_reggenes,
-                            output_path,
-                            penalization_lambda = penalization_lambda)
-  print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
-  print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
-  print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
-  print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
-  print(paste("taget_genes_residual_var:"), quote = FALSE)
-  print(biclust_result$taget_genes_residual_var, quote = FALSE)
+  penalization_lambdas <- c(0.00001, 0.001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+  BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
+  for (i_penalization_lambda in seq_along(penalization_lambdas)) {
+    print(paste("RUNNING biclust FOR penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
+    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
+                                                        cell_id = cell_id,
+                                                        true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
+                                                        max_iter = 50,
+                                                        n_target_gene_clusters,
+                                                        initial_clustering,
+                                                        n_target_genes,
+                                                        n_regulator_genes,
+                                                        n_total_cells,
+                                                        n_cell_clusters,
+                                                        ind_targetgenes,
+                                                        ind_reggenes,
+                                                        output_path,
+                                                        penalization_lambda = penalization_lambdas[i_penalization_lambda])
+
+  }
+  for (i_penalization_lambda in seq_along(penalization_lambdas)) {
+    if (!is.null(BICLUST_RESULTS[[i_penalization_lambda]])) {
+      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", biclust_result$rand_index))
+    }else {
+      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"))
+    }
+  }
+
+  # print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
+  # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
+  # print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
+  # print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
+  # print(paste("taget_genes_residual_var:"), quote = FALSE)
+  # print(biclust_result$taget_genes_residual_var, quote = FALSE)
 }
