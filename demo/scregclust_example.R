@@ -48,8 +48,9 @@ generated_data <- generate_dummy_data_for_cell_clustering(
   disturbed_fraction = 0.21  # TODO: Add size disturbance too
 )
 
-ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
+ind_reggenes <- which(c(rep(1, n_regulator_genes), rep(0, n_target_genes)) == 1)
+ind_targetgenes <- which(c(rep(0, n_regulator_genes), rep(1, n_target_genes)) == 1)
+
 
 disturbed_initial_cell_clust <- factor(generated_data$disturbed_initial_cell_clust)
 
@@ -88,7 +89,6 @@ ind_reggenes <- ind_reggenes
 # output_path <- modded_output_path
 
 i_cell_cluster <- 1
-i_main <- 1
 
 use_weights <- TRUE
 use_complex_cluster_allocation <- FALSE
@@ -132,6 +132,8 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 
 penalization_lambdas <- c(0.000001, 0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
+
+
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   print(paste("RUNNING biclust FOR penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
   BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
@@ -156,6 +158,8 @@ print("", quote = FALSE)
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
+  } else if(is.null(BICLUST_RESULTS[i_penalization_lambda])) {
+    print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"), quote = FALSE)
   }else {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS[[i_penalization_lambda]]$rand_index), quote = FALSE)
   }
