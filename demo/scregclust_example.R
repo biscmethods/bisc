@@ -48,14 +48,16 @@ generated_data <- generate_dummy_data_for_cell_clustering(
   disturbed_fraction = 0.21  # TODO: Add size disturbance too
 )
 
-ind_reggenes <- which(c(rep(1, n_regulator_genes), rep(0, n_target_genes)) == 1)
-ind_targetgenes <- which(c(rep(0, n_regulator_genes), rep(1, n_target_genes)) == 1)
+
+# Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
+ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
+ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
 
 disturbed_initial_cell_clust <- factor(generated_data$disturbed_initial_cell_clust)
 
 biclust_input_data <- generated_data$dat
-colnames(biclust_input_data) <- c(paste0("r", 1:n_target_genes), paste0("t", 1:n_regulator_genes))
+colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
 biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
 # # These needs to be strings for discrete labels in pca plot
@@ -129,8 +131,9 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 
 # true_cell_cluster_allication <- factor(generated_data$true_cell_clust)
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
+# true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-penalization_lambdas <- c(0.000001, 0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+penalization_lambdas <- c(0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 
