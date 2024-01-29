@@ -18,7 +18,7 @@ hms_span <- function(start, end) {
   dsec <- as.numeric(difftime(end, start, unit = "secs"))
   hours <- floor(dsec / 3600)
   minutes <- floor((dsec - 3600 * hours) / 60)
-  seconds <- dsec - 3600*hours - 60*minutes
+  seconds <- dsec - 3600 * hours - 60 * minutes
   paste0(
     sapply(c(hours, minutes, seconds), function(x) {
       formatC(x, width = 2, format = "d", flag = "0")
@@ -274,12 +274,10 @@ biclust <- function(dat = dat,
 
     # Output: n_cell_clusters x n_target_genes
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
-      print(paste("  Calculating residual variance for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "cells."), quote = FALSE)
-
-      # TODO: here we will need to take SCREGCLUSTs normalisation into account
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
+      print(paste("  Calculating residual variance for cell cluster", i_cell_cluster, "with", length(current_rows), "cells."), quote = FALSE)
 
       # Standardize
       training_data_ind <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
