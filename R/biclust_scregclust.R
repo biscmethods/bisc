@@ -342,7 +342,7 @@ biclust <- function(dat = dat,
     # lm examples
     # weights <- sweep(exp(loglikelihood/100), 2, cluster_proportions, "*")
 
-    print(paste("  Doing final weights caluclations"), quote = FALSE)
+    print(paste("  Doing final weights calculations"), quote = FALSE)
     loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
     weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
