@@ -8,28 +8,60 @@ library(pracma)      # For pseudo inverse
 library(stats)       # For kmeans
 library(ppclust)
 library(clusterSim)  # for db
-
+library(Rmpfr)  # for small loglikihoods
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
 source(file.path(R_path, "plot_cluster_history.R"))
 source(file.path(R_path, "plot_loglikelihood.R"))
 
-loglikelihood_calc_matrix <- function(dat,
+# Because scregclust doesn't want a index vector but a logical one
+# and also in loglike calc we need the inverse of a index vector
+inverse_which <- function(indices, output_length)
+{
+  rv <- logical(output_length)
+  if (length(indices) > 0)
+  {
+    rv[indices] <- TRUE
+  }
+  return(rv)
+}
+
+
+loglikelihood_calc_matrix <- function(all_genes,
                                       models,
                                       target_genes_residual_var,
                                       n_cell_clusters,
                                       ind_reggenes,
-                                      ind_targetgenes) {
+                                      ind_targetgenes,
+                                      data_split_for_scregclust,
+                                      current_cell_cluster_allocation) {
   # For all cells, calculate the likelihood of coming from the model corresponding to each
-  n_cells <- nrow(dat)
+  n_cells <- nrow(all_genes)
   loglikelihood <- matrix(data = 0, nrow = n_cells, ncol = n_cell_clusters)
+
+  regulator_genes <- as.matrix(all_genes[, ind_reggenes, drop = FALSE])  # 1xr -> cxr
+  target_genes <- as.matrix(all_genes[, ind_targetgenes, drop = FALSE])  # 1xt -> cxt
+
+
   for (i_cell_cluster in seq_len(n_cell_clusters)) {
-    cell_regulator_genes <- as.matrix(dat[, ind_reggenes, drop = FALSE])  # 1xr -> cxr
-    observed_value <- as.matrix(dat[, ind_targetgenes, drop = FALSE])  # 1xt -> cxt
+    # Standardize data like in scregclust
+    cell_cluster_rows_ind <- which(current_cell_cluster_allocation == i_cell_cluster)
+    training_data_ind <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
+    training_data_for_scregclust_ind <- cell_cluster_rows_ind[training_data_ind]
+    rest_of_data_ind <- which(!inverse_which(training_data_for_scregclust_ind, n_cells))
+    res <- standardize_like_scregclust(xvals = regulator_genes, yvals = target_genes,
+                                       training_data_ind = training_data_for_scregclust_ind, test_data_ind = rest_of_data_ind)
+    regulator_genes_normalized <- res[['xvals']]
+    target_genes_normalized <- res[['yvals']]
+    #--------------------
+
+    print(paste("  Calculating loglikelihood for cell cluster", i_cell_cluster), quote = FALSE)
+
+
     cell_cluster_betas <- models[[i_cell_cluster]] # rxt
 
-    predicted_value <- cell_regulator_genes %*% cell_cluster_betas  # 1xt -> cxt
-    cell_squared_error <- (observed_value - predicted_value)^2  # 1xt -> cxt
+    predicted_value <- regulator_genes_normalized %*% cell_cluster_betas  # 1xt -> cxt
+    cell_squared_error <- (target_genes_normalized - predicted_value)^2  # 1xt -> cxt
     cell_squared_error[is.na(cell_squared_error)] <- mean(cell_squared_error, na.rm = TRUE)
 
     # Extrude 1xt to cxt so we can divide element wise
@@ -43,14 +75,12 @@ loglikelihood_calc_matrix <- function(dat,
 
     loglikelihood[, i_cell_cluster] <- temp_loglikelihood
   }
-
   return(loglikelihood)
 }
 
 
-standardize_like_scregclust <- function(xvals, yvals, CELL_DATA_SPLIT) {
-  training_data_ind <- which(CELL_DATA_SPLIT == 1)
-  test_data_ind <- which(CELL_DATA_SPLIT == 2)
+standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_data_ind) {
+
 
   org_yvals <- yvals
   org_xvals <- xvals
@@ -64,16 +94,6 @@ standardize_like_scregclust <- function(xvals, yvals, CELL_DATA_SPLIT) {
   return(list("xvals" = xvals, "yvals" = yvals))
 }
 
-# Because scregclust doesn't want a index vector but a logical one
-inverse_which <- function(indices, output_length)
-{
-  rv <- logical(output_length)
-  if (length(indices) > 0)
-  {
-    rv[indices] <- TRUE
-  }
-  return(rv)
-}
 
 #' Biclust
 #'
@@ -136,7 +156,7 @@ biclust <- function(dat = dat,
   stop_iterating_flag <- 0  # Flag if we have converged
   for (i_main in 1:max_iter) {
     print(paste(" Running iteration", i_main), quote = FALSE)
-    start.time <- Sys.time()
+    start_time_iteration <- Sys.time()
 
     ################################################################
     ##### M-step, compute estimates for \pi_k and model parameters #
@@ -148,16 +168,17 @@ biclust <- function(dat = dat,
     ###### M.1                           ####
     models <- vector(mode = "list", length = n_cell_clusters)
     data_split_for_scregclust <- vector(mode = "list", length = n_cell_clusters)
+
     for (i_cell_cluster in 1:n_cell_clusters) {
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
 
 
-      print(paste("  Calculating betas for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "target genes."), quote = FALSE)
+      print(paste("  Calculating betas for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "cells."), quote = FALSE)
 
       if (nrow(cell_cluster_target_genes) == 0) {
-        print(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"))
+        print(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"), quote = FALSE)
         return(NA)
       }
 
@@ -170,6 +191,15 @@ biclust <- function(dat = dat,
         # Training data are represented by 1 and test data by 2
         data_split_for_scregclust[[i_cell_cluster]] <- sample(rep(1:2, length.out = ncol(indata_for_scregclust)))
 
+        n_training_data <- sum(data_split_for_scregclust[[i_cell_cluster]] == 1)
+        n_test_data <- sum(data_split_for_scregclust[[i_cell_cluster]] == 2)
+
+
+        if ((length(ind_reggenes) > n_test_data) || (length(ind_reggenes) > n_training_data)) {
+          print(paste("The split into training/test data for scregclust resulted in less cells than there are regulators."), quote = FALSE)
+          return(NA)
+        }
+        sink(tempfile()) # Shut scregclust up
         screg_out <- scregclust::scregclust(
           expression = indata_for_scregclust,  # scRegClust wants this form
           split_indices = data_split_for_scregclust[[i_cell_cluster]],
@@ -179,8 +209,15 @@ biclust <- function(dat = dat,
           penalization = penalization_lambda,
           noise_threshold = 0.00001,
           verbose = FALSE,
-          # n_cycles = 3000,
+          # n_cycles = 100,
         )
+        sink()
+
+        # This is OK, things work out anyway
+        # if (!screg_out$results[[1]]$converged) {
+        #   print(paste("scregclust didn't converge for cell cluster", i_cell_cluster,"."), quote = FALSE)
+        #   return(NA)
+        # }
 
         screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
         if (is.null(screg_out_betas)) {
@@ -226,16 +263,20 @@ biclust <- function(dat = dat,
 
     # Output: n_cell_clusters x n_target_genes
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
-      print(paste("  Calculating residual variance for cell cluster", i_cell_cluster), quote = FALSE)
+      print(paste("  Calculating residual variance for cell cluster", i_cell_cluster, "with", nrow(cell_cluster_target_genes), "cells."), quote = FALSE)
 
       # TODO: here we will need to take SCREGCLUSTs normalisation into account
       current_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       current_regulator_genes <- as.matrix(dat[current_rows, ind_reggenes, drop = FALSE])
       current_target_genes <- as.matrix(dat[current_rows, ind_targetgenes, drop = FALSE])
 
-      # res <- standardize_like_scregclust(xvals = current_regulator_genes, yvals = current_target_genes, CELL_DATA_SPLIT = data_split_for_scregclust[[i_cell_cluster]])
-      # current_regulator_genes <- res[['xvals']]
-      # current_target_genes <- res[['yvals']]
+      # Standardize
+      training_data_ind <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
+      test_data_ind <- which(data_split_for_scregclust[[i_cell_cluster]] == 2)
+      res <- standardize_like_scregclust(xvals = current_regulator_genes, yvals = current_target_genes,
+                                         training_data_ind = training_data_ind, test_data_ind = test_data_ind)
+      current_regulator_genes <- res[['xvals']]
+      current_target_genes <- res[['yvals']]
 
 
       cell_cluster_betas <- models[[i_cell_cluster]] # $coefficients # with our own lm we only save the coeffs anyway
@@ -256,15 +297,20 @@ biclust <- function(dat = dat,
 
     # Calculated loglikelihoods
     # M.3
-    likelihood <- loglikelihood_calc_matrix(dat = dat,
-                                            models = models,
-                                            target_genes_residual_var = target_genes_residual_var,
-                                            n_cell_clusters = n_cell_clusters,
-                                            ind_reggenes = ind_reggenes,
-                                            ind_targetgenes = ind_targetgenes)
+
+
+    loglikelihood <- loglikelihood_calc_matrix(all_genes = dat,
+                                               models = models,
+                                               target_genes_residual_var = target_genes_residual_var,
+                                               n_cell_clusters = n_cell_clusters,
+                                               ind_reggenes = ind_reggenes,
+                                               ind_targetgenes = ind_targetgenes,
+                                               data_split_for_scregclust = data_split_for_scregclust,
+                                               current_cell_cluster_allocation = current_cell_cluster_allocation)
 
     cluster_proportions <- vector(length = n_cell_clusters)
     for (i_cell_cluster in seq_len(n_cell_clusters)) {
+      print(paste("  Calculating cluster proportions for cell cluster", i_cell_cluster), quote = FALSE)
       current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
 
       # If some cluster has been completely omitted, give it a nonzero proportion anyway for next iteration
@@ -283,7 +329,11 @@ biclust <- function(dat = dat,
 
     # If everything goes well this should work the same for screg as with our
     # lm examples
-    weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
+    # weights <- sweep(exp(loglikelihood/100), 2, cluster_proportions, "*")
+
+    print(paste("  Doing final weights caluclations"), quote = FALSE)
+    loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
+    weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
     big_logLhat_in_BIC <- sum(log(rowSums(weights)))
     k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
@@ -291,34 +341,38 @@ biclust <- function(dat = dat,
     BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
 
     weights <- sweep(weights, 1, rowSums(weights), "/")
+    weights <- Rmpfr::asNumeric(weights)  # if you use nórmal as.numeric it doens't keep the matrix format
 
-    likelihood <- weights
+    loglikelihood <- weights
 
     weights_all[[i_main]] <- weights
     BIC_all[[i_main]] <- BIC
 
-    likelihood_all[[i_main]] <- likelihood
+    likelihood_all[[i_main]] <- loglikelihood
+
 
     if (i_main == 1) {
+      print(paste("  Calculating complexity of likelihood-clusters for iteration 1"), quote = FALSE)
       no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]  # This weird line converts a vector with factors to a normal numeric vector.
       # print(str(no_factor_cluster), quote = FALSE)
-      # db <- index.DB(likelihood, no_factor_cluster)$DB
-      db <- mean(silhouette(no_factor_cluster, dist(likelihood))[, 3])
+      # db <- index.DB(loglikelihood, no_factor_cluster)$DB
+      db <- mean(silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
     }
 
 
     ####################################################################
     ##### E-step #######################################################
     ##### update cluster allocations ###################################
+    print(paste("  Assigning new clusters"), quote = FALSE)
     if (use_complex_cluster_allocation) {
-      pca_likelihood <- stats::prcomp(likelihood, center = TRUE, scale. = TRUE)$x
+      pca_likelihood <- stats::prcomp(loglikelihood, center = TRUE, scale. = TRUE)$x
       fcm_res <- ppclust::fcm(x = pca_likelihood, centers = n_cell_clusters)
       weights_all[[i_main]] <- fcm_res$u
       updated_cell_clust <- fcm_res$cluster
       # updated_cell_clust <- stats::kmeans(x = pca_likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
     }else {
-      updated_cell_clust <- sapply(seq_len(nrow(likelihood)),
-                                   function(row) which.max(likelihood[row,]))
+      updated_cell_clust <- sapply(seq_len(nrow(loglikelihood)),
+                                   function(row) which.max(loglikelihood[row,]))
     }
     updated_cell_clust <- unlist(updated_cell_clust)
 
@@ -342,7 +396,7 @@ biclust <- function(dat = dat,
     }
 
     rand_index_true_cluster <- aricode::RI(true_cell_cluster_allocation, updated_cell_clust)
-    time_taken <- round(Sys.time() - start.time, 2)
+    time_taken <- round(Sys.time() - start_time_iteration, 2)
     print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
     current_cell_cluster_allocation <- as.factor(updated_cell_clust)
@@ -354,8 +408,10 @@ biclust <- function(dat = dat,
       break
     }
 
+    print(paste("  Plotting for iteration."), quote = FALSE)
+
     scatter_plot_loglikelihood(dat = dat,
-                               likelihood = likelihood,
+                               likelihood = loglikelihood,
                                n_cell_clusters = n_cell_clusters,
                                penalization_lambda = penalization_lambda,
                                output_path = output_path,
@@ -363,7 +419,7 @@ biclust <- function(dat = dat,
                                true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
 
     hist_plot_loglikelihood(dat = dat,
-                            likelihood = likelihood,
+                            likelihood = loglikelihood,
                             n_cell_clusters = n_cell_clusters,
                             penalization_lambda = penalization_lambda,
                             output_path = output_path,
@@ -371,7 +427,7 @@ biclust <- function(dat = dat,
                             true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
   }
 
-  start.time <- Sys.time()
+  start_time_alluvial_plot <- Sys.time()
 
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = true_cell_cluster_allocation,
@@ -380,7 +436,7 @@ biclust <- function(dat = dat,
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
-  time_taken <- round(Sys.time() - start.time, 2)
+  time_taken <- round(Sys.time() - start_time_alluvial_plot, 2)
   print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."), quote = FALSE)
 
   return(list("rand_index" = rand_index_true_cluster,

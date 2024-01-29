@@ -133,12 +133,13 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-penalization_lambdas <- c(0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+penalization_lambdas <- c(0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.5, 0.7)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-  print(paste("RUNNING biclust FOR penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
+  print("", quote = FALSE)
+  print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
   BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
                                                       cell_id = cell_id,
                                                       true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
@@ -161,7 +162,7 @@ print("", quote = FALSE)
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
-  } else if(is.null(BICLUST_RESULTS[i_penalization_lambda])) {
+  } else if (is.null(BICLUST_RESULTS[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"), quote = FALSE)
   }else {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS[[i_penalization_lambda]]$rand_index), quote = FALSE)
