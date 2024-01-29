@@ -14,6 +14,17 @@ R_path <- here::here("R")
 source(file.path(R_path, "plot_cluster_history.R"))
 source(file.path(R_path, "plot_loglikelihood.R"))
 
+hms_span <- function(start, end) {
+  dsec <- as.numeric(difftime(end, start, unit = "secs"))
+  hours <- floor(dsec / 3600)
+  minutes <- floor((dsec - 3600 * hours) / 60)
+  seconds <- dsec - 3600*hours - 60*minutes
+  paste0(
+    sapply(c(hours, minutes, seconds), function(x) {
+      formatC(x, width = 2, format = "d", flag = "0")
+    }), collapse = ":")
+}
+
 # Because scregclust doesn't want a index vector but a logical one
 # and also in loglike calc we need the inverse of a index vector
 inverse_which <- function(indices, output_length)
@@ -396,8 +407,8 @@ biclust <- function(dat = dat,
     }
 
     rand_index_true_cluster <- aricode::RI(true_cell_cluster_allocation, updated_cell_clust)
-    time_taken <- round(Sys.time() - start_time_iteration, 2)
-    print(paste0(" Iteration ", i_main, ", took ", time_taken, " seconds", ", Rand index: ", rand_index_true_cluster), quote = FALSE)
+    time_taken <- hms_span(start_time_iteration, Sys.time())
+    print(paste0(" Iteration ", i_main, ", took ", time_taken, ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
     current_cell_cluster_allocation <- as.factor(updated_cell_clust)
 
