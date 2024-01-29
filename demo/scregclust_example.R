@@ -3,6 +3,7 @@ rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
+sink()
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
