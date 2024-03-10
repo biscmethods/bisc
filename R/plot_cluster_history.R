@@ -27,11 +27,15 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
   rand_ind <- vector(length = (ncol(cell_cluster_history) - 1))
   for (i in 2:ncol(cell_cluster_history)) {
     rand_ind[i - 1] <- round(aricode::RI(cell_cluster_history[, 2],
-                                              cell_cluster_history[, i]), 4)
+                                         cell_cluster_history[, i]), 4)
     new_colnames[i] <- paste0(new_colnames[i], "\nRI:", rand_ind[i - 1])
   }
 
   colnames(d) <- new_colnames
+
+  # Convert factor columns to numeric in order to not get warnings from melt
+  indx <- sapply(d, is.factor)
+  d[indx] <- lapply(d[indx], function(x) as.numeric(as.character(x)))
 
   d <- reshape2::melt(d, id.vars = "Cell ID")  # TODO: https://stackoverflow.com/questions/25688897/reshape2-melt-warning-message
   colnames(d) <- c("cell", "iteration", "cluster")

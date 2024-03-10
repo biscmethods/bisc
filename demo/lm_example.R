@@ -4,7 +4,7 @@ rm(list = ls())
 library(here)  # To work with paths
 library(patchwork)
 
-# options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
+# options(warn = 2)  # To convert warning messages into error messages which display row of error. For debugging.
 
 # Get absolute path where script is located, by using relative paths.
 demo_path <- here::here("demo")
@@ -82,7 +82,7 @@ for (i in seq_along(penalization_lambdas)) {
                  output_path = modded_output_path,
                  penalization_lambda = penalization_lambda,
                  use_weights = TRUE)
-  if(length(res)==1 && is.na(res)){
+  if (length(res) == 1 && is.na(res)) {
     rand_indexes_all[i] <- NA
     n_iterations_all[i] <- NA
     cluster_complexity_all[i] <- NA
@@ -90,7 +90,7 @@ for (i in seq_along(penalization_lambdas)) {
     temp_BIC <- NA
     BIC_all[i, seq_along(temp_BIC)] <- NA
     print(paste("For penalization lambda:", penalization_lambda, ", algoritm crashes"), quote = FALSE)
-  }else{
+  }else {
     rand_indexes_all[i] <- res$rand_index
     n_iterations_all[i] <- res$n_iterations
     cluster_complexity_all[i] <- res$db
@@ -122,7 +122,7 @@ png(file.path(output_path, paste0("final_plot.png")),
 p1 <- ggplot(data = df, aes(x = penalization_lambdas, y = cluster_complexity, group = 1)) +
   geom_line(color = "red") +
   geom_point() +
-  scale_x_log10() +
+  scale_x_log10(trans = scales::pseudo_log_trans(sigma = 0.01)) +
   labs(x = "Penalization Lambda", y = "Silhoutte")
 p2 <- ggplot(data = df, aes(x = number_of_iterations, y = cluster_complexity, group = 1)) +
   geom_line(color = "red") +
@@ -139,12 +139,12 @@ p4 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_t
 p5 <- ggplot(data = df, aes(x = penalization_lambdas, y = rand_index_result_vs_true, group = 1)) +
   geom_line(color = "red") +
   geom_point() +
-  scale_x_log10() +
+  scale_x_log10(trans = scales::pseudo_log_trans(sigma = 0.01)) +
   labs(x = "Penalization Lambda", y = "Rand Index, result vs true")
 p6 <- ggplot(data = df, aes(x = penalization_lambdas, y = BIC, group = 1)) +
   geom_line(color = "red") +
   geom_point() +
-  scale_x_log10() +
+  scale_x_log10(trans = scales::pseudo_log_trans(sigma = 0.01)) +
   labs(x = "Penalization Lambda", y = "Last iteration BIC")
 p1 + p2 + p3 + p4 + p5 + p6
 dev.off()
