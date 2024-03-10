@@ -40,9 +40,7 @@ dat_train <- dat[train_indices,]
 dat_test <- dat[test_indices,]
 
 disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation,
-                                                         fraction_randomised = 0.4)
-
-print(str(disturbed_initial_cell_clust))
+                                                         fraction_randomised = 0.2)
 
 disturbed_initial_cell_clust_train <- disturbed_initial_cell_clust[train_indices]
 
@@ -84,14 +82,25 @@ for (i in seq_along(penalization_lambdas)) {
                  output_path = modded_output_path,
                  penalization_lambda = penalization_lambda,
                  use_weights = TRUE)
-  rand_indexes_all[i] <- res$rand_index
-  n_iterations_all[i] <- res$n_iterations
-  cluster_complexity_all[i] <- res$db
-  target_genes_residual_var_all[[i]] <- res$taget_genes_residual_var
-  temp_BIC <- unlist(res$BIC)
-  BIC_all[i, seq_along(temp_BIC)] <- temp_BIC
-  print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)
+  if(length(res)==1 && is.na(res)){
+    rand_indexes_all[i] <- NA
+    n_iterations_all[i] <- NA
+    cluster_complexity_all[i] <- NA
+    target_genes_residual_var_all[[i]] <- NA
+    temp_BIC <- NA
+    BIC_all[i, seq_along(temp_BIC)] <- NA
+    print(paste("For penalization lambda:", penalization_lambda, ", algoritm crashes"), quote = FALSE)
+  }else{
+    rand_indexes_all[i] <- res$rand_index
+    n_iterations_all[i] <- res$n_iterations
+    cluster_complexity_all[i] <- res$db
+    target_genes_residual_var_all[[i]] <- res$taget_genes_residual_var
+    temp_BIC <- unlist(res$BIC)
+    BIC_all[i, seq_along(temp_BIC)] <- temp_BIC
+    print(paste("For penalization lambda:", penalization_lambda, ", Final rand index when compared to true clusters:", res$rand_index), quote = FALSE)
+  }
   print("", quote = FALSE)
+
 }
 
 # Basic scatterplots of Penalization Lambdas vs Rand index

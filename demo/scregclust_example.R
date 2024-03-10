@@ -46,7 +46,7 @@ generated_data <- generate_dummy_data_for_cell_clustering(
   regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
   coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
   coefficient_sds = coefficient_sds,
-  disturbed_fraction = 0.21  # TODO: Add size disturbance too
+  disturbed_fraction = 0.49  # TODO: Add size disturbance too
 )
 
 

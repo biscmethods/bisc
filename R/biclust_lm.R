@@ -240,6 +240,12 @@ biclust <- function(dat = dat,
       cell_cluster_rows <- which(current_cell_cluster_allocation == i_cell_cluster)
       cell_cluster_target_genes <- as.matrix(dat[cell_cluster_rows, ind_targetgenes, drop = FALSE])
       cell_cluster_regulator_genes <- as.matrix(dat[cell_cluster_rows, ind_reggenes, drop = FALSE])
+
+      if (nrow(cell_cluster_target_genes) == 0) {
+        print(paste("Number of cells in cell cluster ", i_cell_cluster, "is 0"), quote = FALSE)
+        return(NA)
+      }
+
       if (use_weights == FALSE || i_main == 1) {
         current_weights <- diag(nrow(cell_cluster_regulator_genes))
       }
@@ -248,9 +254,20 @@ biclust <- function(dat = dat,
       }
       else {
         # Current weights is a n_cell x n_cell matrix with the weigths on the diagonal
-        current_weights <- weights_all[[i_main - 1]][cell_cluster_rows]
+        current_weights <- weights_all[[i_main - 1]][cell_cluster_rows, drop = FALSE]
+
         # current_weights <- current_weights / sum(current_weights)
-        current_weights <- diag(current_weights)
+        if (length(current_weights) == 1) {
+          current_weights <- matrix(current_weights, nrow = 1, ncol = 1)
+        }else if (length(current_weights) == 0) {
+          print("Current weights are:", quote = FALSE)
+          print(current_weights, quote = FALSE)
+          stop("Length of weights is 0")
+
+        }else {
+          current_weights <- diag(current_weights)
+        }
+
       }
       # models2[[i_cell_cluster]] <- lm(formula = 'cell_cluster_target_genes ~ 0 + cell_cluster_regulator_genes',
       #                                 data = environment())$coefficients
@@ -373,7 +390,6 @@ biclust <- function(dat = dat,
 
     if (i_main == 1) {
       no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
-      print(str(no_factor_cluster), quote = FALSE)
       # db <- index.DB(likelihood, no_factor_cluster)$DB
       db <- mean(silhouette(no_factor_cluster, dist(likelihood))[, 3])
     }
@@ -458,7 +474,8 @@ biclust <- function(dat = dat,
                                n_cell_clusters,
                                penalization_lambda,
                                output_path,
-                               i_main)
+                               i_main,
+                               true_cell_cluster_allocation_vector = dat$true_cell_cluster_allocation)
     hist_plot_loglikelihood(dat,
                             likelihood,
                             n_cell_clusters,
