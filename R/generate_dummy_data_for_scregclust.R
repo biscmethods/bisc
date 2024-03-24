@@ -180,7 +180,9 @@ generate_dummy_data_for_scregclust <- function(
   #              nrow = n_cells,
   #              ncol = n_regulator_genes)
 
-  Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes, mean = regulator_mean, sd = 0.1),
+  Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes,
+                             mean = regulator_mean,
+                             sd   = 0.1),
                 nrow = n_cells,
                 ncol = n_regulator_genes)
 
@@ -208,9 +210,13 @@ generate_dummy_data_for_scregclust <- function(
 
   Beta <- array(
     data = sapply(1:n_target_gene_clusters,
-                  function(i) abs(rnorm(n_regulator_genes * n_target_genes, mean = coefficient_mean, sd = coefficient_sd[i]))),
+                  function(i) abs(rnorm(n_regulator_genes * n_target_genes,
+                                        mean = coefficient_mean[i],
+                                        sd = coefficient_sd[i]))),
     dim = c(n_regulator_genes, n_target_genes, n_target_gene_clusters)
   )
+
+
 
   if (!all(Beta > 0)) {
     stop("Not all betas generated where positive, try with a larger coefficient mean.")
@@ -253,14 +259,14 @@ generate_dummy_data_for_scregclust <- function(
     Beta_with_signs[[i_target_gene_cluster]] <- (diag_(S[i_target_gene_cluster,]) %*% Beta[, , i_target_gene_cluster]) %*% diag_(Pi[i_target_gene_cluster,])
   }
 
-  # Todo: Vectorize this
+
   # Create Z_t
   for (i_target_gene_cluster in 1:n_target_gene_clusters) {
     for (i_target_gen in 1:n_target_genes) {
       target_gene <- Z_r[, R2R_i(i_target_gene_cluster)] %*%     # Gene expression of regulators of cluster i
         diag_(S2S_i(i_target_gene_cluster)) %*%  # Signs for whether regulators are stimulating or repressing
         Beta2Beta_i(i_target_gene_cluster)[, i_target_gen]   # How much reg of cluster i affects target j
-      error_mean <- mean(target_gene) / 10
+      error_mean <- 0  # mean(target_gene) / 10
 
       Z_t[, i_target_gen] <-
         Z_t[, i_target_gen] +

@@ -370,7 +370,7 @@ biclust <- function(dat = dat,
 
 
     ####################################################################
-    ##### E-step #######################################################
+    ##### C-step #######################################################
     ##### update cluster allocations ###################################
     print(paste("  Assigning new clusters"), quote = FALSE)
     if (use_complex_cluster_allocation) {
