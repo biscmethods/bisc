@@ -272,7 +272,7 @@ generate_dummy_data_for_scregclust <- function(
         Z_t[, i_target_gen] +
           Pi[i_target_gene_cluster, i_target_gen] *                #  True cluster allocation, zero if Z_t[,j] is not in cluster i
             (
-              target_gene + rnorm(n_cells, mean = error_mean, sd = error_mean * 0.1)  # Error-term
+              target_gene + rnorm(n_cells, mean = error_mean, sd = mean(target_gene) / 100)  # Error-term
             )
 
 
