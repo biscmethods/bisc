@@ -23,7 +23,7 @@ group_2_flag <- TRUE
 path_temp <- here::here('temp')
 path_data <- here::here('data')
 path_save_zip <- file.path(path_temp, "neftel2019.zip")
-path_Neftel2019 <- file.path(path_data, "Neftel2019")
+path_Neftel2019 <- file.path(path_temp, "Neftel2019")
 
 # Create paths that don't exist
 if (!file.exists(path_data)) {
@@ -42,7 +42,7 @@ if (!file.exists(path_save_zip)) {
   options(timeout = max(3000, getOption("timeout")))
   utils::download.file(url = download_url, destfile = path_save_zip, quiet = TRUE, cacheOK = FALSE, mode = 'wb')
   if (!file.exists(path_Neftel2019)) {
-    utils::unzip(zipfile = path_save_zip, exdir = path_data)
+    utils::unzip(zipfile = path_save_zip, exdir = path_temp)
   }
 }
 
@@ -72,6 +72,9 @@ if (group_1_flag) {
     rownames(mn_g1) <- genes
     colnames(mn_g1) <- cells$cell_name
 
+    mn_g1 <- mn_g1[!duplicated(genes),]
+    genes <- genes[!duplicated(genes)]
+
     saveRDS(mn_g1, file = file.path(path_neftel_mn_group1))
 
   }else {
@@ -80,9 +83,11 @@ if (group_1_flag) {
     cells <- read.table(file = path_cell_file, sep = ' ', header = TRUE, stringsAsFactors = FALSE)
     genes <- read.table(file = path_gene_file, sep = '\t', header = FALSE, stringsAsFactors = FALSE)
     genes <- genes[, 1]
+    genes <- genes[!duplicated(genes)]
 
     rownames(cells) <- cells[, 1]
   }
+
 
   # TODO: Doesn't work
   if (!file.exists(path_neftel_seurat_group1)) {
