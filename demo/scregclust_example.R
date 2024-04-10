@@ -28,10 +28,10 @@ set.seed(214)
 n_cell_clusters <- 2
 n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
 n_target_genes <- 30
-n_regulator_genes <- 70
+n_regulator_genes <- 100
 n_cells <- c(10000, 10000)
 regulator_means <- c(5, 1)  # For generating dummy data, regulator mean in each cell cluster
-coefficient_means <- list(c(1, 20), c(5, 20, 100))  # For generating dummy data, coefficient means in each cell cluster
+coefficient_means <- list(c(1, 1.2), c(5, 5.5, 6))  # For generating dummy data, coefficient means in each cell cluster
 coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
 true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
 n_total_cells <- sum(n_cells)
@@ -46,7 +46,7 @@ generated_data <- generate_dummy_data_for_cell_clustering(
   regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
   coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
   coefficient_sds = coefficient_sds,
-  disturbed_fraction = 0.49  # TODO: Add size disturbance too
+  disturbed_fraction = 0.25  # TODO: Add size disturbance too
 )
 
 
@@ -81,7 +81,7 @@ n_regulator_genes <- length(ind_reggenes)
 ####initialise variables for dev ##########
 ##########################################
 
-max_iter <- 50
+max_iter <- 100
 initial_clustering <- disturbed_initial_cell_clust
 n_target_genes <- n_target_genes
 n_regulator_genes <- n_regulator_genes
@@ -134,7 +134,7 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-penalization_lambdas <- c(0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.5, 0.7)
+penalization_lambdas <- c( 0.00001, 0.001, 0.1, 0.3, 0.5, 0.7)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 
@@ -144,7 +144,7 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
                                                       cell_id = cell_id,
                                                       true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
-                                                      max_iter = 50,
+                                                      max_iter = max_iter,
                                                       n_target_gene_clusters,
                                                       initial_clustering,
                                                       n_target_genes,
