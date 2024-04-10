@@ -88,8 +88,6 @@ if (group_1_flag) {
     rownames(cells) <- cells[, 1]
   }
 
-
-  # TODO: Doesn't work
   if (!file.exists(path_neftel_seurat_group1)) {
     Neftel_g1 <- Seurat::CreateSeuratObject(mn_g1, min.cells = 3, min.features = 500, meta.data = cells)
     Neftel_g1 <- Seurat::SCTransform(Neftel_g1)
