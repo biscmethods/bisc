@@ -109,9 +109,9 @@ ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels = true_cluster_allocation,
                                                                 fraction_randomised = 0.25))
 
-biclust_input_data <- t(d)
+biclust_input_data <- as.matrix(GetAssayData(d, assay = "RNA", slot = "counts"))
+biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
-biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
 # # These needs to be strings for discrete labels in pca plot
 # data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
