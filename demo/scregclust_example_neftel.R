@@ -14,7 +14,7 @@ output_path <- demo_path
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
-
+source(file.path(R_path, "randomise_cluster_labels.R"))
 
 #############################################
 ############ data for dev ###################
@@ -62,7 +62,9 @@ df <- df[!duplicated(df$cell_name),]
 
 # There are more cells/columns in neftel gene data matrix then there is in
 # the cells.csv file. This will fix remove the mis-match.
-neftel_smartseq2_malignant_exists_in_cells <- neftel_smartseq2_malignant[, b %in% a]
+a <- df$cell_name
+b <- colnames(neftel_smartseq2_malignant_ordered)
+neftel_smartseq2_malignant_exists_in_cells <- neftel_smartseq2_malignant_ordered[, b %in% a]
 
 # This is the magic line that actual puts the cells/columns
 # in the order of cell clusters
@@ -95,7 +97,7 @@ n_cell_clusters <- 4
 n_target_gene_clusters <- c(3, 3, 3, 3)  # TODO:Number of target gene clusters in each cell cluster
 n_target_genes <- length(is_regulator) - sum(is_regulator == 1)
 n_regulator_genes <- sum(is_regulator == 1)
-n_total_cells <- ncol(neftel_smartseq2_malignant_ordered)
+n_total_cells <- ncol(neftel_smartseq2_malignant_sorted)
 # We assume cells are ordered in the order of cell clusters. So the first x columns are cell cluster 1, etc.
 n_cells <- c(n_cells_cell_cluster_1, n_cells_cell_cluster_2, n_cells_cell_cluster_3, n_cells_cell_cluster_4)
 true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do this
@@ -105,10 +107,10 @@ true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do t
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
 ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
-# TODO: continue here
-disturbed_initial_cell_clust <- factor(generated_data$disturbed_initial_cell_clust)
+disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels = true_cluster_allocation,
+                                                                fraction_randomised = 0.25))
 
-biclust_input_data <- generated_data$dat
+biclust_input_data <- t(neftel_smartseq2_malignant_sorted)
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
 biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
@@ -194,7 +196,7 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
   BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
                                                       cell_id = cell_id,
-                                                      true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
+                                                      true_cell_cluster_allocation = factor(true_cluster_allocation),
                                                       max_iter = max_iter,
                                                       n_target_gene_clusters,
                                                       initial_clustering,
