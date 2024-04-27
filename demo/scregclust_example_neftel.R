@@ -45,10 +45,12 @@ print(paste("The dimension of the matrix is", nrow(neftel_smartseq2_malignant), 
 neftel_smartseq2_malignant_ordered <- neftel_smartseq2_malignant[order(is_regulator),]
 is_regulator <- is_regulator[order(is_regulator)]
 
-# TODO: Decide cell cluster truth FILIP is on it
-
-# Initial guess on number of target gene clusters in each cell cluster
+# TODO: Initial guess on number of target gene clusters in each cell cluster
 #target_genes <- neftel_smartseq2_malignant[!is_regulator,]
+
+# True cell cluster allocation
+# We need to order the columns by the cell clusters
+# We will use MES, AC, OPC and NPC as true cell clusters
 library(ggfortify)
 df <- cells_malignant[c("cell_name", "MESlike2", "MESlike1", "AClike", "OPClike", "NPClike1", "NPClike2")]
 df <- df[complete.cases(df), ]
@@ -58,14 +60,28 @@ colors <- apply(df[,2:7], MARGIN=c(1), which.max)
 df['cell_cluster'] <- c("MES", "MES", "AC", "OPC", "NPC", "NPC")[colors]
 
 autoplot(pca_res, data = df, colour = 'cell_cluster')
+
+print(paste("Number of duplicated cell names in df is", sum(duplicated(df$cell_name))), quote=FALSE)
+df <- df[!duplicated(df$cell_name), ]
+
+# print(paste("Number of cell names that is in neftel_smartseq2_malignant but not in cells.csv is", sum(!(df$cell_name %in% colnames(neftel_smartseq2_malignant)))), quote=FALSE)
+# print(paste("Number of cell names that is in cells.csv but not in neftel_smartseq2_malignant is", sum(!(colnames(neftel_smartseq2_malignant) %in% df$cell_name))), quote=FALSE)
+a <- df$cell_name
+b <- colnames(neftel_smartseq2_malignant)
+setdiff(b,a)  #  The elements of setdiff(x,y) are those elements in x but not in y.
+neftel_smartseq2_malignant_exists_in_cells <- neftel_smartseq2_malignant[,b %in% a]
+a <- df$cell_name
+b <- colnames(neftel_smartseq2_malignant_exists_in_cells)
+setdiff(b,a)  #  The elements of setdiff(x,y) are those elements in x but not in y.
+
+#
 df <- df[order(df$cell_cluster),]
-df <- df[!duplicated(df[, 'cell_name']), ]
-df <- df[df$cell_name %in% colnames(neftel_smartseq2_malignant),]
-df <- df[colnames(neftel_smartseq2_malignant) %in% df$cell_name,]
+# df <- df[df$cell_name %in% colnames(neftel_smartseq2_malignant),]
+# df <- df[colnames(neftel_smartseq2_malignant) %in% df$cell_name,]
 
 
 print(unique(df$cell_cluster), quote = FALSE)
-neftel_smartseq2_malignant_sorted <- neftel_smartseq2_malignant[,df$cell_name]
+neftel_smartseq2_malignant_sorted <- neftel_smartseq2_malignant_exists_in_cells[,df$cell_name]
 n_cells_cell_cluster_1 <- sum(df$cell_cluster == 'AC')
 n_cells_cell_cluster_2 <- sum(df$cell_cluster == 'MES')
 n_cells_cell_cluster_3 <- sum(df$cell_cluster == 'NPC')
@@ -96,8 +112,7 @@ n_target_genes <- length(is_regulator)-sum(is_regulator == 1)
 n_regulator_genes <- sum(is_regulator == 1)
 n_total_cells <- ncol(neftel_smartseq2_malignant_ordered)
 # We assume cells are ordered in the order of cell clusters. So the first x columns are cell cluster 1, etc.
-# TODO: Order it in the order of true cell clusters
-n_cells <- c(?, ?, ?, ?)
+n_cells <- c(n_cells_cell_cluster_1, n_cells_cell_cluster_2, n_cells_cell_cluster_3, n_cells_cell_cluster_4)
 true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do this
 
 
@@ -105,7 +120,7 @@ true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do t
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
 ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
-
+# TODO: continue here
 disturbed_initial_cell_clust <- factor(generated_data$disturbed_initial_cell_clust)
 
 biclust_input_data <- generated_data$dat
