@@ -105,7 +105,7 @@ generate_data_lm <- function(n_cell_clusters = 3,
 ) {
 
 
-  # Manual arguments ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  # Manual arguments for dev -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   # n_cell_clusters <- 3
   # n_target_gene_type <- 5  # We have x named target genes that have one expression per cell
   # n_regulator_gene_type <- 20  # We have x named regulator genes that have one expression per cell

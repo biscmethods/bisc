@@ -217,7 +217,6 @@ generate_dummy_data_for_scregclust <- function(
   )
 
 
-
   if (!all(Beta > 0)) {
     stop("Not all betas generated where positive, try with a larger coefficient mean.")
   }
@@ -272,7 +271,9 @@ generate_dummy_data_for_scregclust <- function(
         Z_t[, i_target_gen] +
           Pi[i_target_gene_cluster, i_target_gen] *                #  True cluster allocation, zero if Z_t[,j] is not in cluster i
             (
-              target_gene + rnorm(n_cells, mean = error_mean, sd = mean(target_gene) / 100)  # Error-term
+              target_gene + rnorm(n_cells,
+                                  mean = error_mean,
+                                  sd = mean(target_gene) / 100)  # Error-term
             )
 
 
@@ -336,14 +337,23 @@ generate_dummy_data_for_scregclust <- function(
 # || interactive()
 if (sys.nframe() == 0) {
   # ... do main stuff
-  set.seed(12124)
+
+  # n_target_genes = 50  # Number of target genes
+  # n_regulator_genes = 30  # Number of regulator genes
+  # n_cells = 10000 # Number of cells
+  # n_target_gene_clusters = 3  # Number of target gene clusters
+  # regulator_mean = 1  # Mean expression of regulator genes
+  # coefficient_mean = c(5, 20, 100)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
+  # coefficient_sd = c(0.1, 0.1, 0.1)
+  #
+  set.seed(1234)
   res <- generate_dummy_data_for_scregclust(n_target_genes = 50,  # Number of target genes
                                             n_regulator_genes = 30,  # Number of regulator genes
                                             n_cells = 10000,  # Number of cells
                                             n_target_gene_clusters = 3,  # Number of target gene clusters
                                             regulator_mean = 1,  # Mean expression of regulator genes
-                                            coefficient_mean = c(5, 20, 100),  # Mean coefficients/betas in true model, length n_target_gene_clusters)
-                                            coefficient_sd = c(0.1, 0.1, 0.1)
+                                            coefficient_mean = c(0, 10, 100),  # Mean coefficients/betas in true model, length n_target_gene_clusters)
+                                            coefficient_sd = c(0.1, 1, 10)
   )
   print(str(res))
 }

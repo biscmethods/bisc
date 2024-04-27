@@ -26,7 +26,8 @@ res <- generate_data_lm(n_cell_clusters = 3,
                         regulator_means = c(1, 2, 3),  # Regulator mean expression in each cell cluster.
                         regulator_standard_deviations = c(0.1, 0.2, 0.2),  # Regulator sd for expression in each cell cluster.
                         coefficients_standard_deviation = 100, # 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
-                        target_gene_type_standard_deviation = 3
+                        target_gene_type_standard_deviation = 3,
+                        plot_stuff = TRUE
 )
 
 dat <- res$dat
@@ -124,6 +125,7 @@ p1 <- ggplot(data = df, aes(x = penalization_lambdas, y = cluster_complexity, gr
   geom_point() +
   scale_x_log10(trans = scales::pseudo_log_trans(sigma = 0.01)) +
   labs(x = "Penalization Lambda", y = "Silhoutte")
+
 p2 <- ggplot(data = df, aes(x = number_of_iterations, y = cluster_complexity, group = 1)) +
   geom_line(color = "red") +
   geom_point() +

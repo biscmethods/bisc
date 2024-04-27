@@ -24,7 +24,7 @@ source(file.path(R_path, "biclust_scregclust.R"))
 set.seed(214)
 
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#
 n_cell_clusters <- 2
 n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
 n_target_genes <- 30
@@ -46,7 +46,8 @@ generated_data <- generate_dummy_data_for_cell_clustering(
   regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
   coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
   coefficient_sds = coefficient_sds,
-  disturbed_fraction = 0.25  # TODO: Add size disturbance too
+  disturbed_fraction = 0.25,  # TODO: Add size disturbance too
+  plot_stuff = TRUE
 )
 
 
