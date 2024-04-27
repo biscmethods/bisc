@@ -81,6 +81,13 @@ n_cells_cell_cluster_2 <- sum(df$cell_cluster == 'MES')
 n_cells_cell_cluster_3 <- sum(df$cell_cluster == 'NPC')
 n_cells_cell_cluster_4 <- sum(df$cell_cluster == 'OPC')
 
+print(paste("Cells in clusters:"), quote = FALSE)
+print(paste("1:", n_cells_cell_cluster_1), quote = FALSE)
+print(paste("2:", n_cells_cell_cluster_2), quote = FALSE)
+print(paste("3:", n_cells_cell_cluster_3), quote = FALSE)
+print(paste("4:", n_cells_cell_cluster_4), quote = FALSE)
+print(paste("Number of regulator genes are", sum(is_regulator)), quote = FALSE)
+print("Scregclust wants more cells than regulator genes x 2 for each cell cluster. Otherwise it doesn't work.", quote = FALSE)
 
 # Double check the sums are the same
 total_n_cells_in_cellstxt <- n_cells_cell_cluster_1 +
@@ -189,7 +196,6 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 
 penalization_lambdas <- c(0.00001, 0.001, 0.1, 0.3, 0.5, 0.7)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
-
 
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   print("", quote = FALSE)
