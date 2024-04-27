@@ -45,16 +45,58 @@ print(paste("The dimension of the matrix is", nrow(neftel_smartseq2_malignant), 
 neftel_smartseq2_malignant_ordered <- neftel_smartseq2_malignant[order(is_regulator),]
 is_regulator <- is_regulator[order(is_regulator)]
 
-# TODO: Decide cell cluster truth
+# TODO: Decide cell cluster truth FILIP is on it
 
+# Initial guess on number of target gene clusters in each cell cluster
+#target_genes <- neftel_smartseq2_malignant[!is_regulator,]
+library(ggfortify)
+df <- cells_malignant[c("cell_name", "MESlike2", "MESlike1", "AClike", "OPClike", "NPClike1", "NPClike2")]
+df <- df[complete.cases(df), ]
+pca_res <- prcomp(df[,2:7], scale. = TRUE)
+
+colors <- apply(df[,2:7], MARGIN=c(1), which.max)
+df['cell_cluster'] <- c("MES", "MES", "AC", "OPC", "NPC", "NPC")[colors]
+
+autoplot(pca_res, data = df, colour = 'cell_cluster')
+df <- df[order(df$cell_cluster),]
+df <- df[!duplicated(df[, 'cell_name']), ]
+df <- df[df$cell_name %in% colnames(neftel_smartseq2_malignant),]
+df <- df[colnames(neftel_smartseq2_malignant) %in% df$cell_name,]
+
+
+print(unique(df$cell_cluster), quote = FALSE)
+neftel_smartseq2_malignant_sorted <- neftel_smartseq2_malignant[,df$cell_name]
+n_cells_cell_cluster_1 <- sum(df$cell_cluster == 'AC')
+n_cells_cell_cluster_2 <- sum(df$cell_cluster == 'MES')
+n_cells_cell_cluster_3 <- sum(df$cell_cluster == 'NPC')
+n_cells_cell_cluster_4 <- sum(df$cell_cluster == 'OPC')
+total_n_cells_in_cellstxt <- n_cells_cell_cluster_1 + n_cells_cell_cluster_2 +n_cells_cell_cluster_3 +n_cells_cell_cluster_4
+total_n_cells_in_genedata <- ncol(neftel_smartseq2_malignant_sorted)
+print(paste(str(total_n_cells_in_cellstxt), " = ", str(total_n_cells_in_genedata)), quote=FALSE)
+
+# #-------------
+# install.packages("pheatmap")
+# library(pheatmap)
+# df <- cells_malignant[c("MESlike2", "MESlike1", "AClike", "OPClike", "NPClike1", "NPClike2")]
+# df <- df[complete.cases(df), ]
+# df <- df[order(df$MESlike2,df$MESlike1, df$AClike, df$OPClike, df$NPClike1, df$NPClike2),]
+# df <- t(df)
+# pheatmap(df,
+#          cluster_cols=FALSE,
+#          cluster_rows = FALSE,
+#          show_rownames = TRUE,
+#          show_colnames = FALSE,
+#          color = colorRampPalette(c("blue", "gray", "red"))(n = 299))
 
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 n_cell_clusters <- 4
-n_target_gene_clusters <- c(?, ?, ?, ?)  # TODO:Number of target gene clusters in each cell cluster
+n_target_gene_clusters <- c(3, 3, 3, 3)  # TODO:Number of target gene clusters in each cell cluster
 n_target_genes <- length(is_regulator)-sum(is_regulator == 1)
 n_regulator_genes <- sum(is_regulator == 1)
 n_total_cells <- ncol(neftel_smartseq2_malignant_ordered)
+# We assume cells are ordered in the order of cell clusters. So the first x columns are cell cluster 1, etc.
+# TODO: Order it in the order of true cell clusters
 n_cells <- c(?, ?, ?, ?)
 true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do this
 
