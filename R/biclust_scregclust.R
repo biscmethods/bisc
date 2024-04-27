@@ -208,6 +208,9 @@ biclust <- function(dat = dat,
 
         if ((length(ind_reggenes) > n_test_data) || (length(ind_reggenes) > n_training_data)) {
           print(paste("The split into training/test data for scregclust resulted in less cells than there are regulators."), quote = FALSE)
+          print(paste("There are", length(ind_reggenes), "regulator genes."), quote = FALSE)
+          print(paste("There are", length(n_test_data), "cells in the test data."), quote = FALSE)
+          print(paste("There are", length(n_training_data), "cells in the training data."), quote = FALSE)
           return(NA)
         }
         sink(tempfile()) # Shut scregclust up
