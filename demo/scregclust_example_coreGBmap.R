@@ -55,9 +55,23 @@ rownames(fake_matrix) <- as.vector(d@assays$RNA@meta.features$feature_name)
 out <- scregclust::scregclust_format(fake_matrix)  # Needs to be a matrix to use this
 is_regulator <- out[['is_regulator']]
 
-# Put some stuff in order gene/row wise
+
+# Put some stuff in order gene/row wise.
+# This puts the regulator genes at the end
 d <- d[order(is_regulator),]
 is_regulator <- is_regulator[order(is_regulator)]
+
+# Sub sample genes
+n_target_genes <- 100
+n_regulator_genes <- 50
+old_ind_regulators <- which(as.logical(is_regulator))
+new_ind_targetgenes <- sample(1:(min(old_ind_regulators)-1), n_target_genes)
+new_ind_regulators <- sample(old_ind_regulators, n_regulator_genes)
+new_ind_genes <- sort(c(new_ind_targetgenes, new_ind_regulators))
+keep_genes <- replace(rep(FALSE, length(is_regulator)), new_ind_genes, TRUE)
+#  Apply sub sampling
+d <- d[keep_genes,]
+is_regulator <- (c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
 # Put stuff in order cell/column wise
 cell_order <- order(cell_types)
@@ -110,6 +124,7 @@ disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels =
                                                                 fraction_randomised = 0.25))
 
 biclust_input_data <- as.matrix(GetAssayData(d, assay = "RNA", slot = "counts"))
+rm(d)
 biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
 
