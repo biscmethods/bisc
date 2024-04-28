@@ -26,7 +26,8 @@ set.seed(214)
 # Load data
 # Folders and filenames
 path_data <- here::here('data')
-path_medium <- file.path(path_data, "medium.rds")  # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
+path_medium <- file.path(path_data, "medium.rds")
+# Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
 
 # Read data
 d <- readRDS(path_medium)
@@ -122,8 +123,10 @@ ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
 disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels = true_cluster_allocation,
                                                                 fraction_randomised = 0.25))
-
-biclust_input_data <- as.matrix(GetAssayData(d, assay = "RNA", slot = "counts"))
+# convert from seurat object into matrix that we can work with
+# List of object layers
+# SeuratObject::Layers(d)
+biclust_input_data <- as.matrix(Seurat::GetAssayData(d, assay = "RNA", layer = "data"))
 rm(d)
 biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
@@ -167,7 +170,7 @@ ind_reggenes <- ind_reggenes
 
 i_cell_cluster <- 1
 
-use_weights <- TRUE
+use_weights <- FALSE
 use_complex_cluster_allocation <- FALSE
 
 demo_path <- here::here("demo")
@@ -189,7 +192,6 @@ test_indices <- which(cell_data_split == 2)
 biclust_input_data_train <- biclust_input_data[train_indices,]
 biclust_input_data_test <- biclust_input_data[test_indices,]
 
-# TODO: Put this inside generate_data_lm or something
 # Setup variables that will be used throughout the script
 # We assume target genes start with t then a number. And likewise for regulator genes.
 n_total_cells_train <- length(train_indices)

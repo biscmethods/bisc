@@ -110,7 +110,7 @@ if (group_2_flag) {
 
   if (!file.exists(path_Group2)) {
     dir.create(path_Group2)
-    stop(paste("Please download Group2 from https://uppsala.box.com/s/aqf3fyeb43i5jy8v4s527u0l262virue and put them in", path_r_files))
+    stop(paste("Please download Group2 from https://uppsala.box.com/s/aqf3fyeb43i5jy8v4s527u0l262virue and put them in", path_Group2))
   }
 
   if (!file.exists(path_neftel_mn_group2)) {
