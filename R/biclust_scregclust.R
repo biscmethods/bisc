@@ -238,6 +238,10 @@ biclust <- function(dat = dat,
           print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."), quote = FALSE)
           return(NA)
         }
+        if (length(screg_out$results[[1]]$output[[1]]$cluster) != (n_target_genes+n_regulator_genes)) {
+          print(paste("Number of outputted genes with named clusters is less than we fed into scregclust.", length(screg_out$results[[1]]$output[[1]]$cluster), "is less than target+reg=", n_target_genes, "+", n_regulator_genes, "=", n_regulator_genes+n_regulator_genes), quote = FALSE)
+          return(NA)
+        }
 
         # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
         # target_gene_cluster_names, e.g. 2 2 1 3 1 3,
