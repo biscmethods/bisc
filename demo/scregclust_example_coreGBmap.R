@@ -128,6 +128,11 @@ disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels =
 # SeuratObject::Layers(d)
 biclust_input_data <- as.matrix(Seurat::GetAssayData(d, assay = "RNA", layer = "data"))
 rm(d)
+
+saveRDS(biclust_input_data, file.path(path_data, "coreGBmap_subsetted.rds"))
+
+# biclust_input_data <- readRDS(file.path(path_data, "coreGBmap_subsetted.rds"))
+
 biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
 
