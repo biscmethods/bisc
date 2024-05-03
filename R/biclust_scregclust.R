@@ -9,6 +9,8 @@ library(stats)       # For kmeans
 library(ppclust)
 library(clusterSim)  # for db
 library(Rmpfr)  # for small loglikihoods
+library(parallel)
+
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
 source(file.path(R_path, "plot_cluster_history.R"))
@@ -137,7 +139,6 @@ biclust <- function(dat = dat,
                     ind_reggenes,
                     output_path,
                     penalization_lambda = 0.05,
-                    use_weights = TRUE,
                     use_complex_cluster_allocation = FALSE) {
 
   if (!is.factor(initial_clustering)) {
@@ -213,17 +214,31 @@ biclust <- function(dat = dat,
           print(paste("    There are", n_training_data, "cells in the training data."), quote = FALSE)
           return(NA)
         }
+
+        # Fix constant genes
+        ind_cells_train <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
+        ind_cells_test <- which(data_split_for_scregclust[[i_cell_cluster]] == 2)
+        print(str(indata_for_scregclust))
+
+        constant_ind_test <- which(apply(indata_for_scregclust[, ind_cells_test, drop = FALSE], 1, sd) == 0)
+
+        non_constant_genes_ind_test <- which(apply(indata_for_scregclust[, ind_cells_test, drop = FALSE], 1, sd) != 0)
+        non_constant_genes_ind_train <- which(apply(indata_for_scregclust[, ind_cells_train, drop = FALSE], 1, sd) != 0)
+
+        non_constant_ind_genes <- sort(intersect(non_constant_genes_ind_test, non_constant_genes_ind_train))
+        non_constant_ind_regulator_genes <- non_constant_ind_genes[non_constant_ind_genes > n_target_genes] - n_target_genes
+
         sink(tempfile()) # Shut scregclust up
         screg_out <- scregclust::scregclust(
-          expression = indata_for_scregclust,  # scRegClust wants this form
+          expression = indata_for_scregclust,  # p rows of genes, n columns of cells
           split_indices = data_split_for_scregclust[[i_cell_cluster]],
           genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
           is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
           n_cl = n_target_gene_clusters[[i_cell_cluster]],
           penalization = penalization_lambda,
           noise_threshold = 0.00001,
-          verbose = FALSE,
-          # n_cycles = 100,
+          verbose = TRUE,
+          n_cycles = 100,
         )
         sink()
 
@@ -233,15 +248,23 @@ biclust <- function(dat = dat,
         #   return(NA)
         # }
 
-        screg_out_betas <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
-        if (is.null(screg_out_betas)) {
+        screg_out_betas_temp <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
+        if (is.null(screg_out_betas_temp)) {
           print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."), quote = FALSE)
           return(NA)
         }
-        if (length(screg_out$results[[1]]$output[[1]]$cluster) != (n_target_genes+n_regulator_genes)) {
-          print(paste("Number of outputted genes with named clusters is less than we fed into scregclust.", length(screg_out$results[[1]]$output[[1]]$cluster), "is less than target+reg=", n_target_genes, "+", n_regulator_genes, "=", n_regulator_genes+n_regulator_genes), quote = FALSE)
-          return(NA)
-        }
+
+        screg_out_betas <- matrix(NA, nrow = n_regulator_genes, ncol = ncol(screg_out_betas_temp))
+        screg_out_betas[non_constant_ind_regulator_genes,] <- screg_out_betas_temp
+
+
+        # if (length(screg_out$results[[1]]$output[[1]]$cluster) < (n_target_genes + n_regulator_genes)) {
+        #   print(paste("Number of outputted genes with named clusters is less than we fed into scregclust.",
+        #               length(screg_out$results[[1]]$output[[1]]$cluster),
+        #               "is less than target + reg =",
+        #               n_target_genes, "+", n_regulator_genes, "=", n_regulator_genes + n_target_genes), quote = FALSE)
+        #   return(NA)
+        # }
 
         # Create cluster_indexes which maps columns in screg_out_betas to correct places under some assumptions of order:
         # target_gene_cluster_names, e.g. 2 2 1 3 1 3,
@@ -250,7 +273,14 @@ biclust <- function(dat = dat,
         # indexes_of_not_deleted_target_gene_clusters <- which(sapply(out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$coeffs, FUN=function(x) !is.null(x)))
         # target_gene_cluster_index <- out_list[[i_target_cell_cluster]]$results[[1]]$output[[1]]$cluster[1:n_target_genes]  # n_target_genes, e.g. 1 1 1 1 3 3 3 3 3 3 3 3 1 3 1 3 3 3 3 3 1 3 1 1 3 1 3 3 1 3
         # target_gene_cluster_index <- unlist(sapply(indexes_of_not_deleted_target_gene_clusters, FUN=function(x) which(target_gene_cluster_index==x)))
-        target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster[1:n_target_genes]
+
+        # This is a work around because sregclust removes constant genes before it starts
+        temp_vector <- rep(-1, n_target_genes+n_regulator_genes)
+        target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
+        temp_vector[non_constant_ind_genes] <- target_gene_cluster_names
+        target_gene_cluster_names <- target_gene_cluster_names[1:n_target_genes]
+
+        # Fixa den här. target_gene_cluster_names är 47. Ut kommer cluster_indexes som är 47
         cluster_indexes <- rep(NA, length(target_gene_cluster_names))
         tmp_max_ind <- 0
         for (i_target_gene_cluster in 1:n_target_gene_clusters[[i_cell_cluster]]) {
@@ -260,6 +290,7 @@ biclust <- function(dat = dat,
           tmp_max_ind <- n_target_genes_in_cluster
         }
 
+        # TODO: Fix bug here. Sometimes indexes aren't right.
         screg_out_betas <- screg_out_betas[, cluster_indexes]  # Sort the matrix
 
 
@@ -346,15 +377,18 @@ biclust <- function(dat = dat,
     # If everything goes well this should work the same for screg as with our
     # lm examples
     # weights <- sweep(exp(loglikelihood/100), 2, cluster_proportions, "*")
+    sink()
 
     print(paste("  Doing final weights calculations"), quote = FALSE)
     loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
     weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
-    big_logLhat_in_BIC <- sum(log(rowSums(weights)))
-    k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
-    n_in_BIC <- n_total_cells
-    BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+
+    # big_logLhat_in_BIC <- sum(log(rowSums(weights)))
+    # k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
+    # n_in_BIC <- n_total_cells
+    # BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+    BIC <- 0
 
     weights <- sweep(weights, 1, rowSums(weights), "/")
     weights <- Rmpfr::asNumeric(weights)  # if you use nórmal as.numeric it doens't keep the matrix format
