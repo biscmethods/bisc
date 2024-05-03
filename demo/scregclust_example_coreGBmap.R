@@ -4,7 +4,7 @@ rm(list = ls())
 library(here)  # To work with paths
 library(patchwork)
 sink()
-#TODO: Subsample genes?
+
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
 # Get absolute path where script is located, by using relative paths.
@@ -28,154 +28,154 @@ set.seed(214)
 path_data <- here::here('data')
 path_medium <- file.path(path_data, "medium.rds")
 # # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
-#
-# # # Read data
-# # d <- readRDS(path_medium)
-# #
-# #
-# # # Keep the correct type of cells
-# # cell_types <- d@meta.data$annotation_level_3
-# # keep_cells <- cell_types == 'AC-like' |
-# #   cell_types == 'MES-like' |
-# #   cell_types == 'NPC-like' |
-# #   cell_types == 'OPC-like'
-# #
-# # keep_cells_split <- sample(c(1, 2), length(keep_cells), prob = c(0.8, 0.2), replace = T)
-# # keep_ind <- keep_cells_split == 1
-# # keep_cells <- keep_cells & keep_ind
-# #
-# # cell_types <- factor(cell_types[keep_cells])
-# # d <- d[,keep_cells]
-# #
-# # # Find out which are regulator genes
-# # # Make it into a matrix and rename row names from
-# # # Ensembl gene IDs (like "ENSG00000269696") to standard gene names (like "A1BG"),
-# # fake_matrix <- matrix(0, nrow = nrow(d), ncol = 1)  # This is fast
-# # # dm <- tibble::as_tibble(as.matrix(GetAssayData(d, assay = "RNA", slot = "counts")))  # Using the data is slow
-# # rownames(fake_matrix) <- as.vector(d@assays$RNA@meta.features$feature_name)
-# # out <- scregclust::scregclust_format(fake_matrix)  # Needs to be a matrix to use this
-# # is_regulator <- out[['is_regulator']]
-# #
-# #
-# # # Put some stuff in order gene/row wise.
-# # # This puts the regulator genes at the end
-# # d <- d[order(is_regulator),]
-# # is_regulator <- is_regulator[order(is_regulator)]
-# #
-# # # Sub sample genes
-# # n_target_genes <- 100
-# # n_regulator_genes <- 50
-# # old_ind_regulators <- which(as.logical(is_regulator))
-# # new_ind_targetgenes <- sample(1:(min(old_ind_regulators)-1), n_target_genes)
-# # new_ind_regulators <- sample(old_ind_regulators, n_regulator_genes)
-# # new_ind_genes <- sort(c(new_ind_targetgenes, new_ind_regulators))
-# # keep_genes <- replace(rep(FALSE, length(is_regulator)), new_ind_genes, TRUE)
-# # #  Apply sub sampling
-# # d <- d[keep_genes,]
-# # is_regulator <- (c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-# #
-# # # Put stuff in order cell/column wise
-# # cell_order <- order(cell_types)
-# # cell_types <- cell_types[cell_order]
-# # unique(cell_types[cell_order])
-# # d <- d[,cell_order]
-# #
-# # # Now when we have put the cells in order we just need to count the cells
-# # # in each cell cluster. Then it's easy to make a vector with the true_cluster_allocation
-# # # further down in code
-# # n_cells_cell_cluster_1 <- sum(cell_types == 'AC-like')
-# # n_cells_cell_cluster_2 <- sum(cell_types == 'MES-like')
-# # n_cells_cell_cluster_3 <- sum(cell_types == 'NPC-like')
-# # n_cells_cell_cluster_4 <- sum(cell_types == 'OPC-like')
-# #
-# # print(paste("Cells in clusters:"), quote = FALSE)
-# # print(paste("1:", n_cells_cell_cluster_1), quote = FALSE)
-# # print(paste("2:", n_cells_cell_cluster_2), quote = FALSE)
-# # print(paste("3:", n_cells_cell_cluster_3), quote = FALSE)
-# # print(paste("4:", n_cells_cell_cluster_4), quote = FALSE)
-# # print(paste("Number of regulator genes are", sum(is_regulator)), quote = FALSE)
-# # print("Scregclust wants more cells than regulator genes x 2 for each cell cluster. Otherwise it doesn't work.", quote = FALSE)
-# #
-# # # Double check the sums are the same
-# # total_n_cells_in_cellstxt <- n_cells_cell_cluster_1 +
-# #   n_cells_cell_cluster_2 +
-# #   n_cells_cell_cluster_3 +
-# #   n_cells_cell_cluster_4
-# # total_n_cells_in_genedata <- ncol(d)
-# # print(paste(str(total_n_cells_in_cellstxt), " = ", str(total_n_cells_in_genedata)), quote = FALSE)
-# #
-# #
-# # # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# #
-# # n_cell_clusters <- 4
-# # n_target_gene_clusters <- c(3, 3, 3, 3)  # TODO:Number of target gene clusters in each cell cluster
-# # n_target_genes <- length(is_regulator) - sum(is_regulator == 1)
-# # n_regulator_genes <- sum(is_regulator == 1)
-# # n_total_cells <- ncol(d)
-# # # We assume cells are ordered in the order of cell clusters. So the first x columns are cell cluster 1, etc.
-# # n_cells <- c(n_cells_cell_cluster_1, n_cells_cell_cluster_2, n_cells_cell_cluster_3, n_cells_cell_cluster_4)
-# # true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do this
-# #
-# #
-# # # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
-# # ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
-# # ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-# #
-# # disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels = true_cluster_allocation,
-# #                                                                 fraction_randomised = 0.25))
-# # # convert from seurat object into matrix that we can work with
-# # # List of object layers
-# # # SeuratObject::Layers(d)
-# # biclust_input_data <- as.matrix(Seurat::GetAssayData(d, assay = "RNA", layer = "data"))
-# # rm(d)
-# #
-#
-#
-#
-# biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
-# colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes),
-#                                   paste0("r", 1:n_regulator_genes))
-#
-# # we need to remove constant variables because otherwise SCREG messes things up
-#  constant_vars <- which(apply(biclust_input_data, 2, sd) == 0)
-#
-# # remove those variables
-#  str(biclust_input_data[,-constant_vars])
-#
-# # correct affected variables
-#
-# ind_targetgenes <- ind_targetgenes[!(ind_targetgenes %in% constant_vars)]
-# ind_reggenes <- ind_reggenes[!(ind_reggenes %in% constant_vars)]
-#
-# n_target_genes    <- length(ind_targetgenes)
-# n_regulator_genes <- length(ind_reggenes)
-#
-# is_regulator <- (c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-#
-#
-#
-#
-# # # These needs to be strings for discrete labels in pca plot
-# # data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
-# #                                        biclust_input_data)
-# # pca_res <- prcomp(biclust_input_data, scale. = TRUE)
-# # p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
-#
-# # Set up some variables
-# n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
-# n_target_genes <- length(ind_targetgenes)
-# n_regulator_genes <- length(ind_reggenes)
-#
-#
-# #############################################
-# ############ end data for dev ###############
-# #############################################
-#
-# save.image( file.path(path_data, "coreGBmap_subsetted.RData"))
 
-# to load data, uncomment above code and run and re-comment
+if (!file.exists(file.path(path_data, "coreGBmap_subsetted.RData"))) {
 
-load(file.path(path_data, "coreGBmap_subsetted.RData"))
+  # Read data
+  d <- readRDS(path_medium)
+
+  # Keep the correct type of cells
+  cell_types <- d@meta.data$annotation_level_3
+  keep_cells <- cell_types == 'AC-like' |
+    cell_types == 'MES-like' |
+    cell_types == 'NPC-like' |
+    cell_types == 'OPC-like'
+
+  keep_cells_split <- sample(c(1, 2), length(keep_cells), prob = c(0.8, 0.2), replace = T)
+  keep_ind <- keep_cells_split == 1
+  keep_cells <- keep_cells & keep_ind
+
+  cell_types <- factor(cell_types[keep_cells])
+  d <- d[,keep_cells]
+
+  # Find out which are regulator genes
+  # Make it into a matrix and rename row names from
+  # Ensembl gene IDs (like "ENSG00000269696") to standard gene names (like "A1BG"),
+  fake_matrix <- matrix(0, nrow = nrow(d), ncol = 1)  # This is fast
+  # dm <- tibble::as_tibble(as.matrix(GetAssayData(d, assay = "RNA", slot = "counts")))  # Using the data is slow
+  rownames(fake_matrix) <- as.vector(d@assays$RNA@meta.features$feature_name)
+  out <- scregclust::scregclust_format(fake_matrix)  # Needs to be a matrix to use this
+  is_regulator <- out[['is_regulator']]
+
+
+  # Put some stuff in order gene/row wise.
+  # This puts the regulator genes at the end
+  d <- d[order(is_regulator),]
+  is_regulator <- is_regulator[order(is_regulator)]
+
+  # Sub sample genes
+  n_target_genes <- 100
+  n_regulator_genes <- 50
+  old_ind_regulators <- which(as.logical(is_regulator))
+  new_ind_targetgenes <- sample(1:(min(old_ind_regulators)-1), n_target_genes)
+  new_ind_regulators <- sample(old_ind_regulators, n_regulator_genes)
+  new_ind_genes <- sort(c(new_ind_targetgenes, new_ind_regulators))
+  keep_genes <- replace(rep(FALSE, length(is_regulator)), new_ind_genes, TRUE)
+  #  Apply sub sampling
+  d <- d[keep_genes,]
+  is_regulator <- (c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+
+  # Put stuff in order cell/column wise
+  cell_order <- order(cell_types)
+  cell_types <- cell_types[cell_order]
+  unique(cell_types[cell_order])
+  d <- d[,cell_order]
+
+  # Now when we have put the cells in order we just need to count the cells
+  # in each cell cluster. Then it's easy to make a vector with the true_cluster_allocation
+  # further down in code
+  n_cells_cell_cluster_1 <- sum(cell_types == 'AC-like')
+  n_cells_cell_cluster_2 <- sum(cell_types == 'MES-like')
+  n_cells_cell_cluster_3 <- sum(cell_types == 'NPC-like')
+  n_cells_cell_cluster_4 <- sum(cell_types == 'OPC-like')
+
+  print(paste("Cells in clusters:"), quote = FALSE)
+  print(paste("1:", n_cells_cell_cluster_1), quote = FALSE)
+  print(paste("2:", n_cells_cell_cluster_2), quote = FALSE)
+  print(paste("3:", n_cells_cell_cluster_3), quote = FALSE)
+  print(paste("4:", n_cells_cell_cluster_4), quote = FALSE)
+  print(paste("Number of regulator genes are", sum(is_regulator)), quote = FALSE)
+  print("Scregclust wants more cells than regulator genes x 2 for each cell cluster. Otherwise it doesn't work.", quote = FALSE)
+
+  # Double check the sums are the same
+  total_n_cells_in_cellstxt <- n_cells_cell_cluster_1 +
+    n_cells_cell_cluster_2 +
+    n_cells_cell_cluster_3 +
+    n_cells_cell_cluster_4
+  total_n_cells_in_genedata <- ncol(d)
+  print(paste(str(total_n_cells_in_cellstxt), " = ", str(total_n_cells_in_genedata)), quote = FALSE)
+
+
+  # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  n_cell_clusters <- 4
+  n_target_gene_clusters <- c(3, 3, 3, 3)  # TODO:Number of target gene clusters in each cell cluster
+  n_target_genes <- length(is_regulator) - sum(is_regulator == 1)
+  n_regulator_genes <- sum(is_regulator == 1)
+  n_total_cells <- ncol(d)
+  # We assume cells are ordered in the order of cell clusters. So the first x columns are cell cluster 1, etc.
+  n_cells <- c(n_cells_cell_cluster_1, n_cells_cell_cluster_2, n_cells_cell_cluster_3, n_cells_cell_cluster_4)
+  true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do this
+
+
+  # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
+  ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
+  ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+
+  disturbed_initial_cell_clust <- factor(randomise_cluster_labels(cluster_labels = true_cluster_allocation,
+                                                                  fraction_randomised = 0.25))
+  # convert from seurat object into matrix that we can work with
+  # List of object layers
+  # SeuratObject::Layers(d)
+  biclust_input_data <- as.matrix(Seurat::GetAssayData(d, assay = "RNA", layer = "data"))
+  rm(d)
+  #
+
+  biclust_input_data <- t(tibble::as_tibble(biclust_input_data))
+  colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes),
+                                    paste0("r", 1:n_regulator_genes))
+
+  # we need to remove constant variables because otherwise SCREG messes things up
+  constant_vars <- which(apply(biclust_input_data, 2, sd) == 0)
+
+  # remove those variables
+  str(biclust_input_data[,-constant_vars])
+
+  # correct affected variables
+
+  ind_targetgenes <- ind_targetgenes[!(ind_targetgenes %in% constant_vars)]
+  ind_reggenes <- ind_reggenes[!(ind_reggenes %in% constant_vars)]
+
+  n_target_genes    <- length(ind_targetgenes)
+  n_regulator_genes <- length(ind_reggenes)
+
+  is_regulator <- (c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+
+  # # These needs to be strings for discrete labels in pca plot
+  # data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
+  #                                        biclust_input_data)
+  # pca_res <- prcomp(biclust_input_data, scale. = TRUE)
+  # p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
+
+  # Set up some variables
+  n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
+  n_target_genes <- length(ind_targetgenes)
+  n_regulator_genes <- length(ind_reggenes)
+
+
+  #############################################
+  ############ end data for dev ###############
+  #############################################
+
+  save.image( file.path(path_data, "coreGBmap_subsetted.RData"))
+
+} else{
+
+  load(file.path(path_data, "coreGBmap_subsetted.RData"))
+
+}
+
+
 
 
 
