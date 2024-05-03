@@ -275,9 +275,9 @@ biclust <- function(dat = dat,
         # target_gene_cluster_index <- unlist(sapply(indexes_of_not_deleted_target_gene_clusters, FUN=function(x) which(target_gene_cluster_index==x)))
 
         # This is a work around because sregclust removes constant genes before it starts
-        temp_vector <- rep(-1, n_target_genes+n_regulator_genes)
-        target_gene_cluster_names <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
-        temp_vector[non_constant_ind_genes] <- target_gene_cluster_names
+        target_gene_cluster_names <- rep(-1, n_target_genes + n_regulator_genes)
+        target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
+        target_gene_cluster_names[non_constant_ind_genes] <- target_gene_cluster_names_temp
         target_gene_cluster_names <- target_gene_cluster_names[1:n_target_genes]
 
         # Fixa den här. target_gene_cluster_names är 47. Ut kommer cluster_indexes som är 47
@@ -289,8 +289,9 @@ biclust <- function(dat = dat,
           cluster_indexes[ind_tmp] <- 1:n_target_genes_in_cluster + tmp_max_ind  # Get names of clusters for each target gene
           tmp_max_ind <- n_target_genes_in_cluster
         }
+        # print(max(cluster_indexes, na.rm = TRUE), quote = FALSE)
+        # print(ncol(screg_out_betas), quote = FALSE)
 
-        # TODO: Fix bug here. Sometimes indexes aren't right.
         screg_out_betas <- screg_out_betas[, cluster_indexes]  # Sort the matrix
 
 
