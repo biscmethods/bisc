@@ -236,7 +236,7 @@ if (file.exists(path_env_data)) {
 }
 
 biclust_input_data <- biclust_input_data_org
-biclust_input_data <- biclust_input_data[, apply(biclust_input_data, MARGIN = 2, function(x) sum(x != 0)) > 5000]
+biclust_input_data <- biclust_input_data[, apply(biclust_input_data, MARGIN = 2, function(x) sum(x != 0)) > 200]
 n_target_genes <- length(grep("^t", colnames(biclust_input_data), value = TRUE))
 n_regulator_genes <- length(grep("^r", colnames(biclust_input_data), value = TRUE))
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
