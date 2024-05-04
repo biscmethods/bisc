@@ -10,6 +10,8 @@ library(ppclust)
 library(clusterSim)  # for db
 library(Rmpfr)  # for small loglikihoods
 library(parallel)
+library(doParallel)
+library(foreach)
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
@@ -238,7 +240,7 @@ biclust <- function(dat = dat,
           penalization = penalization_lambda,
           noise_threshold = 0.00001,
           verbose = TRUE,
-          n_cycles = 100,
+          n_cycles = 20,
         )
         sink()
 
@@ -377,37 +379,72 @@ biclust <- function(dat = dat,
 
     # If everything goes well this should work the same for screg as with our
     # lm examples
-    # weights <- sweep(exp(loglikelihood/100), 2, cluster_proportions, "*")
     sink()
 
     print(paste("  Doing final weights calculations"), quote = FALSE)
     loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
+
     weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
 
+    # TODO: Skip BIC calc until things work. It takes minutes to do.
     # big_logLhat_in_BIC <- sum(log(rowSums(weights)))
     # k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
     # n_in_BIC <- n_total_cells
     # BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
     BIC <- 0
 
-    weights <- sweep(weights, 1, rowSums(weights), "/")
-    weights <- Rmpfr::asNumeric(weights)  # if you use nórmal as.numeric it doens't keep the matrix format
+    # Parallize the below calculation (e.g speeds up from 1:32 min to 12 sec)
+    # weights <- sweep(weights, 1, rowSums(weights), "/")
+    #------------------------
+
+    # Define the number of cores to use
+    num_cores <- max(detectCores() - 2, 1)
+
+    # # Create a parallel backend
+    cl <- makeCluster(num_cores)
+
+    # Register the parallel backend
+    registerDoParallel(cl)
+    num_rows <- nrow(weights)
+
+    split_indices <- split(1:num_rows, cut(1:num_rows, num_cores))
+
+    # Define the function to parallelize
+    parallel_sweep <- function(x) {
+      Rmpfr::asNumeric(sweep(x, 1, rowSums(x), "/"))
+    }
+
+    # Parallelize the operation using foreach
+    weights <- foreach(i = split_indices, .packages = c("Rmpfr"), .combine = 'rbind') %dopar% {
+      parallel_sweep(weights[i, , drop = FALSE])
+    }
+
+    # Stop the parallel backend
+    stopImplicitCluster()
+    stopCluster(cl)
+    sink()
+
+    # --------------------
 
     loglikelihood <- weights
-
     weights_all[[i_main]] <- weights
-    BIC_all[[i_main]] <- BIC
 
+    # Clear some memory
+    rm(weights)
+    gc()
+
+    BIC_all[[i_main]] <- BIC
     likelihood_all[[i_main]] <- loglikelihood
 
 
     if (i_main == 1) {
-      print(paste("  Calculating complexity of likelihood-clusters for iteration 1"), quote = FALSE)
-      no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]  # This weird line converts a vector with factors to a normal numeric vector.
-      # print(str(no_factor_cluster), quote = FALSE)
-      # db <- index.DB(loglikelihood, no_factor_cluster)$DB
-      db <- mean(silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
+      db <- 0
+      # print(paste("  Calculating complexity of likelihood-clusters for iteration 1"), quote = FALSE)
+      # no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]  # This weird line converts a vector with factors to a normal numeric vector.
+      # # print(str(no_factor_cluster), quote = FALSE)
+      # # db <- index.DB(loglikelihood, no_factor_cluster)$DB
+      # db <- mean(silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
     }
 
 
