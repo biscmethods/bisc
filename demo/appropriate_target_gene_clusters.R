@@ -21,7 +21,7 @@ source(file.path(R_path, "randomise_cluster_labels.R"))
 #############################################
 
 # Set seed for example
-set.seed(214)
+set.seed(2147)
 
 # Load data
 # Folders and filenames
@@ -303,41 +303,62 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 penalization_lambdas <- c(0.00001, 0.001, 0.1, 0.3, 0.5, 0.7)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
-str(is_regulator)
+penalization_lambda <- 0.16
+results_outer <- vector("list", 4)
 
-str(true_cluster_allocation)
-str(biclust_input_data)
-unique(true_cluster_allocation)
+# cell_cluster <- 1
+# iter <- 1
 
-current_cell_cluster <- biclust_input_data[true_cluster_allocation == 1,]
+library(scregclust)
+for(cell_cluster in seq(1,4)){
+  print(paste("calculating for cell cluster", cell_cluster))
+  current_cell_cluster <- biclust_input_data[true_cluster_allocation == cell_cluster,]
 
-str(current_cell_cluster)
+  #run screg with a bunch of different cluster setings
+  results_inner <- vector("list", 7)
 
-#run screg with a bunch of different cluster setings
-results <- vector("list", 14)
+  for(iter in seq(1,7)){
+    target_gene_clusters <- seq(2,8)[iter]
 
-for(iter in seq(1,7)){
-  target_gene_clusters <- seq(2,8)[iter]
-  penalization_lambda <- 0.16
+    print(paste("calculating for",target_gene_clusters, "clusters"))
 
-  library(scregclust)
-  results[[iter]] <- scregclust::scregclust(
-    expression = t(current_cell_cluster),  # p rows of genes, n columns of cells
-    split_indices = NULL,
-    genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
-    is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
-    n_cl = target_gene_clusters,
-    penalization = penalization_lambda,
-    noise_threshold = 0.00001,
-    verbose = TRUE,
-    n_cycles = 150,
-    compute_silhouette = T
-  )
+
+    current_cell_cluster <- current_cell_cluster[,
+                                             apply(current_cell_cluster,
+                                                     MARGIN = 2,
+                                                   function(x) sum(x != 0)) > 200]
+
+
+    n_target_genes <- length(grep("^t", colnames(current_cell_cluster), value = TRUE))
+    n_regulator_genes <- length(grep("^r", colnames(current_cell_cluster), value = TRUE))
+    ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
+    ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+    colnames(current_cell_cluster) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
+
+
+
+
+    results_inner[[iter]] <- scregclust::scregclust(
+      expression = t(current_cell_cluster),  # p rows of genes, n columns of cells
+      split_indices = NULL,
+      genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+      is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
+      n_cl = target_gene_clusters,
+      penalization = penalization_lambda,
+      noise_threshold = 0.00001,
+      verbose = TRUE,
+      n_cycles = 150,
+      compute_silhouette = T
+    )
+  }
+
+  # results_outer[cell_cluster] <- results_inner
+
+  saveRDS(results_inner, file.path(path_data,paste0("screg_results_cluster_",cell_cluster,
+                                              "_penalization_",penalization_lambda,
+                                              ".rds")))
 }
 
-saveRDS(results, file.path(path_data,"screg_results_cluster1.rds"))
-
-results_ <- results[c(1,2,3,4)]
 
 scregclust::plot_silhouettes(list_of_fits = results_,
                              penalization = c(penalization_lambda))
