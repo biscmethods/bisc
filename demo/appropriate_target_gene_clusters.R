@@ -300,10 +300,8 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-penalization_lambdas <- c(0.00001, 0.001, 0.1, 0.3, 0.5, 0.7)
-BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
-penalization_lambda <- 0.16
+penalization_lambda <- 0.001
 results_outer <- vector("list", 4)
 
 # cell_cluster <- 1
@@ -352,7 +350,7 @@ for(cell_cluster in seq(1,4)){
     )
   }
 
-  # results_outer[cell_cluster] <- results_inner
+  results_outer[[cell_cluster]] <- results_inner
 
   saveRDS(results_inner, file.path(path_data,paste0("screg_results_cluster_",cell_cluster,
                                               "_penalization_",penalization_lambda,
@@ -360,11 +358,48 @@ for(cell_cluster in seq(1,4)){
 }
 
 
-scregclust::plot_silhouettes(list_of_fits = results_,
-                             penalization = c(penalization_lambda))
+for(cell_cluster in seq(1,4)){
+  print(paste("calculating for cell cluster", cell_cluster))
 
-scregclust::plot_cluster_count_helper(list_of_fits = results_,
-                             penalization = c(penalization_lambda))
+  #run screg with a bunch of different cluster setings
+  results_inner <- vector("list", 7)
 
+  for(iter in seq(1,7)){
+    target_gene_clusters <- seq(2,8)[iter]
+    print(file.path(path_data,paste0("screg_results_cluster_",cell_cluster,
+                                     "_penalization_",penalization_lambda,
+                                     ".rds"))
+          )
+  }
+}
+
+
+# scregclust::plot_silhouettes(list_of_fits = results_outer[[1]],
+                             # penalization = c(penalization_lambda))
+
+demo_path <- here::here("demo")
+R_path <- here::here("R")
+output_path <- demo_path
+
+for(cell_cluster in seq(1,4)) {
+
+  png(
+  file.path(output_path,paste0("cluster_count_helper_coreGB_cell_cluster",
+                               cell_cluster,
+                               "_penalisation_",
+                               penalization_lambda,
+                               ".png")
+            )
+  ,width = 1024, height = 480, units = "px"
+      )
+
+ scregclust::plot_cluster_count_helper(
+          list_of_fits = results_outer[[cell_cluster]],
+          penalization = c(penalization_lambda)
+          ) -> p
+  print(p)
+  dev.off()
+
+}
 
 
