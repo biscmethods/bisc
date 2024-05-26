@@ -70,8 +70,8 @@ for (i in seq_along(penalization_lambdas)) {
   modded_output_path <- file.path(output_path, paste("penalization_lambda_", penalization_lambda_str))
   dir.create(modded_output_path, showWarnings = FALSE)
 
-
   res <- biclust(dat = dat_train,
+                 dat_test = dat_test,
                  max_iter = max_iter,
                  initial_clustering = disturbed_initial_cell_clust_train,
                  n_target_genes = n_target_genes_train,

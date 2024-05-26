@@ -188,6 +188,7 @@ loglikelihood_calc_matrix <- function(dat,
 #' @export
 #'
 biclust <- function(dat = dat,
+                    dat_test = NULL,
                     max_iter = 50,
                     initial_clustering,
                     n_target_genes,
@@ -200,6 +201,10 @@ biclust <- function(dat = dat,
                     penalization_lambda = 0.05,
                     use_weights = TRUE,
                     use_complex_cluster_allocation = FALSE) {
+
+
+  # TODO: Split into train and test here instead of in script
+  n_total_cells_test    <- nrow(dat_test)
 
   # Preallocate cluster history
   cell_cluster_history <- tibble::tibble(dat$cell_id, dat$true_cell_cluster_allocation, initial_clustering)
@@ -366,12 +371,6 @@ biclust <- function(dat = dat,
 
     weights <- sweep(exp(likelihood), 2, cluster_proportions, "*")
 
-    big_logLhat_in_BIC <- sum(log(rowSums(weights)))
-    k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
-    n_in_BIC <- n_total_cells
-    BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
-
-    weights <- sweep(weights, 1, rowSums(weights), "/")
 
     # weights_2 <- sweep((likelihood), 2, cluster_proportions, "*")
     # weights_2 <- sweep(weights_2, 1, rowSums(weights_2), "/")
@@ -384,14 +383,50 @@ biclust <- function(dat = dat,
     # # print(str(weights))
     #
     weights_all[[i_main]] <- weights
-    BIC_all[[i_main]] <- BIC
 
     likelihood_all[[i_main]] <- likelihood
 
+
+
+    ###### compute BIC
+    #first, predict cluster allocation
+    likelihood_test <- loglikelihood_calc_matrix(dat_test,
+                                                 models,
+                                                 target_genes_residual_var,
+                                                 n_cell_clusters,
+                                                 ind_reggenes,
+                                                 ind_targetgenes)
+
+    predicted_cluster_allocation_test <- sapply(seq_len(nrow(likelihood_test)),
+                                                function(row) which.max(likelihood_test[row,]))
+
+    # compute cluster allocation proportions
+    cluster_proportions_test <- vector(length = n_cell_clusters)
+    for (i_cell_cluster in seq_len(n_cell_clusters)) {
+      current_cluster_proportion <- sum(predicted_cluster_allocation_test == i_cell_cluster) / length(predicted_cluster_allocation_test)
+      if (current_cluster_proportion == 0) {
+        cluster_proportions_test[i_cell_cluster] <- 0.0001
+        warning("Test data has zero cells in predicted cluster")
+      }else
+        cluster_proportions_test[i_cell_cluster] <- current_cluster_proportion
+    }
+    #calculate likelihood of model for test data
+
+    weights_test <- sweep(exp(likelihood_test), 2, cluster_proportions_test, "*")
+
+
+    big_logLhat_in_BIC <- sum(log(rowSums(weights_test)))
+    k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
+    n_in_BIC <- n_total_cells_test
+
+    BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+    BIC_all[[i_main]] <- BIC
+
     if (i_main == 1) {
-      no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
+      # no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]
       # db <- index.DB(likelihood, no_factor_cluster)$DB
-      db <- mean(silhouette(no_factor_cluster, dist(likelihood))[, 3])
+      # db <- mean(silhouette(no_factor_cluster, dist(likelihood))[, 3])
+      db <- 0 # hack
     }
 
     ######################################
@@ -430,6 +465,10 @@ biclust <- function(dat = dat,
                                    function(row) which.max(likelihood[row,]))
     }
     updated_cell_clust <- unlist(updated_cell_clust)
+
+    if(length(unique(updated_cell_clust)) == 1){
+      print("Everything is put into the same cell cluster")
+    }
     # print("updated_cell_clust")
     # print((str(unlist(updated_cell_clust))))
     #
