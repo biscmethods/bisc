@@ -35,7 +35,7 @@ neftel_smartseq2 <- readRDS(path_neftel_seurat_group2)
 neftel_smartseq2 <- neftel_smartseq2@assays$SCT@scale.data
 
 # Remove all genes/rows that don't correlate with other rows more than 0.1
-cor_matrix <- abs(cor(t(d)))
+cor_matrix <- abs(cor(t(neftel_smartseq2)))
 diag(cor_matrix) <- 0
 threshold <- 0.1
 keep_rows <- apply(cor_matrix, 1, max) > threshold
@@ -110,12 +110,8 @@ total_n_cells_in_cellstxt <- n_cells_cell_cluster_1 +
 total_n_cells_in_genedata <- ncol(neftel_smartseq2_malignant_sorted)
 print(paste(str(total_n_cells_in_cellstxt), " = ", str(total_n_cells_in_genedata)), quote = FALSE)
 
-
-#--------------------------
-
-
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+n_cell_clusters <- 4
 n_target_genes <- length(is_regulator) - sum(is_regulator == 1)
 n_regulator_genes <- sum(is_regulator == 1)
 n_total_cells <- ncol(neftel_smartseq2_malignant_sorted)
@@ -127,12 +123,6 @@ true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)  # TODO: do t
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
 ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-
-# Set up some variables
-n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
-n_target_genes <- length(ind_targetgenes)
-n_regulator_genes <- length(ind_reggenes)
-
 cell_id <- 1:n_total_cells
 
 
@@ -145,7 +135,10 @@ gc()
 # Run screg with a bunch of different cluster setings
 results <- vector(mode = "list", length = length(target_gene_cluster_vector))
 
+# Manual cluster allocation (we only check cell cluster 1, AC, now)
+i_cell_cluster <- 1
 current_cell_cluster <- neftel_smartseq2_malignant_sorted[, df$cell_cluster == 'AC']
+
 for (i_n_target_genes_clusters in seq(length(target_gene_cluster_vector))) {
   n_target_genes_clusters <- target_gene_cluster_vector[i_n_target_genes_clusters]
   print(paste("Cell cluster", i_cell_cluster, "Number of target gene clusters", n_target_genes_clusters), quote = FALSE)
@@ -156,7 +149,7 @@ for (i_n_target_genes_clusters in seq(length(target_gene_cluster_vector))) {
     genesymbols = 1:(n_target_genes + n_regulator_genes),
     is_regulator = is_regulator,
     n_cl = n_target_genes_clusters,
-    penalization = 0.0001,
+    penalization = 0.000001,
     noise_threshold = 0.000001,
     verbose = TRUE,
     n_cycles = 40,
