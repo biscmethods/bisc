@@ -12,10 +12,6 @@ demo_path <- here::here("demo")
 R_path <- here::here("R")
 output_path <- demo_path
 
-source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
-source(file.path(R_path, "randomise_cluster_labels.R"))
-
 #############################################
 ############ data for dev ###################
 #############################################
@@ -28,21 +24,32 @@ set.seed(214)
 path_data <- here::here('data')
 path_Neftel2019 <- file.path(path_data, "Neftel2019")
 path_Group2 <- file.path(path_Neftel2019, "Group2")
-path_neftel_seurat_group2 <- file.path(path_data, "neftel_seurat_group2.rds")
+path_neftel_seurat_group2_1500 <- file.path(path_data, "neftel_seurat_group2_1500.rds")
 
 # Load Neftel 2019 data prepped in download_and_prep_data.R "group 2"
-neftel_smartseq2 <- readRDS(path_neftel_seurat_group2)
+neftel_smartseq2 <- readRDS(path_neftel_seurat_group2_1500)
 neftel_smartseq2 <- neftel_smartseq2@assays$SCT@scale.data
 
-# Remove all genes/rows that don't correlate with other rows more than 0.1
-cor_matrix <- abs(cor(t(neftel_smartseq2)))
+# Figure out which genes are regulator using the names
+out <- scregclust::scregclust_format(neftel_smartseq2)
+is_regulator <- out[['is_regulator']]
+
+# Remove all target genes/rows that don't correlate with other rows more than 0.1
+is_target_gene  <- !is_regulator
+
+
+cor_matrix <- abs(cor(t(neftel_smartseq2[is_target_gene,])))
 diag(cor_matrix) <- 0
 threshold <- 0.1
 keep_rows <- apply(cor_matrix, 1, max) > threshold
+keep_rows <- sort(c(which(is_target_gene)[keep_rows], which(!is_target_gene)))
+
+is_regulator <- !is_target_gene[keep_rows]  #
+
 neftel_smartseq2 <- neftel_smartseq2[keep_rows,]
 
 # Remove all cells that aren't malignant
-cells <- read.table(file = file.path(path_Group2, 'cells.csv'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+cells <- read.table(file = file.path(path_Group2, 'Cells.txt'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
 cells_malignant <- cells[cells[, 'malignant'] == 'yes',]
 neftel_smartseq2_malignant <- neftel_smartseq2[, colnames(neftel_smartseq2) %in% cells_malignant[, 'cell_name']]
 
@@ -149,7 +156,7 @@ for (i_n_target_genes_clusters in seq(length(target_gene_cluster_vector))) {
     genesymbols = 1:(n_target_genes + n_regulator_genes),
     is_regulator = is_regulator,
     n_cl = n_target_genes_clusters,
-    penalization = 0.000001,
+    penalization = 0.16,
     noise_threshold = 0.000001,
     verbose = TRUE,
     n_cycles = 40,

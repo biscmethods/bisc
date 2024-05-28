@@ -106,6 +106,7 @@ if (group_1_flag) {
 if (group_2_flag) {
   path_neftel_mn_group2 <- file.path(path_data, "neftel_mn_group2.rds")
   path_neftel_seurat_group2 <- file.path(path_data, "neftel_seurat_group2.rds")
+  path_neftel_seurat_group2_1500 <- file.path(path_data, "neftel_seurat_group2_1500.rds")
   path_Group2 <- file.path(path_Neftel2019, "Group2")
 
   if (!file.exists(path_Group2)) {
@@ -148,6 +149,13 @@ if (group_2_flag) {
   }else {
     Neftel_g2 <- readRDS(file = path_neftel_seurat_group2)
   }
+  mn_g2 <- readRDS(file = path_neftel_mn_group2)
+  cells <- read.table(file = file.path(path_Group2, 'Cells.txt'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+  rownames(cells) <- cells[, 1]
+  Neftel_g2 <- Seurat::CreateSeuratObject(mn_g2, min.cells = 3, min.features = 500, meta.data = cells)
+  Neftel_g2 <- Seurat::SCTransform(Neftel_g2, variable.features.n = 15000)
+
+  saveRDS(Neftel_g2, file = path_neftel_seurat_group2_1500)
 }
 
 
