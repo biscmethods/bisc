@@ -95,7 +95,7 @@ if (file.exists(path_env_data_neftel2019) && file.exists(path_general_env_data_n
   threshold <- 0.1
   keep_rows <- apply(cor_matrix, 1, max) > threshold
   d <- d[keep_rows,]
-  rm(keep_rows)
+  rm(keep_rows, cor_matrix)
 
   # Ensembl gene IDs (like "ENSG00000269696") to standard gene names (like "A1BG"),
   geneIDs1 <- ensembldb::select(EnsDb.Hsapiens.v79, keys= rownames(d), keytype = "GENEID", columns = c("SYMBOL","GENEID"))
@@ -149,7 +149,6 @@ if (file.exists(path_env_data_neftel2019) && file.exists(path_general_env_data_n
   ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
-  d <- t(d)  # Transpose to work with scregclust
   gc()  # Force clean memory
 
 
@@ -181,28 +180,28 @@ if (!file.exists(path_AC_neftel2019) ||
   load(path_env_data_neftel2019)
 
   # Save one variable per cell cluster to save on memory use
-  cell_cluster_AC <- t(d[true_cluster_allocation == 1,])
+  cell_cluster_AC <- d[, true_cluster_allocation == 1]
   print(dim(cell_cluster_AC))
   print(object.size(cell_cluster_AC), units = 'MB', standard = 'SI')
   save(cell_cluster_AC, file = path_AC_neftel2019)
   rm(cell_cluster_AC)
   gc()  # Force clean memory
 
-  cell_cluster_MES <- t(d[true_cluster_allocation == 2,])
+  cell_cluster_MES <- d[, true_cluster_allocation == 2]
   print(dim(cell_cluster_MES))
   print(object.size(cell_cluster_MES), units = 'MB', standard = 'SI')
   save(cell_cluster_MES, file = path_MES_neftel2019)
   rm(cell_cluster_MES)
   gc()  # Force clean memory
 
-  cell_cluster_NPC <- t(d[true_cluster_allocation == 3,])
+  cell_cluster_NPC <- d[, true_cluster_allocation == 3]
   print(dim(cell_cluster_NPC))
   print(object.size(cell_cluster_NPC), units = 'MB', standard = 'SI')
   save(cell_cluster_NPC, file = path_NPC_neftel2019)
   rm(cell_cluster_NPC)
   gc()  # Force clean memory
 
-  cell_cluster_OPC <- t(d[true_cluster_allocation == 4,])
+  cell_cluster_OPC <- d[, true_cluster_allocation == 4]
   print(dim(cell_cluster_OPC))
   print(object.size(cell_cluster_OPC), units = 'MB', standard = 'SI')
   save(cell_cluster_OPC, file = path_OPC_neftel2019)
@@ -215,6 +214,7 @@ load(path_general_env_data_neftel2019)
 min_number_of_clusters <- 2
 max_number_of_clusters <- 10
 penalization_lambda <- 0.16
+rm(d)  # If loaded remove it since it uses memory
 gc()  # Force clean memory
 target_gene_cluster_vector <- seq(min_number_of_clusters, max_number_of_clusters)
 
@@ -247,7 +247,7 @@ for (i_cell_cluster in seq(n_cell_clusters)) {
     results[[i_n_target_genes_clusters]] <- scregclust::scregclust(
       expression = current_cell_cluster,  # p rows of genes, n columns of cells
       split_indices = NULL,
-      genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+      genesymbols = rownames(current_cell_cluster),  # Gene row numbers
       is_regulator = is_regulator, # inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
       n_cl = n_target_genes_clusters,
       penalization = penalization_lambda,
