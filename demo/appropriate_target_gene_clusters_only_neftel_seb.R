@@ -4,7 +4,11 @@ rm(list = ls())
 library(here)  # To work with paths
 # library(patchwork)
 library(scregclust)
-library("EnsDb.Hsapiens.v79")  # BiocManager::install("EnsDb.Hsapiens.v79")
+# To be able to run library("EnsDb.Hsapiens.v79") you need to at least:
+# BiocManager::install("GenomeInfoDb")
+# BiocManager::install("SparseArray")
+# BiocManager::install("EnsDb.Hsapiens.v79")
+library("EnsDb.Hsapiens.v79")
 sink()  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
 gc()  # Force clean memory
 
@@ -153,6 +157,7 @@ if (file.exists(path_env_data_neftel2019) && file.exists(path_general_env_data_n
 
 
   save(d,
+       is_regulator,
        n_cell_clusters,
        n_regulator_genes,
        n_target_genes,
@@ -161,7 +166,8 @@ if (file.exists(path_env_data_neftel2019) && file.exists(path_general_env_data_n
        true_cluster_allocation,
        file = path_env_data_neftel2019)
 
-   save(n_cell_clusters,
+   save(is_regulator,
+       n_cell_clusters,
        n_regulator_genes,
        n_target_genes,
        ind_reggenes,
@@ -246,7 +252,6 @@ for (i_cell_cluster in seq(n_cell_clusters)) {
 
     results[[i_n_target_genes_clusters]] <- scregclust::scregclust(
       expression = current_cell_cluster,  # p rows of genes, n columns of cells
-      split_indices = NULL,
       genesymbols = rownames(current_cell_cluster),  # Gene row numbers
       is_regulator = is_regulator, # inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
       n_cl = n_target_genes_clusters,
