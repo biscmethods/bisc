@@ -217,14 +217,14 @@ if (!file.exists(path_AC_neftel2019) ||
 
 # ----------------------------
 load(path_general_env_data_neftel2019)
-min_number_of_clusters <- 2
-max_number_of_clusters <- 10
-penalization_lambda <- 0.16
+min_number_of_clusters <- 3
+max_number_of_clusters <- 3
+penalization_lambda <- c(0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5)
 rm(d)  # If loaded remove it since it uses memory
 gc()  # Force clean memory
 target_gene_cluster_vector <- seq(min_number_of_clusters, max_number_of_clusters)
 
-for (i_cell_cluster in seq(n_cell_clusters)) {
+for (i_cell_cluster in c(3)) {
   if(i_cell_cluster==1){
     load(path_AC_neftel2019)
     current_cell_cluster <- cell_cluster_AC
@@ -264,7 +264,7 @@ for (i_cell_cluster in seq(n_cell_clusters)) {
     )
   }
 
-  saveRDS(results, file.path(path_data, paste0("scregResultsNeftel2019_lambda_", penalization_lambda,
+  saveRDS(results, file.path(path_data, paste0("scregResultsNeftel2019_lambda_", paste0(penalization_lambda, collapse="-"),
                                                "_cellCluster_", i_cell_cluster,
                                                "_nRegulatorGenes_", n_regulator_genes,
                                                "_nTargetGenes_", n_target_genes,
@@ -276,25 +276,183 @@ for (i_cell_cluster in seq(n_cell_clusters)) {
 }
 
 
+plot_things <- function() {
+    tryCatch(
+        {
+             p <- scregclust::plot_cluster_count_helper(list_of_fits = all_results[[i]], penalization = cp) + ggtitle(paste(names[i], "lambda", cp)) + coord_cartesian(ylim = c(0, 1))
+            # p <- scregclust::plot_silhouettes(list_of_fits = results[[1]], penalization = penalization_lambda)
+            print(p)
+        },
+        error = function(cond) {
+            NULL
+        },
+        warning = function(cond) {
+            NULL
+        },
+        finally = {
+            print("done")
+        }
+    )
+}
+
+plot_things2 <- function() {
+    tryCatch(
+        {
+          p <- scregclust:::plot.scregclust(all_results[[i]][[ii]]) + ggtitle(paste(names[i], "n clusters", target_gene_cluster_vector[ii])) + coord_cartesian(ylim = c(0, 1))
+          print(p)
+        },
+        error = function(cond) {
+            NULL
+        },
+        warning = function(cond) {
+            NULL
+        },
+        finally = {
+            print("done")
+        }
+    )
+}
+
+
 # TODO: Not updated yet
 # scregclust::plot_silhouettes(list_of_fits = results,
 #                              penalization = penalization_lambda)
 #
 # scregclust::plot_cluster_count_helper(list_of_fits = results, penalization = penalization_lambda)
+min_number_of_clusters <- 2
+max_number_of_clusters <- 15
+target_gene_cluster_vector <- seq(min_number_of_clusters, max_number_of_clusters)
+penalization_lambda <- c(0.1, 0.2, 0.3, 0.5)
+path_data <- "C:\\Users\\Sebastian\\repos\\biclust\\demo\\neftel_experiment"
+results1 <- readRDS(file.path(path_data, "scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_1_nRegulatorGenes_208_nTargetGenes_1640_nCells_4872_minNCluster_2_maxNCluster15.rds"))
+results2 <- readRDS(file.path(path_data, "scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_2_nRegulatorGenes_208_nTargetGenes_1640_nCells_2923_minNCluster_2_maxNCluster15.rds"))
+results3 <- readRDS(file.path(path_data, "scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_3_nRegulatorGenes_208_nTargetGenes_1640_nCells_2810_minNCluster_2_maxNCluster15.rds"))
+results4 <- readRDS(file.path(path_data, "scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_4_nRegulatorGenes_208_nTargetGenes_1640_nCells_2093_minNCluster_2_maxNCluster15.rds"))
+names <- list("AC", "MES", "NPC", "OPC")
+all_results <- list(results1, results2, results3, results4)
+
+# stats
+# str(results1[[1]]$results[[1]]$output[[1]])
+# colSums((results1[[1]]$results[[1]]$output[[1]]$reg_table)!=0)
+# colSums(!is.na(results1[[1]]$results[[1]]$output[[1]]$importance))
+# colSums((results1[[1]]$results[[1]]$output[[1]]$models))
 #
-# path_data <- "C:\\Users\\Sebastian\\repos\\biclust\\data\\old_1000genes"
-# results1 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_4_mincluster_2_maxcluster8.rds"))
-# results2 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_3_mincluster_2_maxcluster8.rds"))
-# results3 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_2_mincluster_2_maxcluster8.rds"))
-# results4 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_1_mincluster_2_maxcluster8.rds"))
-# names <- list("AC", "MES", "NPS", "OPC")
-# all_results <- list(results1, results2, results3, results4)
-# for(i in seq(4)){
-#   results <- all_results[i]
-#   p <- scregclust::plot_cluster_count_helper(list_of_fits = results[[1]], penalization = penalization_lambda)
-#   print(p)
+# beta_logical <- results1[[1]]$results[[1]]$output[[1]]$models
+# coeffs_old_style <- vector(mode = "list", length = ncol(beta_logical))
+# coeffs_new_style <- results1[[1]]$results[[1]]$output[[1]]$coeffs
+# for(i_target_gene_cluster in seq(length(coeffs_old_style))){
+#   temp_coeffs <- matrix(0, nrow=nrow(beta_logical), ncol=ncol(coeffs_new_style[[i_target_gene_cluster]]))
+#   current_beta_logical <- beta_logical[,i_target_gene_cluster]  # Reduces to a vector in R
+#   temp_coeffs[current_beta_logical,] <- coeffs_new_style[[i_target_gene_cluster]]
+#   coeffs_old_style[[i_target_gene_cluster]] <- temp_coeffs
 # }
+# rm(beta_logical, coeffs_new_style, temp_coeffs, current_beta_logical)
 #
+
+
+for (i in seq(4)) {
+  for (cp in penalization_lambda) {
+    # print(str(as.numeric(cp)))
+    print(paste(names[i], "lambda", cp), quote = FALSE)
+    plot_things()
+
+    # p <- scregclust::plot_cluster_count_helper(list_of_fits = all_results[[i]], penalization = cp) + ggtitle(paste(names[i], "lambda", cp))
+    # # p <- scregclust::plot_silhouettes(list_of_fits = results[[1]], penalization = penalization_lambda)
+    # print(p)
+  }
+}
+
+for (i in seq(4)) {
+  for (ii in seq(14)) {
+    plot_things2()
+  }
+}
+
+# Gets all the interesting info from a list of scregclust results
+get_info <- function(res) {
+  n_cluster_parameters <- length(res)
+  n_sum_of_all_lambdas <- 0
+  for (i_cluster in seq(n_cluster_parameters)) {
+    n_sum_of_all_lambdas <- n_sum_of_all_lambdas + length(res[[i_cluster]]$results)
+  }
+  n_combos <- n_sum_of_all_lambdas
+
+  n_cl <- vector(length = n_combos)
+  penalization_lambdas <- vector(length = n_combos)
+  r2 <- vector(length = n_combos)
+  silhouette <- vector(length = n_combos)
+  converged <- vector(length = n_combos)
+  n_lost_clusters <- vector(length = n_combos)
+  mean_regulators_in_non_empty_clusters <- vector(length = n_combos)
+  n_noise_cluster <- vector(length = n_combos)
+
+
+  i <- 0
+  for (i_cluster in seq(n_cluster_parameters)) {
+    n_lambdas <- length(res[[i_cluster]]$results)
+    for (i_penalization in seq(n_lambdas)) {
+      i <- i + 1
+      n_cl[i] <- res[[i_cluster]]$results[[i_penalization]]$n_cl
+      temp_r2 <- res[[i_cluster]]$results[[i_penalization]]$output[[1]]$r2_cluster
+      r2[i] <- mean(temp_r2, na.rm = TRUE)
+      temp_silhouette <- res[[i_cluster]]$results[[i_penalization]]$output[[1]]$silhouette
+      silhouette[i] <- mean(temp_silhouette[is.finite(temp_silhouette)], na.rm = TRUE,)
+
+      # Regulators in target gene cluster 1
+      n_reg_genes <- vector(length = n_cl[i])
+      for (i_target_gene_cluster in seq(n_cl[i])) {
+        n_reg_genes[i_target_gene_cluster] <- sum(res[[i_cluster]]$results[[i_penalization]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0, na.rm = TRUE)
+      }
+      n_reg_genes_string <- paste(n_reg_genes, collapse = '-')
+      n_actual_clusters <- sum(n_reg_genes != 0)
+      mean_regulators_in_non_empty_clusters[i] <- mean(n_reg_genes[n_reg_genes != 0])
+
+      # Target genes in gene cluster 1
+      # sum(res[[1]]$results[[4]]$output[[1]]$cluster==1,na.rm=TRUE)
+      n_noise_cluster[i] <- sum(res[[i_cluster]]$results[[i_penalization]]$output[[1]]$cluster == -1, na.rm = TRUE)
+      n_lost_clusters[i] <- n_cl[i] - n_actual_clusters
+
+      penalization_lambdas[i] <- res[[i_cluster]][[1]][[i_penalization]]
+      converged[i] <- res[[i_cluster]]$results[[i_penalization]]$converged
+
+      print(paste(n_cl[i],
+                  penalization_lambdas[i],
+                  r2[i],
+                  silhouette[i],
+                  converged[i],
+                  "\"", n_reg_genes_string, "\"",
+                  n_actual_clusters,
+                  mean_regulators_in_non_empty_clusters[i],
+                  n_noise_cluster[i],
+                  n_lost_clusters[i]),
+            quote = FALSE)
+    }
+  }
+
+  df <- data.frame(n_cl,
+                   penalization_lambdas,
+                   r2,
+                   silhouette,
+                   converged,
+                   n_lost_clusters,
+                   mean_regulators_in_non_empty_clusters,
+                   n_noise_cluster)
+  df <- subset(df, converged == TRUE)
+  df['rank'] <- rank((rank(-df['r2']) +
+    rank(-df['silhouette']) +
+    rank(-df['mean_regulators_in_non_empty_clusters']) +
+    rank(df['n_lost_clusters']) +
+    rank(df['n_noise_cluster'])))
+
+  df <- df[order(df$rank),]
+  rownames(df) <- NULL
+  return(df)
+}
+
+names <- list("AC", "MES", "NPC", "OPC")
+df <- get_info(res = results4)
+write.table(df, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
 #
 # for (i_cell_cluster in seq(n_cell_clusters)) {
 #   if(i_cell_cluster==1){
