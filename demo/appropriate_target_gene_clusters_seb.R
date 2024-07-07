@@ -15,9 +15,6 @@ demo_path <- here::here("demo")
 R_path <- here::here("R")
 output_path <- demo_path
 
-source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
-source(file.path(R_path, "randomise_cluster_labels.R"))
 
 #############################################
 ############ data for dev ###################
@@ -49,6 +46,8 @@ path_NPC_s <- file.path(path_data, "env_data_NPC_sctransform_s.RData")
 path_OPC_s <- file.path(path_data, "env_data_OPC_sctransform_s.RData")
 # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
 
+path_env_data_tsne3 <- file.path(path_data, "env_data_findtargetcluster_sctransform_tsne3.RData")
+
 if (file.exists(path_env_data)) {
   load(path_env_data_s)
 }else {
@@ -61,11 +60,13 @@ if (file.exists(path_env_data)) {
     d <- readRDS(path_medium)
 
     # Keep the correct type of cells
+    logical_keep_neftel_cells <- as.character(d@meta.data$author)=="Neftel2019"
     cell_types <- d@meta.data$annotation_level_3
     keep_cells <- cell_types == 'AC-like' |
       cell_types == 'MES-like' |
       cell_types == 'NPC-like' |
       cell_types == 'OPC-like'
+    keep_cells <- logical_keep_neftel_cells & keep_cells
 
 
     cell_types <- factor(cell_types[keep_cells])
@@ -157,7 +158,7 @@ if (file.exists(path_env_data)) {
   # List of object layers
   # SeuratObject::Layers(d)
   #-------------------------------------------------------------------
-  d <- Seurat::SCTransform(d,variable.features.n = 1000)
+  d <- Seurat::SCTransform(d,variable.features.n = 4000)
   # d <- SCTransform(d, variable.features.n = 27080)
   # saveRDS(d, path_medium_cleaned_sctransform)
   # Find out which are regulator genes
@@ -184,14 +185,17 @@ if (file.exists(path_env_data)) {
   org_gene_names <- rownames(biclust_input_data)
   org_cell_names <- colnames(biclust_input_data)
   rm(d)
+
+
+
+  biclust_input_data <- t(tibble::as_tibble(biclust_input_data))  # TODO: WHYYYY. It takes more memory.
+
   n_regulator_genes <- sum(is_regulator)
   n_target_genes <- ncol(biclust_input_data) - n_regulator_genes
   new_gene_names <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
   ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
-
-  biclust_input_data <- t(tibble::as_tibble(biclust_input_data))  # TODO: WHYYYY. It takes more memory.
   colnames(biclust_input_data) <- new_gene_names
   rm(new_gene_names)
 
@@ -274,10 +278,92 @@ if (!file.exists(path_AC_s) ||
 load(path_general_env_data_s)
 min_number_of_clusters <- 2
 max_number_of_clusters <- 8
-penalization_lambda <- 0.000001
+penalization_lambda <- 2
 rm(biclust_input_data)
 gc()
 target_gene_cluster_vector <- seq(min_number_of_clusters, max_number_of_clusters)
+
+ensemble_to_normal <- function(genes = org_gene_names){
+  ensemblgenes <- genes
+  geneIDs1 <- ensembldb::select(EnsDb.Hsapiens.v79, keys= ensemblgenes, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
+  select_these <- geneIDs1[,2] # Since we probably lost genes in the translation
+  normal_gene_names <- geneIDs1[,1]
+  return(normal_gene_names)
+}
+
+give_me_regulators <- function(normal_gene_names) {
+  fake_matrix <- matrix(0, nrow = length(normal_gene_names), ncol = 1)  # This is fast
+  rownames(fake_matrix) <- normal_gene_names  # as.vector(d@assays$SCT@var.features)
+  out <- scregclust::scregclust_format(fake_matrix)  # Needs to be a matrix to use this
+  is_regulator <- out[['is_regulator']]
+  rm(fake_matrix, out)
+  return(is_regulator)
+}
+
+for (i_cell_cluster in seq(n_cell_clusters)) {
+  gc()
+  print(i_cell_cluster)
+  if(i_cell_cluster==1){
+    load(path_AC_s)
+    current_cell_cluster <- cell_cluster_AC
+    rm(cell_cluster_AC)
+  }else if(i_cell_cluster==2){
+    load(path_MES_s)
+    current_cell_cluster <- cell_cluster_MES
+    rm(cell_cluster_MES)
+  }else if(i_cell_cluster==3){
+    load(path_NPC_s)
+    current_cell_cluster <- cell_cluster_NPC
+    rm(cell_cluster_NPC)
+  }else if(i_cell_cluster==4){
+    load(path_OPC_s)
+    current_cell_cluster <- cell_cluster_OPC
+    rm(cell_cluster_OPC)
+  }
+  sink()
+  print("Loading compelte")
+  normal_gene_names <- ensemble_to_normal(genes=org_gene_names)
+  is_regulator <- give_me_regulators(normal_gene_names)
+  print("Running reg")
+  sink()
+  tsne_3_reg <- Rtsne::Rtsne(t(current_cell_cluster[is_regulator, ]), dims=3, num_threads = 30, verbose=TRUE, partial_pca=TRUE, max_iter=2000, initial_dims=200)
+  tsne_3_target <- Rtsne::Rtsne(t(current_cell_cluster[!is_regulator, ]), dims=3, num_threads = 30, verbose=TRUE, partial_pca=TRUE, max_iter=2000, initial_dims=200)
+  print("Running target")
+  sink()
+  full_3t_3r <- t(cbind(tsne_3_reg$Y, tsne_3_target$Y))
+    ind_targetgenes <- 1:3
+  ind_reggenes <- 4:6
+  n_target_genes <- 3
+  n_regulator_genes <- 3
+  rownames(full_3t_3r) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n_regulator_genes))
+
+   if(i_cell_cluster==1){
+    cell_cluster_AC <- full_3t_3r
+  }else if(i_cell_cluster==2){
+    cell_cluster_MES <- full_3t_3r
+  }else if(i_cell_cluster==3){
+    cell_cluster_NPC <- full_3t_3r
+  }else if(i_cell_cluster==4){
+    cell_cluster_OPC <- full_3t_3r
+  }
+  rm(full_3t_3r, tsne_3_reg, tsne_3_target)
+}
+
+  save(cell_cluster_AC,
+       cell_cluster_MES,
+       cell_cluster_NPC,
+       cell_cluster_OPC,
+       org_gene_names,
+       org_cell_names,
+       n_cell_clusters,
+       n_regulator_genes,
+       n_target_genes,
+       ind_reggenes,
+       ind_targetgenes,
+       true_cluster_allocation,
+       file = path_env_data_tsne3)
+
+rm(max_number_of_clusters, min_number_of_clusters, normal_gene_names, org_gene_names, penalization_lambda, target_gene_cluster_vector)
 
 for (i_cell_cluster in seq(n_cell_clusters)) {
   if(i_cell_cluster==1){
@@ -384,6 +470,9 @@ for (i_cell_cluster in seq(n_cell_clusters)) {
 
   saveRDS(results, file.path(path_data, paste0("screg_results_lambda_", penalization_lambda,
                                                "_cell_cluster_", i_cell_cluster,
+                                               "_reg_", n_regulator_genes,
+                                               "_target_", n_target_genes,
+                                               "_cells_", ncol(current_cell_cluster),
                                                "_mincluster_", min_number_of_clusters,
                                                 "_maxcluster", max_number_of_clusters,".rds")))
   rm(results, current_cell_cluster)
@@ -396,11 +485,12 @@ scregclust::plot_silhouettes(list_of_fits = results,
                              penalization = penalization_lambda)
 
 scregclust::plot_cluster_count_helper(list_of_fits = results, penalization = penalization_lambda)
-
-results1 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_4_mincluster_2_maxcluster8.rds"))
-results2 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_3_mincluster_2_maxcluster8.rds"))
-results3 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_2_mincluster_2_maxcluster8.rds"))
-results4 <- readRDS(file.path(path_data,"screg_results_lambda_1e-06_cell_cluster_1_mincluster_2_maxcluster8.rds"))
+penalization_lambda <- c(0.1, 0.2, 0.3, 0.5)
+path_data <- "C:\\Users\\Sebastian\\repos\\biclust\\demo"
+results1 <- readRDS(file.path(path_data,"scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_1_nRegulatorGenes_208_nTargetGenes_1640_nCells_4872_minNCluster_2_maxNCluster15.rds"))
+results2 <- readRDS(file.path(path_data,"scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_2_nRegulatorGenes_208_nTargetGenes_1640_nCells_2923_minNCluster_2_maxNCluster15.rds"))
+results3 <- readRDS(file.path(path_data,"scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_3_nRegulatorGenes_208_nTargetGenes_1640_nCells_2810_minNCluster_2_maxNCluster15.rds"))
+results4 <- readRDS(file.path(path_data,"scregResultsNeftel2019_lambda_0.1-0.2-0.3-0.5_cellCluster_4_nRegulatorGenes_208_nTargetGenes_1640_nCells_2093_minNCluster_2_maxNCluster15.rds"))
 names <- list("AC", "MES", "NPS", "OPC")
 all_results <- list(results1, results2, results3, results4)
 for(i in seq(4)){

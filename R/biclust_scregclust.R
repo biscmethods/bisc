@@ -133,19 +133,21 @@ biclust <- function(dat = dat,
                     max_iter = 50,
                     n_target_gene_clusters,
                     initial_clustering,
-                    n_target_genes,
-                    n_regulator_genes,
-                    n_total_cells,
                     n_cell_clusters,
                     ind_targetgenes,
                     ind_reggenes,
                     output_path,
                     penalization_lambda = 0.05,
-                    use_complex_cluster_allocation = FALSE) {
+                    use_complex_cluster_allocation = FALSE,
+                    calculate_BIC = FALSE,
+                    calculate_silhoutte = FALSE,
+                    calculate_davies_bouldin_index = FALSE) {
 
   if (!is.factor(initial_clustering)) {
     stop("The variable initial_clustering needs to be a factor vector.")
   }
+  n_target_genes <- length(ind_targetgenes)
+  n_regulator_genes <- length(ind_reggenes)
 
   # Preallocate cluster history
 
@@ -208,19 +210,19 @@ biclust <- function(dat = dat,
         n_training_data <- sum(data_split_for_scregclust[[i_cell_cluster]] == 1)
         n_test_data <- sum(data_split_for_scregclust[[i_cell_cluster]] == 2)
 
-        if ((length(ind_reggenes) > n_test_data) || (length(ind_reggenes) > n_training_data)) {
-          print(paste("   The split into training/test data for scregclust resulted in less cells than there are regulators."), quote = FALSE)
-          print(paste("    There are", length(ind_reggenes), "regulator genes."), quote = FALSE)
-          print(paste0("    There are ", ncol(indata_for_scregclust), " cells in cell cluster ", i_cell_cluster, "."), quote = FALSE)
-          print(paste("    There are", n_test_data, "cells in the test data."), quote = FALSE)
-          print(paste("    There are", n_training_data, "cells in the training data."), quote = FALSE)
-          return(NA)
-        }
+        # if ((length(ind_reggenes) > n_test_data) || (length(ind_reggenes) > n_training_data)) {
+        #   print(paste("   The split into training/test data for scregclust resulted in less cells than there are regulators."), quote = FALSE)
+        #   print(paste("    There are", length(ind_reggenes), "regulator genes."), quote = FALSE)
+        #   print(paste0("    There are ", ncol(indata_for_scregclust), " cells in cell cluster ", i_cell_cluster, "."), quote = FALSE)
+        #   print(paste("    There are", n_test_data, "cells in the test data."), quote = FALSE)
+        #   print(paste("    There are", n_training_data, "cells in the training data."), quote = FALSE)
+        #   return(NA)
+        # }
 
         # Fix constant genes
         ind_cells_train <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
         ind_cells_test <- which(data_split_for_scregclust[[i_cell_cluster]] == 2)
-        print(str(indata_for_scregclust))
+        # print(str(indata_for_scregclust))
 
         constant_ind_test <- which(apply(indata_for_scregclust[, ind_cells_test, drop = FALSE], 1, sd) == 0)
 
@@ -238,11 +240,54 @@ biclust <- function(dat = dat,
           is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
           n_cl = n_target_gene_clusters[[i_cell_cluster]],
           penalization = penalization_lambda,
-          noise_threshold = 0.00001,
-          verbose = TRUE,
-          n_cycles = 20,
+          verbose = FALSE,
+          n_cycles = 200,
         )
         sink()
+
+
+
+        # v Step 1: Regulators selected (in 8ms)
+        # # Final counts
+        #      Cluster  Noise |     1 |     2
+        #      Targets   1627 |     0 |     0
+        #   Regulators      - |     0 |     0
+        #
+        # v Step 2a: Coefficients re-estimated (in 8ms)
+        # v Post-processing and packaging done (in 4ms)
+        #
+        # v Finished clustering with penalization = 0.5
+        #
+        # v Finished!
+        # Warning in rm(beta_logical, coeffs_new_style, temp_coeffs, current_beta_logical) :
+        #   object 'temp_coeffs' not found
+        # Warning in rm(beta_logical, coeffs_new_style, temp_coeffs, current_beta_logical) :
+        #   object 'current_beta_logical' not found
+        # [1] Cell cluster 1 betas is NULL for scregclust output.
+        # [1]
+        # [1]
+        # [1] penalization_lambda 0.5 is NA # TODO
+
+        # Since the output in scregclust changed with after commit e0516fcdd89a6a549d7906f6502f41586c3ed47f
+        # we need to convert the current output to the old output style
+        print(paste("  Converting scregclust output to old style."), quote = FALSE)
+        beta_logical <- screg_out$results[[1]]$output[[1]]$models
+        coeffs_old_style <- vector(mode = "list", length = ncol(beta_logical))
+        coeffs_new_style <- screg_out$results[[1]]$output[[1]]$coeffs
+        for (i_target_gene_cluster in seq(length(coeffs_old_style))) {
+          if (is.null(coeffs_new_style[[i_target_gene_cluster]])) {
+            coeffs_old_style[[i_target_gene_cluster]] <- NULL
+            temp_coeffs <- NULL
+            current_beta_logical <- NULL
+          }else {
+            temp_coeffs <- matrix(0, nrow = nrow(beta_logical), ncol = ncol(coeffs_new_style[[i_target_gene_cluster]]))
+            current_beta_logical <- beta_logical[, i_target_gene_cluster]  # Reduces to a vector in R
+            temp_coeffs[current_beta_logical,] <- coeffs_new_style[[i_target_gene_cluster]]
+            coeffs_old_style[[i_target_gene_cluster]] <- temp_coeffs
+          }
+        }
+        rm(beta_logical, coeffs_new_style, temp_coeffs, current_beta_logical)
+
 
         # This is OK, things work out anyway
         # if (!screg_out$results[[1]]$converged) {
@@ -250,7 +295,7 @@ biclust <- function(dat = dat,
         #   return(NA)
         # }
 
-        screg_out_betas_temp <- do.call(cbind, screg_out$results[[1]]$output[[1]]$coeffs)  # Merge betas into one matrix
+        screg_out_betas_temp <- do.call(cbind, coeffs_old_style)  # Merge betas into one matrix
         if (is.null(screg_out_betas_temp)) {
           print(paste("Cell cluster", i_cell_cluster, "betas is NULL for scregclust output."), quote = FALSE)
           return(NA)
@@ -379,7 +424,7 @@ biclust <- function(dat = dat,
 
     # If everything goes well this should work the same for screg as with our
     # lm examples
-    sink()
+
 
     print(paste("  Doing final weights calculations"), quote = FALSE)
     loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
@@ -387,16 +432,17 @@ biclust <- function(dat = dat,
     weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
 
-    # TODO: Skip BIC calc until things work. It takes minutes to do.
-    # big_logLhat_in_BIC <- sum(log(rowSums(weights)))
-    # k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
-    # n_in_BIC <- n_total_cells
-    # BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
-    BIC <- 0
+    if (calculate_BIC) {
+      big_logLhat_in_BIC <- sum(log(rowSums(weights)))
+      k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
+      n_in_BIC <- n_total_cells
+      BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+    }else {
+      BIC <- 0
+    }
 
-    # Parallize the below calculation (e.g speeds up from 1:32 min to 12 sec)
+    # Below parallizes the this calculation (e.g speeds up from 1:32 min to 12 sec)
     # weights <- sweep(weights, 1, rowSums(weights), "/")
-    #------------------------
 
     # Define the number of cores to use
     num_cores <- max(detectCores() - 2, 1)
@@ -423,7 +469,7 @@ biclust <- function(dat = dat,
     # Stop the parallel backend
     stopImplicitCluster()
     stopCluster(cl)
-    sink()
+
 
     # --------------------
 
@@ -437,15 +483,26 @@ biclust <- function(dat = dat,
     BIC_all[[i_main]] <- BIC
     likelihood_all[[i_main]] <- loglikelihood
 
-
     if (i_main == 1) {
-      db <- 0
-      # print(paste("  Calculating complexity of likelihood-clusters for iteration 1"), quote = FALSE)
-      # no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]  # This weird line converts a vector with factors to a normal numeric vector.
-      # # print(str(no_factor_cluster), quote = FALSE)
-      # # db <- index.DB(loglikelihood, no_factor_cluster)$DB
-      # db <- mean(silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
+      if (calculate_silhoutte | calculate_davies_bouldin_index) {
+        no_factor_cluster <- as.numeric(levels(initial_clustering))[initial_clustering]  # This weird line converts a vector with factors to a normal numeric vector.
+      }
+      if (calculate_silhoutte) {
+        print(paste("  Calculating silhoutte of likelihood-clusters for iteration 1"), quote = FALSE)
+        silhouette_measure <- mean(cluster::silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
+      }else {
+        silhouette_measure <- 0
+      }
+      if (calculate_davies_bouldin_index) {
+        print(paste("  Calculating Davies Bouldin's index of likelihood-clusters for iteration 1"), quote = FALSE)
+        db <- clusterSim::index.DB(loglikelihood, no_factor_cluster)$DB
+      }else {
+        db <- 0
+      }
     }
+
+
+
 
 
     ####################################################################
@@ -498,21 +555,21 @@ biclust <- function(dat = dat,
 
     print(paste("  Plotting for iteration."), quote = FALSE)
 
-    scatter_plot_loglikelihood(dat = dat,
-                               likelihood = loglikelihood,
-                               n_cell_clusters = n_cell_clusters,
-                               penalization_lambda = penalization_lambda,
-                               output_path = output_path,
-                               i_main = i_main,
-                               true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
-
-    hist_plot_loglikelihood(dat = dat,
-                            likelihood = loglikelihood,
-                            n_cell_clusters = n_cell_clusters,
-                            penalization_lambda = penalization_lambda,
-                            output_path = output_path,
-                            i_main = i_main,
-                            true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
+    # scatter_plot_loglikelihood(dat = dat,
+    #                            likelihood = loglikelihood,
+    #                            n_cell_clusters = n_cell_clusters,
+    #                            penalization_lambda = penalization_lambda,
+    #                            output_path = output_path,
+    #                            i_main = i_main,
+    #                            true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
+    #
+    # hist_plot_loglikelihood(dat = dat,
+    #                         likelihood = loglikelihood,
+    #                         n_cell_clusters = n_cell_clusters,
+    #                         penalization_lambda = penalization_lambda,
+    #                         output_path = output_path,
+    #                         i_main = i_main,
+    #                         true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
   }
 
   start_time_alluvial_plot <- Sys.time()
@@ -529,7 +586,8 @@ biclust <- function(dat = dat,
 
   return(list("rand_index" = rand_index_true_cluster,
               "n_iterations" = i_main,
-              "db" = db,
+              "silhouette_measure" = silhouette_measure,
+              "davies_bouldin_index" = db,
               "BIC" = BIC_all[1:i_main],
               "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main]))
 }
