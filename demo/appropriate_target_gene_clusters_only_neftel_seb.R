@@ -386,7 +386,8 @@ get_info <- function(res) {
   mean_regulators_in_non_empty_clusters <- vector(length = n_combos)
   n_noise_cluster <- vector(length = n_combos)
 
-
+  regulator_index <- c()
+  non_empty_target_gene_clusters <- 0
   i <- 0
   for (i_cluster in seq(n_cluster_parameters)) {
     n_lambdas <- length(res[[i_cluster]]$results)
@@ -401,7 +402,12 @@ get_info <- function(res) {
       # Regulators in target gene cluster 1
       n_reg_genes <- vector(length = n_cl[i])
       for (i_target_gene_cluster in seq(n_cl[i])) {
-        n_reg_genes[i_target_gene_cluster] <- sum(res[[i_cluster]]$results[[i_penalization]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0, na.rm = TRUE)
+        creg <- (res[[i_cluster]]$results[[i_penalization]]$output[[1]]$reg_table[[i_target_gene_cluster]])
+        n_reg_genes[i_target_gene_cluster] <- sum(creg != 0, na.rm = TRUE)
+        if (!all(is.na(creg))) {
+          non_empty_target_gene_clusters <- non_empty_target_gene_clusters + 1
+          regulator_index <- c(regulator_index, which(creg != 0))
+        }
       }
       n_reg_genes_string <- paste(n_reg_genes, collapse = '-')
       n_actual_clusters <- sum(n_reg_genes != 0)
@@ -446,12 +452,30 @@ get_info <- function(res) {
 
   df <- df[order(df$rank),]
   rownames(df) <- NULL
-  return(df)
+  return(list("df" = df,
+              "regulator_index" = regulator_index,
+              "non_empty_target_gene_clusters" = non_empty_target_gene_clusters))
 }
 
 names <- list("AC", "MES", "NPC", "OPC")
-df <- get_info(res = results4)
+
+
+current_results <- results3
+
+RES <- get_info(res = current_results)
+df <- RES['df']
+regulator_index <- RES['regulator_index']$regulator_index
+non_empty_target_gene_clusters <- RES$non_empty_target_gene_clusters
 write.table(df, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
+regnames <- current_results[[1]]$results[[1]]$genesymbols
+n_regulator_genes <- length(current_results[[1]]$results[[1]]$output[[1]]$reg_table[[1]])
+names_of_regulator_genes <- regnames[(length(regnames)-n_regulator_genes+1):length(regnames)]
+barplot(table(regulator_index)/non_empty_target_gene_clusters, ylim=c(0, 1))
+d <- table(regulator_index)/non_empty_target_gene_clusters
+d <- d[d>0.2]
+d <- as.data.frame(d)
+d['regulator_name'] <- names_of_regulator_genes[which(d>0.2)]
+
 
 #
 # for (i_cell_cluster in seq(n_cell_clusters)) {
