@@ -242,6 +242,7 @@ biclust <- function(dat = dat,
           penalization = penalization_lambda,
           verbose = FALSE,
           n_cycles = 200,
+          center=FALSE,
         )
         sink()
 
