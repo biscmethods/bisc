@@ -16,11 +16,11 @@ library(Seurat)  # To work with Neftel data
 # This then process the datasets into rds and/or loads the datasets.
 
 # Which dataset to load
-group_1_flag <- TRUE
+group_1_flag <- FALSE
 group_2_flag <- TRUE
 
 # Folders and filenames
-path_temp <- here::here('temp')
+path_temp <- here::here('data')
 path_data <- here::here('data')
 path_save_zip <- file.path(path_temp, "neftel2019.zip")
 path_Neftel2019 <- file.path(path_temp, "Neftel2019")
@@ -118,8 +118,8 @@ if (group_2_flag) {
     mn_g2 <- Matrix::readMM(file = file.path(path_Group2, 'exp_data_TPM.mtx'))
     mn_g2 <- as.matrix(mn_g2)
 
-    cells <- read.table(file = file.path(path_Group2, 'Cells.txt'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
-    genes <- read.table(file = file.path(path_Group2, 'Genes.txt'), sep = '\t', header = FALSE, stringsAsFactors = FALSE)
+    cells <- read.table(file = file.path(path_Group2, 'cells.csv'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+    genes <- read.table(file = file.path(path_Group2, 'genes.txt'), sep = '\t', header = FALSE, stringsAsFactors = FALSE)
     genes <- genes[, 1]
 
     rownames(cells) <- cells[, 1]
@@ -135,7 +135,13 @@ if (group_2_flag) {
   }
 
   if (!file.exists(path_neftel_seurat_group2)) {
-    cells <- read.table(file = file.path(path_Group2, 'Cells.txt'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+    cells <- read.table(file = file.path(path_Group2, 'cells.csv'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+    # sum(matrixStats::rowAlls(!is.na(cells[,8:17])))/nrow(cells)
+    # inds <- matrixStats::rowAlls(!is.na(cells[,8:17]))
+    # any(cells[inds,'malignant']=="no")
+    # d <- as.data.frame(as.matrix(cells[inds,8:17]))
+    # Hmisc::hist.data.frame(d)
+
     rownames(cells) <- cells[, 1]
 
     Neftel_g2 <- Seurat::CreateSeuratObject(mn_g2, min.cells = 3, min.features = 500, meta.data = cells)
