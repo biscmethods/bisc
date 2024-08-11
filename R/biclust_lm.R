@@ -187,7 +187,7 @@ loglikelihood_calc_matrix <- function(dat,
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
-biclust <- function(dat = dat,
+biclust_lm <- function(dat = dat,
                     dat_test = NULL,
                     max_iter = 50,
                     initial_clustering,

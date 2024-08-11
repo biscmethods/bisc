@@ -127,7 +127,7 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
-biclust <- function(dat = dat,
+biclust_scregclust <- function(dat = dat,
                     cell_id,
                     true_cell_cluster_allocation,
                     max_iter = 50,
