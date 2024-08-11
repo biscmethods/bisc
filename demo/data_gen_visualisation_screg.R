@@ -22,28 +22,31 @@ source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
   set.seed(231)
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  n_cell_clusters <- 2
-  n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
-  n_target_genes <- 50
-  n_regulator_genes <- 30
-  n_cells <- c(10000, 5000)
-  regulator_means <- c(5, 1)  # For generating dummy data, regulator mean in each cell cluster
-  coefficient_means <- list(c(1, 20), c(5, 20, 100))  # For generating dummy data, coefficient means in each cell cluster
-  coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
-  true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
-  n_total_cells <- sum(n_cells)
+  # n_cell_clusters <- 2
+  # n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
+  # n_target_genes <- 50
+  # n_regulator_genes <- 30
+  # n_cells <- c(10000, 5000)
+  # regulator_means <- c(5, 1)  # For generating dummy data, regulator mean in each cell cluster
+  # coefficient_means <- list(c(1, 20), c(5, 20, 100))  # For generating dummy data, coefficient means in each cell cluster
+  # coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
+  # true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
+  # n_total_cells <- sum(n_cells)
 
   # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  # generated_data <- generate_dummy_data_for_cell_clustering(
+    # n_cell_clusters = n_cell_clusters,
+    # n_target_gene_clusters = n_target_gene_clusters,  # Number of target gene clusters in each cell cluster
+    # n_target_genes = n_target_genes,
+    # n_regulator_genes = n_regulator_genes,
+    # n_cells = n_cells,
+    # regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
+    # coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
+    # coefficient_sds = coefficient_sds,
+    # disturbed_fraction = 0.22
+  # )
+
   generated_data <- generate_dummy_data_for_cell_clustering(
-    n_cell_clusters = n_cell_clusters,
-    n_target_gene_clusters = n_target_gene_clusters,  # Number of target gene clusters in each cell cluster
-    n_target_genes = n_target_genes,
-    n_regulator_genes = n_regulator_genes,
-    n_cells = n_cells,
-    regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
-    coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
-    coefficient_sds = coefficient_sds,
-    disturbed_fraction = 0.22
   )
 
   str(generated_data)

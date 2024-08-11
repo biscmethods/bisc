@@ -11,6 +11,7 @@ sink()
 demo_path <- here::here("demo")
 R_path <- here::here("R")
 output_path <- demo_path
+path_data <- here::here('data')
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -21,34 +22,52 @@ source(file.path(R_path, "biclust_scregclust.R"))
 #############################################
 
 # Set seed for example
-set.seed(214)
+set.seed(1234)
 
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#
-n_cell_clusters <- 2
-n_target_gene_clusters <- c(2, 3)  # Number of target gene clusters in each cell cluster
-n_target_genes <- 30
-n_regulator_genes <- 100
-n_cells <- c(10000, 10000)
-regulator_means <- c(5, 1)  # For generating dummy data, regulator mean in each cell cluster
-coefficient_means <- list(c(1, 1.2), c(5, 5.5, 6))  # For generating dummy data, coefficient means in each cell cluster
-coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
-true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
-n_total_cells <- sum(n_cells)
+
+n_cell_clusters = 2
+n_target_gene_clusters = c(10, 7)  # Number of target gene clusters in each cell cluster
+n_target_genes = 2193          #from vignette
+n_regulator_genes = 493        # from vignette
+n_cells = c(6000, 6000)
+regulator_means = c(0, 0)# For generating dummy data, regulator mean in each cell cluster
+# coefficient_means <- list(c(1, 1.2), c(5, 5.5, 6))  # For generating dummy data, coefficient means in each cell cluster
+# coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
+# true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
+# n_total_cells <- sum(n_cells)
 
 # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-generated_data <- generate_dummy_data_for_cell_clustering(
-  n_cell_clusters = n_cell_clusters,
-  n_target_gene_clusters = n_target_gene_clusters,  # Number of target gene clusters in each cell cluster
-  n_target_genes = n_target_genes,
-  n_regulator_genes = n_regulator_genes,
-  n_cells = n_cells,
-  regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
-  coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
-  coefficient_sds = coefficient_sds,
-  disturbed_fraction = 0.25,  # TODO: Add size disturbance too
-  plot_stuff = TRUE
-)
+# generated_data <- generate_dummy_data_for_cell_clustering(
+#   n_cell_clusters = n_cell_clusters,
+#   n_target_gene_clusters = n_target_gene_clusters,  # Number of target gene clusters in each cell cluster
+#   n_target_genes = n_target_genes,
+#   n_regulator_genes = n_regulator_genes,
+#   n_cells = n_cells,
+#   regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
+#   coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
+#   coefficient_sds = coefficient_sds,
+#   disturbed_fraction = 0.25,  # TODO: Add size disturbance too
+#   plot_stuff = TRUE
+# )
+
+
+
+
+
+if (!file.exists(file.path(path_data, "env_sim_data_biclust_sc.rds"))) {
+
+  generated_data <- generate_dummy_data_for_cell_clustering(
+  )
+
+  saveRDS(generated_data, file.path(path_data, "env_sim_data_biclust_sc.rds"))
+
+} else{
+
+  generated_data <- readRDS(file.path(path_data, "env_sim_data_biclust_sc.rds"))
+
+}
+
 
 
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
@@ -65,7 +84,7 @@ biclust_input_data <- tibble::as_tibble(biclust_input_data)
 # # These needs to be strings for discrete labels in pca plot
 # data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
 #                                        biclust_input_data)
-# pca_res <- prcomp(biclust_input_data, scale. = TRUE)
+# pca_res <- prcomp(biclust_input_data, scale. = TRUE)}
 # p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
 
 # Set up some variables
@@ -84,12 +103,6 @@ n_regulator_genes <- length(ind_reggenes)
 
 max_iter <- 100
 initial_clustering <- disturbed_initial_cell_clust
-n_target_genes <- n_target_genes
-n_regulator_genes <- n_regulator_genes
-n_total_cells <- n_total_cells
-n_cell_clusters <- n_cell_clusters
-ind_targetgenes <- ind_targetgenes
-ind_reggenes <- ind_reggenes
 # output_path <- modded_output_path
 
 i_cell_cluster <- 1
@@ -116,10 +129,10 @@ test_indices <- which(cell_data_split == 2)
 biclust_input_data_train <- biclust_input_data[train_indices,]
 biclust_input_data_test <- biclust_input_data[test_indices,]
 
-# TODO: Put this inside generate_data_lm or something
 # Setup variables that will be used throughout the script
 # We assume target genes start with t then a number. And likewise for regulator genes.
 n_total_cells_train <- length(train_indices)
+n_total_cells <- nrow(biclust_input_data)
 cell_id <- 1:n_total_cells
 cell_id_train <- cell_id[train_indices]
 
@@ -135,28 +148,31 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
-penalization_lambdas <- c( 0.00001, 0.001, 0.1, 0.3, 0.5, 0.7)
+penalization_lambdas <- c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
+max_iter <- 10
 
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   print("", quote = FALSE)
   print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-  BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(dat = biclust_input_data,
-                                                      cell_id = cell_id,
-                                                      true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
-                                                      max_iter = max_iter,
-                                                      n_target_gene_clusters,
-                                                      initial_clustering,
-                                                      n_target_genes,
-                                                      n_regulator_genes,
-                                                      n_total_cells,
-                                                      n_cell_clusters,
-                                                      ind_targetgenes,
-                                                      ind_reggenes,
-                                                      output_path,
-                                                      penalization_lambda = penalization_lambdas[i_penalization_lambda])
-
+  BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(
+    dat = biclust_input_data,
+    cell_id = cell_id,
+    true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
+    max_iter = max_iter,
+    n_target_gene_clusters,
+    initial_clustering,
+    n_cell_clusters,
+    ind_targetgenes,
+    ind_reggenes,
+    output_path,
+    penalization_lambda = penalization_lambdas[i_penalization_lambda],
+    use_complex_cluster_allocation = FALSE,
+    calculate_BIC = FALSE,
+    calculate_silhoutte = FALSE,
+    calculate_davies_bouldin_index = FALSE
+    )
 }
 
 print("", quote = FALSE)

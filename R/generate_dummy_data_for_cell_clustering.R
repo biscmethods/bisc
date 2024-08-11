@@ -16,16 +16,53 @@ library(plyr)
 
 
 generate_dummy_data_for_cell_clustering <- function(
-  n_cell_clusters = 3,
-  n_target_gene_clusters = c(3, 4, 5),  # Number of target gene clusters in each cell cluster
-  n_target_genes = 40,
-  n_regulator_genes = 20,
-  n_cells = c(1000, 5000, 10000),
-  regulator_means = c(1, 2, 3),  # For generating dummy data, regulator mean in each cell cluster
-  coefficient_means = list(c(1, 20, 30), c(1, 2, 3, 4), c(1, 2, 3, 4, 5)),  # For generating dummy data, coefficient means in each cell cluster
-  coefficient_sds = list(c(0.1, 0.1, 0.1), c(0.1, 0.1, 0.1, 0.1), c(0.1, 0.1, 0.1, 0.1, 0.1)),
+  n_cell_clusters = 2,
+  n_target_gene_clusters = c(10, 7),  # Number of target gene clusters in each cell cluster
+  n_target_genes = 2193,          #from vignette
+  n_regulator_genes = 493,        # from vignette
+  n_cells = c(6000, 6000),
+  regulator_means = c(0, 0),  # For generating dummy data, regulator mean in each cell cluster
+  coefficient_means = list(c(0.0417,
+                             0.0343,
+                             0.0576,
+                             0.043 ,
+                             0.0576,
+                             0.0413,
+                             0.0473,
+                             0.0444,
+                             0.0481,
+                            -0.0139),
+                           c(0.0404,
+                             0.0519,
+                             0.0545,
+                             0.0915,
+                             0.0663,
+                             0.0512,
+                            -0.0064
+                            )
+                           ),  # For generating dummy data, coefficient means in each cell cluster
+  coefficient_sds = list(c(0.0556,
+                           0.037,
+                           0.0638,
+                           0.0466,
+                           0.0761,
+                           0.0471,
+                           0.0468,
+                           0.0611,
+                           0.0623,
+                           0.0394
+                           ),
+                         c(0.0462,
+                           0.0496,
+                           0.0807,
+                           0.1086,
+                           0.071,
+                           0.0716,
+                           0.057
+                           )
+                         ),
   disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-  plot_stuff = FALSE
+  plot_stuff = TRUE
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -35,7 +72,7 @@ generate_dummy_data_for_cell_clustering <- function(
   # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   dummy_data <- vector(mode = "list", length = n_cell_clusters)
-  betas <- dummy_data
+  betas      <- dummy_data
   for (i_cluster in 1:n_cell_clusters) {
     print(paste(" Generating data for cell cluster", i_cluster), quote = FALSE)
     dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
@@ -44,7 +81,10 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                   n_target_gene_clusters = n_target_gene_clusters[i_cluster],
                                                                   regulator_mean = regulator_means[i_cluster],
                                                                   coefficient_mean = coefficient_means[[i_cluster]],
-                                                                  coefficient_sd = coefficient_sds[[i_cluster]])
+                                                                  coefficient_sd = coefficient_sds[[i_cluster]],
+                                                                  make_regulator_network_plot = TRUE,
+                                                                  plot_suffix = i_cluster
+                                                                  )
     # list of list of models. with dimension regulators x targets
     # Top level list is each cell cluster
     # in each of those elements is the model generating each target gene cluster in that cell cluster
@@ -274,3 +314,25 @@ generate_dummy_data_for_cell_clustering <- function(
               true_betas = betas,
               dat = dat))
 }
+
+
+
+
+# runs only when script is run by itself
+# || interactive()
+if (sys.nframe() == 0) {
+  # ... do main stuff
+
+  # n_target_genes = 50  # Number of target genes
+  # n_regulator_genes = 30  # Number of regulator genes
+  # n_cells = 10000 # Number of cells
+  # n_target_gene_clusters = 3  # Number of target gene clusters
+  # regulator_mean = 1  # Mean expression of regulator genes
+  # coefficient_mean = c(5, 20, 100)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
+  # coefficient_sd = c(0.1, 0.1, 0.1)
+  #
+  set.seed(1234) #gives R index close to 1
+  res <- generate_dummy_data_for_cell_clustering ()
+  print(str(res))
+}
+
