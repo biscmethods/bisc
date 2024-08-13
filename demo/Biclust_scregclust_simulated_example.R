@@ -57,8 +57,7 @@ regulator_means = c(0, 0)# For generating dummy data, regulator mean in each cel
 
 if (!file.exists(file.path(path_data, "env_sim_data_biclust_sc.rds"))) {
 
-  generated_data <- generate_dummy_data_for_cell_clustering(
-  )
+  generated_data <- generate_dummy_data_for_cell_clustering()
 
   saveRDS(generated_data, file.path(path_data, "env_sim_data_biclust_sc.rds"))
 
@@ -148,31 +147,42 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
+
 penalization_lambdas <- c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 max_iter <- 10
 
-for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-  print("", quote = FALSE)
-  print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-  BICLUST_RESULTS[[i_penalization_lambda]] <- biclust(
-    dat = biclust_input_data,
-    cell_id = cell_id,
-    true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
-    max_iter = max_iter,
-    n_target_gene_clusters,
-    initial_clustering,
-    n_cell_clusters,
-    ind_targetgenes,
-    ind_reggenes,
-    output_path,
-    penalization_lambda = penalization_lambdas[i_penalization_lambda],
-    use_complex_cluster_allocation = FALSE,
-    calculate_BIC = FALSE,
-    calculate_silhoutte = FALSE,
-    calculate_davies_bouldin_index = FALSE
+if (!file.exists(file.path(path_data, "env_sim_res_biclust_sc.rds"))) {
+
+  for (i_penalization_lambda in seq_along(penalization_lambdas)) {
+    print("", quote = FALSE)
+    print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
+    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
+      dat = biclust_input_data,
+      cell_id = cell_id,
+      true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
+      max_iter = max_iter,
+      n_target_gene_clusters,
+      initial_clustering,
+      n_cell_clusters,
+      ind_targetgenes,
+      ind_reggenes,
+      output_path,
+      penalization_lambda = penalization_lambdas[i_penalization_lambda],
+      use_complex_cluster_allocation = FALSE,
+      calculate_BIC = FALSE,
+      calculate_silhoutte = FALSE,
+      calculate_davies_bouldin_index = FALSE
     )
+  }
+
+  saveRDS(BICLUST_RESULTS, file.path(path_data, "env_sim_res_biclust_sc.rds"))
+
+} else{
+
+  BICLUST_RESULTS <- readRDS(file.path(path_data, "env_sim_res_biclust_sc.rds"))
+
 }
 
 print("", quote = FALSE)

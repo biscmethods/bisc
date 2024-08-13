@@ -48,7 +48,8 @@ generate_dummy_data_for_scregclust <- function(
                      0.0394
   ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
   make_regulator_network_plot = TRUE,
-  plot_suffix = 1
+  plot_suffix = 1,
+  testing_penalization = 0.1 # optional, for the screg run in the end
 )
 {
   # Check arguments
@@ -370,6 +371,7 @@ generate_dummy_data_for_scregclust <- function(
     is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # vector indicating which genes are regulators
     n_cl = n_target_gene_clusters,
     penalization = 0.1, #generated data is supposed to resemble results from this
+    n_cycles     = 10,
     verbose = TRUE,
     noise_threshold = 0.05,
     center = FALSE
