@@ -70,7 +70,7 @@ for (i in seq_along(penalization_lambdas)) {
   modded_output_path <- file.path(output_path, paste("penalization_lambda_", penalization_lambda_str))
   dir.create(modded_output_path, showWarnings = FALSE)
 
-  res <- biclust(dat = dat_train,
+  res <- biclust_lm(dat = dat_train,
                  dat_test = dat_test,
                  max_iter = max_iter,
                  initial_clustering = disturbed_initial_cell_clust_train,
@@ -117,7 +117,7 @@ df <- data.frame("cluster_complexity" = as.numeric(as.character(cluster_complexi
 
 df <- df[order(df$cluster_complexity, decreasing = TRUE),]
 
-png(file.path(output_path, paste0("final_plot.png")),
+png(file.path(output_path, paste0("final_plot_lm_example.png")),
     width = 1024, height = 480, units = "px")
 
 p1 <- ggplot(data = df, aes(x = penalization_lambdas, y = cluster_complexity, group = 1)) +
