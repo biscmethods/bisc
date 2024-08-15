@@ -62,7 +62,9 @@ generate_dummy_data_for_cell_clustering <- function(
                            )
                          ),
   disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-  plot_stuff = TRUE
+  plot_stuff = TRUE,
+  plot_suffix = "vignette",
+  testing_penalization = 0.1 #vector of length n_cell_clusters
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -83,7 +85,8 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                   coefficient_mean = coefficient_means[[i_cluster]],
                                                                   coefficient_sd = coefficient_sds[[i_cluster]],
                                                                   make_regulator_network_plot = TRUE,
-                                                                  plot_suffix = i_cluster
+                                                                  plot_suffix = i_cluster,
+                                                                  testing_penalization = testing_penalization[i_cluster]
                                                                   )
     # list of list of models. with dimension regulators x targets
     # Top level list is each cell cluster
@@ -195,7 +198,7 @@ generate_dummy_data_for_cell_clustering <- function(
       # dev.off()
     }
 
-    png(file.path(output_path, paste0("biclust_data_gen_regulators.png")),
+    png(file.path(output_path, paste0("biclust_data_gen_regulators_",plot_suffix,".png")),
         width = 1024, height = 480, units = "px")
     plot_pca(indata     = Z_r,
              cluster_allocations = true_cluster_allocation,
@@ -203,7 +206,7 @@ generate_dummy_data_for_cell_clustering <- function(
     print(p)
     dev.off()
 
-    png(file.path(output_path, paste0("biclust_data_gen_targets.png")),
+    png(file.path(output_path, paste0("biclust_data_gen_targets_",plot_suffix,".png")),
         width = 1024, height = 480, units = "px")
     plot_pca(indata     = Z_t,
              cluster_allocations = true_cluster_allocation,
@@ -240,7 +243,7 @@ generate_dummy_data_for_cell_clustering <- function(
       ggtitle("Heatmap of S matrices") -> p
 
 
-    png(file.path(output_path, paste0("biclust_data_gen_S.png")),
+    png(file.path(output_path, paste0("biclust_data_gen_S_",plot_suffix,".png")),
         width = 1024, height = 480, units = "px")
     print(p)
     dev.off()
@@ -273,7 +276,7 @@ generate_dummy_data_for_cell_clustering <- function(
       ylab("Target gene cluster")  +
       ggtitle("Heatmap of Pi matrices") -> p
 
-    png(file.path(output_path, paste0("biclust_data_gen_Pp.png")),
+    png(file.path(output_path, paste0("biclust_data_gen_Pi_",plot_suffix,".png")),
           width = 1024, height = 480, units = "px")
     print(p)
     dev.off()
@@ -301,7 +304,7 @@ generate_dummy_data_for_cell_clustering <- function(
       theme(axis.text.x = element_text(angle = 90, hjust = 1),
             plot.title = element_text(hjust = 0.5)) -> p
 
-    png(file.path(output_path, paste0("biclust_data_gen_B.png")),
+    png(file.path(output_path, paste0("biclust_data_gen_B_",plot_suffix,".png")),
         width = 1024, height = 480, units = "px")
     print(p)
     dev.off()

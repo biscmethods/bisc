@@ -127,7 +127,8 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
-biclust_scregclust <- function(dat = dat,
+biclust_scregclust <- function(
+                    dat = dat,
                     cell_id,
                     true_cell_cluster_allocation,
                     max_iter = 50,
@@ -141,7 +142,9 @@ biclust_scregclust <- function(dat = dat,
                     use_complex_cluster_allocation = FALSE,
                     calculate_BIC = FALSE,
                     calculate_silhoutte = FALSE,
-                    calculate_davies_bouldin_index = FALSE) {
+                    calculate_davies_bouldin_index = FALSE,
+                    plot_suffix = ""
+                    ) {
 
   if (!is.factor(initial_clustering)) {
     stop("The variable initial_clustering needs to be a factor vector.")
@@ -578,7 +581,7 @@ biclust_scregclust <- function(dat = dat,
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
-  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 6), ".png")),
+  png(file.path(output_path, paste0("Alluvial_diagram_lambda_",plot_suffix, "_", round(penalization_lambda, 6), ".png")),
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()

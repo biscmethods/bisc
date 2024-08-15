@@ -49,7 +49,7 @@ generate_dummy_data_for_scregclust <- function(
   ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
   make_regulator_network_plot = TRUE,
   plot_suffix = 1,
-  testing_penalization = 0.1 # optional, for the screg run in the end
+  testing_penalization = c(0.1, 0.2) # optional, for the screg run in the end
 )
 {
   # Check arguments
@@ -364,17 +364,18 @@ generate_dummy_data_for_scregclust <- function(
   #   n_cycles = 50L, noise_threshold = 0.05, center = FALSE,
   #   sample_assignment = sample_assignment
   # )
-
+  cat("uuuh 0 \n")
   scregclust::scregclust(
     expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
     genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers
     is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # vector indicating which genes are regulators
     n_cl = n_target_gene_clusters,
-    penalization = 0.1, #generated data is supposed to resemble results from this
+    penalization = testing_penalization, #generated data is supposed to resemble results from this
     n_cycles     = 10,
     verbose = TRUE,
-    noise_threshold = 0.05,
-    center = FALSE
+    min_cluster_size = 1,
+    noise_threshold = 0,
+    center = T
   ) -> scRegOut
 
   if(make_regulator_network_plot){
@@ -425,7 +426,9 @@ generate_dummy_data_for_scregclust <- function(
   #TODO: somehow compare Beta_with_signs and scRegOut$results[[1]]$output[[1]]$coeffs
 
   true_clust_allocation <- apply(X = Pi, MARGIN = 2, FUN = function(x) which(x == 1))
-  predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$cluster[1:n_target_genes]
+  # cat(true_clust_allocation)
+  predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$cluster_all[1:n_target_genes]
+  # cat(predicted_cluster_allocation)
   rand_index <- aricode::RI(true_clust_allocation, predicted_cluster_allocation)
   rand_index <- rand_index - sum(predicted_cluster_allocation == -1) / length(predicted_cluster_allocation)
 

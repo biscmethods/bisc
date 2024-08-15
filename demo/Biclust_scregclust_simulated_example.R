@@ -48,22 +48,23 @@ regulator_means = c(0, 0)# For generating dummy data, regulator mean in each cel
 #   coefficient_means = coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
 #   coefficient_sds = coefficient_sds,
 #   disturbed_fraction = 0.25,  # TODO: Add size disturbance too
-#   plot_stuff = TRUE
+#   plot_stuff = TRUE,
+#  plot_suffix = "vignette"
 # )
 
 
 
 
 
-if (!file.exists(file.path(path_data, "env_sim_data_biclust_sc.rds"))) {
+if (!file.exists(file.path(path_data, "env_sim_vgn_data_biclust_sc.rds"))) {
 
   generated_data <- generate_dummy_data_for_cell_clustering()
 
-  saveRDS(generated_data, file.path(path_data, "env_sim_data_biclust_sc.rds"))
+  saveRDS(generated_data, file.path(path_data, "env_sim_vgn_data_biclust_sc.rds"))
 
 } else{
 
-  generated_data <- readRDS(file.path(path_data, "env_sim_data_biclust_sc.rds"))
+  generated_data <- readRDS(file.path(path_data, "env_sim_vgn_data_biclust_sc.rds"))
 
 }
 
@@ -148,12 +149,12 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
 
-penalization_lambdas <- c( 0.00001, 0.1, 0.2, 0.5)
+penalization_lambdas <- c( 0.1, 0.2) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 max_iter <- 10
 
-if (!file.exists(file.path(path_data, "env_sim_res_biclust_sc.rds"))) {
+if (!file.exists(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))) {
 
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
@@ -173,15 +174,16 @@ if (!file.exists(file.path(path_data, "env_sim_res_biclust_sc.rds"))) {
       use_complex_cluster_allocation = FALSE,
       calculate_BIC = FALSE,
       calculate_silhoutte = FALSE,
-      calculate_davies_bouldin_index = FALSE
+      calculate_davies_bouldin_index = FALSE,
+      plot_suffix = "vignette"
     )
   }
 
-  saveRDS(BICLUST_RESULTS, file.path(path_data, "env_sim_res_biclust_sc.rds"))
+  saveRDS(BICLUST_RESULTS, file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))
 
 } else{
 
-  BICLUST_RESULTS <- readRDS(file.path(path_data, "env_sim_res_biclust_sc.rds"))
+  BICLUST_RESULTS <- readRDS(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))
 
 }
 
