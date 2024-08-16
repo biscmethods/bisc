@@ -191,7 +191,7 @@ generate_dummy_data_for_cell_clustering <- function(
       # png(file.path(demo_path,plot_name))
       pc_df[sample(nrow(pc_df), 1000),] %>%
         ggplot( aes(x = PC1, y = PC2, colour = label)) +
-        geom_point(alpha = 0.1) +
+        geom_point(alpha = 0.4) +
         theme_minimal() +
         labs(title = plot_title) +
         scale_color_discrete(name = "Cell cluster")
@@ -229,15 +229,21 @@ generate_dummy_data_for_cell_clustering <- function(
     df_combined <- do.call(rbind, df_list)
 
     # Create a faceted plot
-    ggplot(df_combined, aes(x = regulator, y = as.factor(target_gene_cluster), fill = value)) +
+    ggplot(df_combined, aes(x = regulator,
+                            y = as.factor(target_gene_cluster),
+                            fill = as.factor(value))
+          )+
       geom_tile() +
       facet_wrap(~ plot, ncol = 2) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1),
             plot.title = element_text(hjust = 0.5)) +
-      scale_fill_gradient2(low = "#075AFF",
-                           mid = "#FFFFCC",
-                           high = "#FF0000") +
+      scale_fill_manual( values = c(
+                                    "-1" = "#075AFF",
+                                    "0" = "#FFFFCC",
+                                    "1" = "#FF0000"
+                                    )
+                         )+
       xlab("Regulator gene") +
       ylab("Target gene cluster")  +
       ggtitle("Heatmap of S matrices") -> p
@@ -261,17 +267,20 @@ generate_dummy_data_for_cell_clustering <- function(
     # Combine all data frames into one
     df_combined <- do.call(rbind, df_list)
 
-    ggplot(df_combined, aes(x = target_gene,
+    ggplot(df_combined, aes(
+                            x = target_gene,
                             y = as.factor(target_gene_cluster),
-                            fill = value)) +
-      geom_tile(color = "black") +
-      facet_wrap(~ plot, ncol = 2) +
+                            fill = as.factor(value)
+                            )
+          ) +
+      geom_tile() +
+      facet_wrap(~ plot, ncol = 1) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1),
             plot.title = element_text(hjust = 0.5)) +
-      scale_fill_gradient2(low = "#075AFF",
-                           mid = "#FFFFCC",
-                           high = "#FF0000") +
+      scale_fill_manual(
+        values = c("0" = "#075AFF", "1" = "#FF0000")
+                       ) +
       xlab("Target gene") +
       ylab("Target gene cluster")  +
       ggtitle("Heatmap of Pi matrices") -> p
@@ -281,6 +290,12 @@ generate_dummy_data_for_cell_clustering <- function(
     print(p)
     dev.off()
 
+    ## #use hclust to find good way to order things
+    # dd <- Reduce('+', X)
+    # hh <- hclust(as.dist(max(dd)-dd))
+    #
+    # #Retrieve what to plot
+    # listOfMatrices<-lapply(X,function(x) x[hh$order,hh$order])
 
     #plot betas (as heatmaps of matrix??? idk)
 
@@ -297,12 +312,16 @@ generate_dummy_data_for_cell_clustering <- function(
     df_combined <- do.call(rbind, df_list)
 
     ggplot(df_combined, aes(x = regulator_gene,
-                            y = target_gene, fill = value)) +
+                            y = target_gene,
+                            fill = value)) +
       geom_tile() +
       facet_wrap(~ plot, ncol = 2) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1),
-            plot.title = element_text(hjust = 0.5)) -> p
+            plot.title = element_text(hjust = 0.5)) +
+      scale_fill_gradient2(low = "#075AFF",
+                           mid = "#FFFFCC",
+                           high = "#FF0000")-> p
 
     png(file.path(output_path, paste0("biclust_data_gen_B_",plot_suffix,".png")),
         width = 1024, height = 480, units = "px")

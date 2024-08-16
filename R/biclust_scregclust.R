@@ -143,7 +143,8 @@ biclust_scregclust <- function(
                     calculate_BIC = FALSE,
                     calculate_silhoutte = FALSE,
                     calculate_davies_bouldin_index = FALSE,
-                    plot_suffix = ""
+                    plot_suffix = "",
+                    always_use_flat_prior = FALSE
                     ) {
 
   if (!is.factor(initial_clustering)) {
@@ -407,19 +408,24 @@ biclust_scregclust <- function(
                                                data_split_for_scregclust = data_split_for_scregclust,
                                                current_cell_cluster_allocation = current_cell_cluster_allocation)
 
-    cluster_proportions <- vector(length = n_cell_clusters)
-    for (i_cell_cluster in seq_len(n_cell_clusters)) {
-      print(paste("  Calculating cluster proportions for cell cluster", i_cell_cluster), quote = FALSE)
-      current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
+    if(!always_use_flat_prior){
+      cluster_proportions <- vector(length = n_cell_clusters)
+      for (i_cell_cluster in seq_len(n_cell_clusters)) {
+        print(paste("  Calculating cluster proportions for cell cluster", i_cell_cluster), quote = FALSE)
+        current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
 
-      # If some cluster has been completely omitted, give it a nonzero proportion anyway for next iteration
-      # Even without weights this is good to include for cluster allocation (though it is a bit arbitrary)
-      if (current_cluster_proportion == 0) {
-        cluster_proportions[i_cell_cluster] <- 0.0001
-        stop_iterating_flag <- T
-      }else
-        cluster_proportions[i_cell_cluster] <- current_cluster_proportion
+        # If some cluster has been completely omitted, give it a nonzero proportion anyway for next iteration
+        # Even without weights this is good to include for cluster allocation (though it is a bit arbitrary)
+        if (current_cluster_proportion == 0) {
+          cluster_proportions[i_cell_cluster] <- 0.0001
+          stop_iterating_flag <- T
+        }else
+          cluster_proportions[i_cell_cluster] <- current_cluster_proportion
+      }
+    } else {
+      cluster_proportions <- (vector(length = n_cell_clusters)+1)/n_cell_clusters
     }
+
 
     ####################################################################
     ##### E-step #######################################################

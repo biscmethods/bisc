@@ -187,8 +187,6 @@ if (!file.exists(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))) {
 
 }
 
-print("", quote = FALSE)
-print("", quote = FALSE)
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
