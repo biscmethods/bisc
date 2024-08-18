@@ -24,19 +24,60 @@ source(file.path(R_path, "biclust_scregclust.R"))
 # Set seed for example
 set.seed(1234)
 
+
+redo_flag = T
+
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 n_cell_clusters = 2
 n_target_gene_clusters = c(10, 7)  # Number of target gene clusters in each cell cluster
-n_target_genes = 2193          #from vignette
-n_regulator_genes = 493        # from vignette
-n_cells = c(6000, 6000)
-regulator_means = c(0, 0)# For generating dummy data, regulator mean in each cell cluster
-# coefficient_means <- list(c(1, 1.2), c(5, 5.5, 6))  # For generating dummy data, coefficient means in each cell cluster
-# coefficient_sds <- list(c(0.1, 0.1), c(0.1, 0.1, 0.1))
-# true_cluster_allocation <- rep(1:n_cell_clusters, times = n_cells)
-# n_total_cells <- sum(n_cells)
-
+n_target_genes = 593              # 2193 from vignette
+n_regulator_genes = 93            # 493 from vignette
+n_cells = c(2000, 2000)            # c(6000, 6000) from vignette
+regulator_means = c(0, 0)         # For generating dummy data, regulator mean in each cell cluster
+coefficient_means = list(c(0.0417,
+                           0.0343,
+                           0.0576,
+                           0.043 ,
+                           0.0576,
+                           0.0413,
+                           0.0473,
+                           0.0444,
+                           0.0481,
+                           -0.0139),
+                         c(0.0404,
+                           0.0519,
+                           0.0545,
+                           0.0915,
+                           0.0663,
+                           0.0512,
+                           -0.0064
+                         )
+)  # For generating dummy data, coefficient means in each cell cluster
+coefficient_sds = list(c(0.0556,
+                         0.037,
+                         0.0638,
+                         0.0466,
+                         0.0761,
+                         0.0471,
+                         0.0468,
+                         0.0611,
+                         0.0623,
+                         0.0394
+),
+c(0.0462,
+  0.0496,
+  0.0807,
+  0.1086,
+  0.071,
+  0.0716,
+  0.057
+)
+)
+disturbed_fraction = 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+plot_stuff = TRUE
+plot_suffix = "vignette"
+testing_penalization = c(0.1, 0.3) #vector of length n_cell_clusters
 # Generate dummy data for each cell cluster that we want ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # generated_data <- generate_dummy_data_for_cell_clustering(
 #   n_cell_clusters = n_cell_clusters,
@@ -56,9 +97,24 @@ regulator_means = c(0, 0)# For generating dummy data, regulator mean in each cel
 
 
 
-if (!file.exists(file.path(path_data, "env_sim_vgn_data_biclust_sc.rds"))) {
+if (
+      !file.exists(file.path(path_data, "env_sim_vgn_data_biclust_sc.rds")) |  redo_flag
+    ) {
 
-  generated_data <- generate_dummy_data_for_cell_clustering()
+  generated_data <- generate_dummy_data_for_cell_clustering(
+    n_cell_clusters = n_cell_clusters,
+    n_target_gene_clusters = n_target_gene_clusters,  # Number of target gene clusters in each cell cluster
+    n_target_genes = n_target_genes,          #from vignette
+    n_regulator_genes = n_regulator_genes,        # from vignette
+    n_cells =n_cells,
+    regulator_means = regulator_means,  # For generating dummy data, regulator mean in each cell cluster
+    coefficient_means = coefficient_means,
+    coefficient_sds = coefficient_sds,
+    disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+    plot_stuff = TRUE,
+    plot_suffix = "vignette",
+    testing_penalization = c(0.1, 0.3) #vector of length n_cell_clusters
+  )
 
   saveRDS(generated_data, file.path(path_data, "env_sim_vgn_data_biclust_sc.rds"))
 
@@ -82,7 +138,7 @@ colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes), paste0("r", 1:n
 biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
 # # These needs to be strings for discrete labels in pca plot
-# data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
+# data_for_plotting <- tibble::as_tibble(true_cell_ uster_allocation = generated_data$true_cell_clust,
 #                                        biclust_input_data)
 # pca_res <- prcomp(biclust_input_data, scale. = TRUE)}
 # p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
@@ -152,9 +208,11 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 penalization_lambdas <- c( 0.1, 0.2) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
-max_iter <- 10
+max_iter <- 20
 
-if (!file.exists(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))) {
+if (
+      !file.exists(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))  |  redo_flag
+    ) {
 
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
@@ -175,7 +233,9 @@ if (!file.exists(file.path(path_data, "env_sim_vgn_res_biclust_sc.rds"))) {
       calculate_BIC = FALSE,
       calculate_silhoutte = FALSE,
       calculate_davies_bouldin_index = FALSE,
-      plot_suffix = "vignette"
+      plot_suffix = "vignette",
+      always_use_flat_prior = FALSE,
+      use_garbage_cluster_targets  = F
     )
   }
 

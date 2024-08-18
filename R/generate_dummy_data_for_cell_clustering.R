@@ -64,7 +64,7 @@ generate_dummy_data_for_cell_clustering <- function(
   disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
   plot_stuff = TRUE,
   plot_suffix = "vignette",
-  testing_penalization = 0.1 #vector of length n_cell_clusters
+  testing_penalization = c(0.1, 0.3) #vector of length n_cell_clusters
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                   coefficient_mean = coefficient_means[[i_cluster]],
                                                                   coefficient_sd = coefficient_sds[[i_cluster]],
                                                                   make_regulator_network_plot = TRUE,
-                                                                  plot_suffix = i_cluster,
+                                                                  plot_suffix = paste0(plot_suffix, "_", i_cluster),
                                                                   testing_penalization = testing_penalization[i_cluster]
                                                                   )
     # list of list of models. with dimension regulators x targets
@@ -155,6 +155,8 @@ generate_dummy_data_for_cell_clustering <- function(
   if(plot_stuff){
     #plot regulators and targets, color by true cell cluster
 
+    cat("plotting stuff for the simulated cell cluestering data")
+
     demo_path <- here::here("demo")
     R_path <- here::here("R")
     output_path <- demo_path
@@ -168,16 +170,17 @@ generate_dummy_data_for_cell_clustering <- function(
     # plot regulators and targets
     plot_pca <- function(indata     = vis_dat$regulators,
                          cluster_allocations = vis_dat$true_cell_cluster_allocation,
-                         plot_title = "Principal components of regulator genes"
+                         plot_title = "PCA plot"
     ){
 
       library(ggmulti)
       library(ggplot2)
       library(dplyr)
       library(ggfortify)
+      library(Rtsne)
 
       # Apply PCA
-      pca_result <- prcomp(indata, scale. = TRUE)
+      pca_result <- stats::prcomp(indata, scale. = TRUE)
 
       # Extract principal components
       pc_df <- as_tibble(pca_result$x[,1:2])
@@ -185,10 +188,6 @@ generate_dummy_data_for_cell_clustering <- function(
       # Add labels (if you have any)
       pc_df$label <- as.factor(cluster_allocations)
 
-      # Plot the first two principal components
-      plot_name <- "regulators_pca.png"
-
-      # png(file.path(demo_path,plot_name))
       pc_df[sample(nrow(pc_df), 1000),] %>%
         ggplot( aes(x = PC1, y = PC2, colour = label)) +
         geom_point(alpha = 0.4) +
@@ -213,6 +212,61 @@ generate_dummy_data_for_cell_clustering <- function(
              plot_title = "Principal components of target genes") -> p
     print(p)
     dev.off()
+
+    png(file.path(output_path, paste0("biclust_data_gen_complete_",plot_suffix,".png")),
+        width = 1024, height = 480, units = "px")
+    plot_pca(indata     = cbind(Z_t,Z_r),
+             cluster_allocations = true_cluster_allocation,
+             plot_title = "Principal components plot of simulated data") -> p
+    print(p)
+    dev.off()
+
+    tsne_plot <- function(
+      indata = dat,
+      cluster_allocation = true_cluster_allocation,
+      title = "tSNE plot"
+    ){
+      tsne_result <- Rtsne::Rtsne(
+        indata, dims = 2,
+        perplexity = 30,
+        max_iter = 500,
+        partial_pca = T,
+        verbose = F
+      )
+      tsne_data   <- data.frame(X = tsne_result$Y[, 1], Y = tsne_result$Y[, 2])
+
+      ggplot(tsne_data, aes(x = X, y = Y, color = as.factor(cluster_allocation))) +
+        geom_point(alpha = 0.4) +
+        theme_minimal() +
+        scale_color_discrete(name = "Cell cluster") +
+        labs(title = title)
+    }
+
+
+    png(file.path(output_path, paste0("biclust_data_gen_complete_tsne_",plot_suffix,".png")),
+        width = 1024, height = 480, units = "px")
+    tsne_plot(indata = dat,
+              cluster_allocation = true_cluster_allocation,
+              title = "tSNE plot of entire data set ")-> p
+    print(p)
+    dev.off()
+
+    png(file.path(output_path, paste0("biclust_data_gen_regulators_tsne_",plot_suffix,".png")),
+        width = 1024, height = 480, units = "px")
+    tsne_plot(indata = Z_r,
+              cluster_allocation = true_cluster_allocation,
+              title = "tSNE plot of regulators")-> p
+    print(p)
+    dev.off()
+
+    png(file.path(output_path, paste0("biclust_data_gen_targets_tsne_",plot_suffix,".png")),
+        width = 1024, height = 480, units = "px")
+    tsne_plot(indata = Z_t,
+              cluster_allocation = true_cluster_allocation,
+              title = "tSNE plot of targets")-> p
+    print(p)
+    dev.off()
+
 
 
     # Visualise S to show cluster structures
@@ -327,6 +381,9 @@ generate_dummy_data_for_cell_clustering <- function(
         width = 1024, height = 480, units = "px")
     print(p)
     dev.off()
+
+    cat("DONE plotting stuff for the simulated cell cluestering data")
+
 
   }
 

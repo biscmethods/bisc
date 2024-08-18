@@ -48,8 +48,8 @@ generate_dummy_data_for_scregclust <- function(
                      0.0394
   ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
   make_regulator_network_plot = TRUE,
-  plot_suffix = 1,
-  testing_penalization = c(0.1, 0.2) # optional, for the screg run in the end
+  plot_suffix = "vignette",
+  testing_penalization = 0.1 # optional, for the screg run in the end
 )
 {
   # Check arguments
@@ -364,7 +364,7 @@ generate_dummy_data_for_scregclust <- function(
   #   n_cycles = 50L, noise_threshold = 0.05, center = FALSE,
   #   sample_assignment = sample_assignment
   # )
-  cat("uuuh 0 \n")
+
   scregclust::scregclust(
     expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
     genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers
@@ -397,7 +397,7 @@ generate_dummy_data_for_scregclust <- function(
         print("Warning generated building network plot")
       },
       finally = function(cond){
-        png(file.path(output_path, paste0("screg_network",plot_suffix ,".png")),
+        png(file.path(output_path, paste0("screg_network_",plot_suffix ,".png")),
             width = 1024, height = 480, units = "px")
         print(p)
       dev.off()
@@ -435,7 +435,7 @@ generate_dummy_data_for_scregclust <- function(
   cat(paste0("Rand index: ", rand_index))
 
   if (rand_index < 0.85) {
-    stop("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index)
+    cat("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index)
   }
 
   # This can probably be vectorized

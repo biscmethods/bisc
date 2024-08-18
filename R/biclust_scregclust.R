@@ -144,7 +144,8 @@ biclust_scregclust <- function(
                     calculate_silhoutte = FALSE,
                     calculate_davies_bouldin_index = FALSE,
                     plot_suffix = "",
-                    always_use_flat_prior = FALSE
+                    always_use_flat_prior = FALSE,
+                    use_garbage_cluster_targets  = TRUE
                     ) {
 
   if (!is.factor(initial_clustering)) {
@@ -328,7 +329,13 @@ biclust_scregclust <- function(
 
         # This is a work around because sregclust removes constant genes before it starts
         target_gene_cluster_names <- rep(-1, n_target_genes + n_regulator_genes)
-        target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
+        if(use_garbage_cluster_targets ){
+          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
+        }else{
+          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster_all  # [1:n_target_genes]
+        }
+
+
         target_gene_cluster_names[non_constant_ind_genes] <- target_gene_cluster_names_temp
         target_gene_cluster_names <- target_gene_cluster_names[1:n_target_genes]
 
@@ -524,6 +531,7 @@ biclust_scregclust <- function(
       fcm_res <- ppclust::fcm(x = pca_likelihood, centers = n_cell_clusters)
       weights_all[[i_main]] <- fcm_res$u
       updated_cell_clust <- fcm_res$cluster
+
       # updated_cell_clust <- stats::kmeans(x = pca_likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
     }else {
       updated_cell_clust <- sapply(seq_len(nrow(loglikelihood)),
