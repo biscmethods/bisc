@@ -128,25 +128,25 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #' @export
 #'
 biclust_scregclust <- function(
-                    dat = dat,
-                    cell_id,
-                    true_cell_cluster_allocation,
-                    max_iter = 50,
-                    n_target_gene_clusters,
-                    initial_clustering,
-                    n_cell_clusters,
-                    ind_targetgenes,
-                    ind_reggenes,
-                    output_path,
-                    penalization_lambda = 0.05,
-                    use_complex_cluster_allocation = FALSE,
-                    calculate_BIC = FALSE,
-                    calculate_silhoutte = FALSE,
-                    calculate_davies_bouldin_index = FALSE,
-                    plot_suffix = "",
-                    always_use_flat_prior = FALSE,
-                    use_garbage_cluster_targets  = TRUE
-                    ) {
+  dat = dat,
+  cell_id,
+  true_cell_cluster_allocation,
+  max_iter = 50,
+  n_target_gene_clusters,
+  initial_clustering,
+  n_cell_clusters,
+  ind_targetgenes,
+  ind_reggenes,
+  output_path,
+  penalization_lambda = 0.05,
+  use_complex_cluster_allocation = FALSE,
+  calculate_BIC = FALSE,
+  calculate_silhoutte = FALSE,
+  calculate_davies_bouldin_index = FALSE,
+  plot_suffix = "",
+  always_use_flat_prior = FALSE,
+  use_garbage_cluster_targets = FALSE
+) {
 
   if (!is.factor(initial_clustering)) {
     stop("The variable initial_clustering needs to be a factor vector.")
@@ -243,14 +243,13 @@ biclust_scregclust <- function(
           split_indices = data_split_for_scregclust[[i_cell_cluster]],
           genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
           is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
-          n_cl = n_target_gene_clusters[[i_cell_cluster]],
+          n_modules = n_target_gene_clusters[[i_cell_cluster]],
           penalization = penalization_lambda,
           verbose = FALSE,
           n_cycles = 200,
-          center=FALSE,
+          center = FALSE,
         )
         sink()
-
 
 
         # v Step 1: Regulators selected (in 8ms)
@@ -329,13 +328,11 @@ biclust_scregclust <- function(
 
         # This is a work around because sregclust removes constant genes before it starts
         target_gene_cluster_names <- rep(-1, n_target_genes + n_regulator_genes)
-        if(use_garbage_cluster_targets ){
-          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster  # [1:n_target_genes]
-        }else{
-          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$cluster_all  # [1:n_target_genes]
+        if (use_garbage_cluster_targets) {
+          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$module  # [1:n_target_genes]
+        }else {
+          target_gene_cluster_names_temp <- screg_out$results[[1]]$output[[1]]$module_all  # [1:n_target_genes]
         }
-
-
         target_gene_cluster_names[non_constant_ind_genes] <- target_gene_cluster_names_temp
         target_gene_cluster_names <- target_gene_cluster_names[1:n_target_genes]
 
@@ -415,7 +412,7 @@ biclust_scregclust <- function(
                                                data_split_for_scregclust = data_split_for_scregclust,
                                                current_cell_cluster_allocation = current_cell_cluster_allocation)
 
-    if(!always_use_flat_prior){
+    if (!always_use_flat_prior) {
       cluster_proportions <- vector(length = n_cell_clusters)
       for (i_cell_cluster in seq_len(n_cell_clusters)) {
         print(paste("  Calculating cluster proportions for cell cluster", i_cell_cluster), quote = FALSE)
@@ -430,7 +427,7 @@ biclust_scregclust <- function(
           cluster_proportions[i_cell_cluster] <- current_cluster_proportion
       }
     } else {
-      cluster_proportions <- (vector(length = n_cell_clusters)+1)/n_cell_clusters
+      cluster_proportions <- (vector(length = n_cell_clusters) + 1) / n_cell_clusters
     }
 
 
@@ -519,9 +516,6 @@ biclust_scregclust <- function(
     }
 
 
-
-
-
     ####################################################################
     ##### C-step #######################################################
     ##### update cluster allocations ###################################
@@ -595,7 +589,7 @@ biclust_scregclust <- function(
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
-  png(file.path(output_path, paste0("Alluvial_diagram_lambda_",plot_suffix, "_", round(penalization_lambda, 6), ".png")),
+  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", plot_suffix, "_", round(penalization_lambda, 6), ".png")),
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
