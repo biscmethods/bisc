@@ -31,9 +31,9 @@ redo_flag = T
 
 n_cell_clusters = 2
 n_target_gene_clusters = c(10, 7)  # Number of target gene clusters in each cell cluster
-n_target_genes = 593              # 2193 from vignette
-n_regulator_genes = 93            # 493 from vignette
-n_cells = c(2000, 2000)            # c(6000, 6000) from vignette
+n_target_genes = 500             # 2193 from vignette
+n_regulator_genes = 100            # 493 from vignette
+n_cells = c(1000, 1000)            # c(6000, 6000) from vignette
 regulator_means = c(0, 0)         # For generating dummy data, regulator mean in each cell cluster
 coefficient_means = list(c(0.0417,
                            0.0343,
@@ -205,7 +205,7 @@ n_cell_clusters_train <- length(unique(initial_clustering_train))
 # true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
 
 
-penalization_lambdas <- c( 0.1, 0.2) # c( 0.00001, 0.1, 0.2, 0.5)
+penalization_lambdas <- c( 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 max_iter <- 20

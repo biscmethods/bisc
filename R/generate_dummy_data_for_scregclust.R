@@ -369,7 +369,7 @@ generate_dummy_data_for_scregclust <- function(
     expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
     genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers
     is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # vector indicating which genes are regulators
-    n_cl = n_target_gene_clusters,
+    n_modules = n_target_gene_clusters,
     penalization = testing_penalization, #generated data is supposed to resemble results from this
     n_cycles     = 10,
     verbose = TRUE,
