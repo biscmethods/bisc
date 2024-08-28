@@ -373,9 +373,9 @@ generate_dummy_data_for_scregclust <- function(
     penalization = testing_penalization, #generated data is supposed to resemble results from this
     n_cycles     = 10,
     verbose = TRUE,
-    min_cluster_size = 1,
+    min_module_size = 0L,
     noise_threshold = 0,
-    center = T
+    center = F
   ) -> scRegOut
 
   if(make_regulator_network_plot){
@@ -427,15 +427,15 @@ generate_dummy_data_for_scregclust <- function(
 
   true_clust_allocation <- apply(X = Pi, MARGIN = 2, FUN = function(x) which(x == 1))
   # cat(true_clust_allocation)
-  predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$cluster_all[1:n_target_genes]
+  predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$module_all[1:n_target_genes]
   # cat(predicted_cluster_allocation)
   rand_index <- aricode::RI(true_clust_allocation, predicted_cluster_allocation)
   rand_index <- rand_index - sum(predicted_cluster_allocation == -1) / length(predicted_cluster_allocation)
 
-  cat(paste0("Rand index: ", rand_index))
+  cat(paste0("Rand index: ", rand_index, "\n"))
 
   if (rand_index < 0.85) {
-    cat("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index)
+    cat("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index, "\n")
   }
 
   # This can probably be vectorized

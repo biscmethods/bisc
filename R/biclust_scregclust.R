@@ -419,7 +419,7 @@ biclust_scregclust <- function(
         current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
 
         # If some cluster has been completely omitted, give it a nonzero proportion anyway for next iteration
-        # Even without weights this is good to include for cluster allocation (though it is a bit arbitrary)
+        # Even without weights this is good to include for cluster allocation (though it is arbitrary)
         if (current_cluster_proportion == 0) {
           cluster_proportions[i_cell_cluster] <- 0.0001
           stop_iterating_flag <- T

@@ -18,3 +18,6 @@ commit <- "62dcd25"#42d5784c3760ed09e0aa630a60d5b626b
 
 # Install the package from the specific commit
 devtools::install_github(paste0(repo, "@", commit), force = TRUE)
+
+
+# note:  if updating, might need to remove (and above code will reinstall) screclust, cli, rcpp
