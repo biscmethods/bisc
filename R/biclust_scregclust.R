@@ -596,12 +596,17 @@ biclust_scregclust <- function(
   time_taken <- round(Sys.time() - start_time_alluvial_plot, 2)
   print(paste(" Iterations complete, Alluvial plot took", time_taken, "seconds."), quote = FALSE)
 
-  return(list("rand_index" = rand_index_true_cluster,
-              "n_iterations" = i_main,
-              "silhouette_measure" = silhouette_measure,
-              "davies_bouldin_index" = db,
-              "BIC" = BIC_all[1:i_main],
-              "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main]))
+  return(
+    list(
+      "cell_cluster_allocation" = cell_cluster_history[,ncol(cell_cluster_history)],
+      "rand_index" = rand_index_true_cluster,
+      "n_iterations" = i_main,
+      "silhouette_measure" = silhouette_measure,
+      "davies_bouldin_index" = db,
+      "BIC" = BIC_all[1:i_main],
+      "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main]
+      )
+    )
 }
 
 
