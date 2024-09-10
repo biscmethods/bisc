@@ -3,6 +3,8 @@ rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
+library(biclust)
+library(rasterVis)
 sink()
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
@@ -13,7 +15,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 path_data <- here::here('data')
 
-redo_flag = TRUE
+redo_flag <- TRUE
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -36,10 +38,7 @@ regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each c
 coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
 coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01))
 disturbed_fraction <- 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-plot_stuff <- FALSE
-plot_suffix <- "Simple"
 testing_penalization_data_gen <- c(0.1, 0.5)
-
 
 if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
   redo_flag) {
@@ -59,10 +58,9 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
     coefficient_sds <- coefficient_sds,
     disturbed_fraction = disturbed_fraction,
     # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-    plot_stuff = plot_stuff,
-    plot_suffix = plot_suffix,
+    plot_stuff = FALSE,
+    plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen
-
   )
 
   saveRDS(generated_data,
@@ -86,81 +84,20 @@ colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes),
                                   paste0("r", 1:n_regulator_genes))
 biclust_input_data <- tibble::as_tibble(biclust_input_data)
 
-# # These needs to be strings for discrete labels in pca plot
-# data_for_plotting <- tibble::as_tibble(true_cell_cluster_allocation = generated_data$true_cell_clust,
-#                                        biclust_input_data)
-# pca_res <- prcomp(biclust_input_data, scale. = TRUE)}
-# p <- ggplot2::autoplot(pca_res, data = data_for_plotting, colour = 'true_cell_cluster_allocation')
-
 # Set up some variables
 n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes <- length(ind_targetgenes)
 n_regulator_genes <- length(ind_reggenes)
-
+n_total_cells <- sum(n_cells)
+cell_id <- 1:n_total_cells
 
 #############################################
 ############ end data for dev ###############
 #############################################
 
-###########################################
-####initialise variables for dev ##########
-##########################################
-
-max_iter <- 100
-
-# output_path <- modded_output_path
-
-i_cell_cluster <- 1
-
-use_weights <- TRUE
-use_complex_cluster_allocation <- FALSE
-
-demo_path <- here::here("demo")
-output_path <- demo_path
-# initial_clustering[1:14900] <- rep(1, 14900)
-# initial_clustering[14901:15000] <- rep(2, 100)
-# print(length(initial_clustering))
-# stop("hej")
-
-
-###########################################
-###END initialise variables for dev #######
-###########################################
-# Split data into train/test
-cell_data_split <- sample(c(1, 2),
-                          nrow(biclust_input_data),
-                          prob = c(0.5, 0.5),
-                          replace = T)
-train_indices <- which(cell_data_split == 1)
-test_indices <- which(cell_data_split == 2)
-
-biclust_input_data_train <- biclust_input_data[train_indices,]
-biclust_input_data_test <- biclust_input_data[test_indices,]
-
-# Setup variables that will be used throughout the script
-# We assume target genes start with t then a number. And likewise for regulator genes.
-n_total_cells <- nrow(biclust_input_data)
-cell_id <- 1:n_total_cells
-cell_id_train <- cell_id[train_indices]
-cell_id_test <- cell_id[test_indices]
-
-initial_clustering <- disturbed_initial_cell_clust
-
-initial_clustering_train <- initial_clustering[train_indices]
-
-initial_clustering_test <- initial_clustering[test_indices]
-
-# Set up some variables
-
-# true_cell_cluster_allication <- factor(generated_data$true_cell_clust)
-# true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
-# true_cell_cluster_allication_train <- true_cell_cluster_allication[train_indices]
-
 
 penalization_lambdas <- c(0.1, 0.2, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
-
-max_iter <- 20
 
 if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
   redo_flag) {
@@ -172,21 +109,21 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
     ),
           quote = FALSE)
     BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
-      dat = biclust_input_data_train,
-      cell_id = cell_id_train,
-      true_cell_cluster_allocation = factor(generated_data$true_cell_clust[train_indices]),
-      max_iter = max_iter,
-      n_target_gene_clusters,
-      initial_clustering_train,
-      n_cell_clusters,
-      ind_targetgenes,
-      ind_reggenes,
-      output_path,
+      dat = biclust_input_data,
+      cell_id = cell_id,
+      true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
+      max_iter = 100,
+      n_target_gene_clusters = n_target_gene_clusters,
+      initial_clustering = disturbed_initial_cell_clust,
+      n_cell_clusters = n_cell_clusters,
+      ind_targetgenes = ind_targetgenes,
+      ind_reggenes = ind_reggenes,
+      output_path = output_path,
       penalization_lambda = penalization_lambdas[i_penalization_lambda],
       use_complex_cluster_allocation = FALSE,
-      calculate_BIC = TRUE,
+      calculate_BIC = FALSE,
       calculate_silhoutte = FALSE,
-      calculate_davies_bouldin_index = TRUE,
+      calculate_davies_bouldin_index = FALSE,
       plot_suffix = "Simple_cluster_all",
       always_use_flat_prior = FALSE,
       use_garbage_cluster_targets = F
@@ -225,60 +162,10 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   }
 }
 
-############################################################################################
-############ run the penalisation parameter by best BIC, on the test dataset#################
-#
-# bic_values <- sapply(BICLUST_RESULTS, function(x) as.numeric(x$BIC[[20]]))
-#
-# print(bic_values)
-#
-# best_lambda <- penalization_lambdas[which.min(bic_values)] # pick best
-# BICLUST_RESULTS_test <- vector(mode = "list", length = length(penalization_lambdas))
-#
-# max_iter <- 20
-#
-# if (
-#   !file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_test.rds"))  | redo_flag
-# ) {
-#
-#   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-#     print("", quote = FALSE)
-#     print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-#     BICLUST_RESULTS_test[[i_penalization_lambda]] <- biclust_scregclust(
-#       dat = biclust_input_data_test,
-#       cell_id = cell_id_test,
-#       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[test_indices]),
-#       max_iter = max_iter,
-#       n_target_gene_clusters,
-#       initial_clustering_test,
-#       n_cell_clusters,
-#       ind_targetgenes,
-#       ind_reggenes,
-#       output_path,
-#       penalization_lambda = penalization_lambdas[i_penalization_lambda],
-#       use_complex_cluster_allocation = FALSE,
-#       calculate_BIC = TRUE,
-#       calculate_silhoutte = FALSE,
-#       calculate_davies_bouldin_index = TRUE,
-#       plot_suffix = "Simple_cluster_all",
-#       always_use_flat_prior = FALSE,
-#       use_garbage_cluster_targets  = F
-#     )
-#   }
-#
-#   saveRDS(BICLUST_RESULTS_test, file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_test.rds"))
-#
-# } else{
-#
-#   BICLUST_RESULTS_test <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_test.rds"))
-#
-# }
-
 
 ##############################
 # run again many times for stats
 ###########################
-library(biclust)
 
 # compare with other biclust variant
 standard_biclust_results <- biclust::biclust(
@@ -293,32 +180,38 @@ standard_biclust_results <- biclust::biclust(
 
 
 res1 <- biclust::biclust(
-  as.matrix(biclust_input_data),
+  as.matrix(biclust_input_data[, 1:n_target_genes]),
   method = BCCC(),
   delta = 1.5,
   alpha = 1,
   number = 2
 )
+res1 <- biclust::biclust(
+              as.matrix(biclust_input_data[, 1:n_target_genes]),
+                method=BCPlaid(),
+              iter.layer=100,
+              shuffle=10,
+              max.layers=10)
 
-a <- as.matrix(biclust_input_data)
-# colnames(a) <- 1:ncol(a)
-png("heatmap.png",
-    width = 8000,
-    height = 7000,
-    res = 300)
-biclust::heatmapBC(
-  x = a,
-  bicResult = res1,
-  order = FALSE,
-  Rowv = FALSE,
-  Colv = FALSE,
-  labRow = NA,
-  labCol = NA
-)
-dev.off()
+# a <- as.matrix(biclust_input_data)
+# # colnames(a) <- 1:ncol(a)
+# png("heatmap.png",
+#     width = 8000,
+#     height = 7000,
+#     res = 300)
+# biclust::heatmapBC(
+#   x = a,
+#   bicResult = res1,
+#   order = FALSE,
+#   Rowv = FALSE,
+#   Colv = FALSE,
+#   labRow = NA,
+#   labCol = NA
+# )
+# dev.off()
 
 
-b <- as.matrix(biclust_input_data)
+b <- as.matrix(biclust_input_data)[,1:n_target_genes]
 b <- matrix(0, nrow = nrow(b), ncol = ncol(b))
 for (i_n in 1:res1@Number) {
   a <- as.matrix((res1@RowxNumber[, i_n, drop = FALSE] %*% res1@NumberxCol[i_n, , drop = FALSE]) == 1)
@@ -326,9 +219,48 @@ for (i_n in 1:res1@Number) {
 }
 unique(as.vector(b))
 
-
 # b <- raster::ratify(raster::raster(b))
-rasterVis::levelplot(b, att = "ID", col.regions = rainbow(12), xlab = 'cells', ylab = 'genes')
+n <- length(unique(as.vector(b)))
+regions <- seq(1, n, length.out = n + 1)
+middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+rasterVis::levelplot(b, att = n,
+                     col.regions = rainbow(n),
+                     colorkey = list(at = regions, labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     xlab = 'Cells',
+                     ylab = 'Target genes',
+                     main='biclust')
+
+#----- Construct hatmap for our biclust
+res <- BICLUST_RESULTS[[1]]
+cell_cluster_allocation <- res$cell_cluster_allocation
+target_gene_allocation <- res$scregclust_final_result_module
+
+result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+
+for (i in 1:n_total_cells) {
+  cluster <- cell_cluster_allocation[i]
+  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+  gene_allocation[gene_allocation==-1] <- 0
+  # Create unique numbers for each pair
+  result_matrix[i, ] <- paste0(cluster, gene_allocation)
+}
+
+# Convert the result to numeric matrix
+result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
+result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
+
+n <- length(unique(as.vector(result_matrix)))
+regions <- seq(1, n, length.out = n + 1)
+middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+rasterVis::levelplot(result_matrix, att = n,
+                     col.regions = rainbow(n),
+                     colorkey = list(at = regions, labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     xlab = 'Cells',
+                     ylab = 'Target genes',
+                     main='biclust_scregclust')
+
+#-------
+
 
 stats::heatmap(x = a,
                Rowv = res1@RowxNumber,

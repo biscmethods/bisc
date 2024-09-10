@@ -175,6 +175,12 @@ biclust_scregclust <- function(
   current_cell_cluster_allocation <- initial_clustering
 
   stop_iterating_flag <- 0  # Flag if we have converged
+  # (results1[[1]][[3]]$results[[1]]$output[[1]]$models)
+  scregclust_final_result_models <- vector(mode = "list", length = n_cell_clusters)
+  # (results1[[1]][[3]]$results[[1]]$output[[1]]$module)
+  scregclust_final_result_module <- vector(mode = "list", length = n_cell_clusters)
+
+
   for (i_main in 1:max_iter) {
     print(paste(" Running iteration", i_main), quote = FALSE)
     start_time_iteration <- Sys.time()
@@ -250,6 +256,9 @@ biclust_scregclust <- function(
           center = FALSE,
         )
         sink()
+
+        scregclust_final_result_module[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
+        scregclust_final_result_models[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$models
 
 
         # v Step 1: Regulators selected (in 8ms)
@@ -462,7 +471,7 @@ biclust_scregclust <- function(
     num_cores <- max(detectCores() - 2, 1)
 
     # # Create a parallel backend
-    cl <- makeCluster(num_cores)
+    cl <- parallel::makeCluster(num_cores,  type = "PSOCK")
 
     # Register the parallel backend
     registerDoParallel(cl)
@@ -598,7 +607,9 @@ biclust_scregclust <- function(
 
   return(
     list(
-      "cell_cluster_allocation" = cell_cluster_history[,ncol(cell_cluster_history)],
+      "cell_cluster_allocation" = cell_cluster_history[,ncol(cell_cluster_history)][[1]],
+      "scregclust_final_result_models" = scregclust_final_result_models,
+      "scregclust_final_result_module" = scregclust_final_result_module,
       "rand_index" = rand_index_true_cluster,
       "n_iterations" = i_main,
       "silhouette_measure" = silhouette_measure,
