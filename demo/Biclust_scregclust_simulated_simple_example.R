@@ -41,6 +41,20 @@ plot_suffix = "Simple"
 testing_penalization_data_gen = c(0.1, 0.5)
 
 
+# n_cell_clusters <- 2
+# n_target_gene_clusters <- c(4, 2)  # Number of target gene clusters in each cell cluster
+# n_target_genes <- 100
+# n_regulator_genes <- 10
+# n_cells <- c(100, 100)
+# regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each cell cluster
+# coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
+# coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01))
+# disturbed_fraction <- 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+# plot_stuff <- FALSE
+# plot_suffix <- "Simple"
+# testing_penalization_data_gen <- c(0.1, 0.5) #same length as n_cells
+
+
 if (
       !file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))  |  redo_flag
     ) {
@@ -48,9 +62,9 @@ if (
   generated_data <- generate_dummy_data_for_cell_clustering(
     n_cell_clusters = 2,
     n_target_gene_clusters = c(4, 2),  # Number of target gene clusters in each cell cluster
-    n_target_genes = 1000,          #from vignette
-    n_regulator_genes = 100,    # from vignette
-    n_cells = c(1000, 1000),
+    n_target_genes = n_target_genes,          #from vignette
+    n_regulator_genes = n_regulator_genes,    # from vignette
+    n_cells = n_cells,
     regulator_means = regulator_means,# For generating dummy data, regulator mean in each cell cluster
     coefficient_means <- coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
     coefficient_sds <- coefficient_sds,
@@ -58,7 +72,6 @@ if (
     plot_stuff = TRUE,
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen
-
   )
 
   saveRDS(generated_data, file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
@@ -153,7 +166,7 @@ initial_clustering_test <- initial_clustering[test_indices]
 
 
 penalization_lambdas <- c( 0.1, 0.2, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
-BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
+BICLUST_RESULTS_train <- vector(mode = "list", length = length(penalization_lambdas))
 
 max_iter <- 20
 
@@ -164,7 +177,7 @@ if (
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
     print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS_train[[i_penalization_lambda]] <- biclust_scregclust(
       dat = biclust_input_data_train,
       cell_id = cell_id_train,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[train_indices]),
@@ -186,11 +199,11 @@ if (
     )
   }
 
-  saveRDS(BICLUST_RESULTS, file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
+  saveRDS(BICLUST_RESULTS_train, file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
 
 } else{
 
-  BICLUST_RESULTS <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
+  BICLUST_RESULTS_train <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
 
 }
 
@@ -202,14 +215,37 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
   } else if (is.null(BICLUST_RESULTS[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"), quote = FALSE)
   }else {
-    print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS[[i_penalization_lambda]]$rand_index), quote = FALSE)
+    print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS_train[[i_penalization_lambda]]$rand_index), quote = FALSE)
   }
 }
+
+
+################################################################
+############### what do we plot ??? ############################
+################################################################
+
+
+RIs <- sapply(BICLUST_RESULTS_train, function(x) as.numeric(x$rand_index))
+
+
+
+
+
+png(file.path(output_path, paste0("biclust_screg_lambda_RI_simple_ex",".png")),
+    width = 1024, height = 480, units = "px")
+plot(
+  penalization_lambdas,
+  RIs,
+  type = 'l'
+)
+dev.off()
+
+
 
 ############################################################################################
 ############ run the penalisation parameter by best BIC, on the test dataset#################
 
-bic_values <- sapply(BICLUST_RESULTS, function(x) as.numeric(x$BIC[[20]]))
+bic_values <- sapply(BICLUST_RESULTS_train, function(x) as.numeric(x$BIC[[length(x$BIC)]]))
 
 print(bic_values)
 
@@ -222,10 +258,9 @@ if (
   !file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_test.rds"))  | redo_flag
 ) {
 
-  for (i_penalization_lambda in seq_along(penalization_lambdas)) {
+  for (i_penalization_lambda in best_lambda) {
     print("", quote = FALSE)
-    print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-    BICLUST_RESULTS_test[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS_test<- biclust_scregclust(
       dat = biclust_input_data_test,
       cell_id = cell_id_test,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[test_indices]),
@@ -236,7 +271,7 @@ if (
       ind_targetgenes,
       ind_reggenes,
       output_path,
-      penalization_lambda = penalization_lambdas[i_penalization_lambda],
+      penalization_lambda = best_lambda,
       use_complex_cluster_allocation = FALSE,
       calculate_BIC = TRUE,
       calculate_silhoutte = FALSE,
@@ -255,25 +290,141 @@ if (
 
 }
 
+####################################
+#### what stats/ results do we want?
+#######################################
+
+str(BICLUST_RESULTS_test)
+BICLUST_RESULTS_test$cell_cluster_allocation %>% table()
+factor(generated_data$true_cell_clust[test_indices]) %>% table()
+
+ RI(unlist(BICLUST_RESULTS_test$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
 
 ##############################
 # run again many times for stats
 ###########################
 
+
+iterations <- 20
+
+BICLUST_RESULTS_iterated <- vector(mode = "list", length = iterations)
+
+
+if (
+  !file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_iter.rds"))  | redo_flag
+) {
+
+  for (i_penalization_lambda in 1:iterations) {
+    print(i_penalization_lambda, quote = FALSE)
+    BICLUST_RESULTS_iterated[[i_penalization_lambda]] <- biclust_scregclust(
+      dat = biclust_input_data_test,
+      cell_id = cell_id_test,
+      true_cell_cluster_allocation = factor(generated_data$true_cell_clust[test_indices]),
+      max_iter = max_iter,
+      n_target_gene_clusters,
+      initial_clustering_test,
+      n_cell_clusters,
+      ind_targetgenes,
+      ind_reggenes,
+      output_path,
+      penalization_lambda = best_lambda,
+      use_complex_cluster_allocation = FALSE,
+      calculate_BIC = TRUE,
+      calculate_silhoutte = FALSE,
+      calculate_davies_bouldin_index = TRUE,
+      plot_suffix = "Simple_cluster_all",
+      always_use_flat_prior = FALSE,
+      use_garbage_cluster_targets  = F
+    )
+  }
+
+  saveRDS(BICLUST_RESULTS_iterated, file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_iter.rds"))
+
+} else{
+
+  BICLUST_RESULTS_iterated <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc_iter.rds"))
+
+}
+
+str(BICLUST_RESULTS_iterated[[1]])
+BICLUST_RESULTS_iterated[[1]]$cell_cluster_allocation %>% table()
+factor(generated_data$true_cell_clust[test_indices]) %>% table()
+RI(unlist(BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
+
+
+#make some plots of results
+RIs <-  sapply(BICLUST_RESULTS_iterated, function(x) as.numeric(x$rand_index))
+
+
+png(file.path(output_path, paste0("biclust_screg_iterated_RI_histogram_simple_ex",".png")),
+    width = 1024, height = 480, units = "px")
+hist( RIs,
+      breaks = 10,
+      main = paste0("Historam of RIs, \n",iterations, " iterations\n", "Mean RI: ", round(mean(RIs), 3)))
+
+dev.off()
+
+
+#start by using biclust to get som cell clusters only, and use that one for plots, update later.
+
 # compare with other biclust variant
 library(biclust)
-?biclust
 
-standard_biclust_results <- biclust( x = as.matrix(biclust_input_data),
-                                     method=BCSpectral(), normalization="irrc", numberOfEigenvalues=6,
-                                     minr=2, minc=2, withinVar=1)
+# ?biclust
 
-test <- matrix(rbinom(400, 50, 0.4), 20, 20)
-res1 <- biclust(as.matrix(biclust_input_data), method=BCCC(), delta=1.5,  alpha=1, number=10)
+# test <- matrix(rbinom(400, 50, 0.4), 20, 20)
+# res1 <- biclust(as.matrix(biclust_input_data), method=BCCC(), delta=1.5,  alpha=1, number=10)
+# res2 <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="b")
+
+
+comparator_iterated <- vector(mode = "list", length = iterations)
+
+if (
+  !file.exists(file.path(path_data, "env_sim_simple_comparator_iter.rds"))  | redo_flag
+) {
+
+  for (iter in 1:iterations) {
+    print(iter)
+    comparator_iterated[[iter]] <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="r")
+
+  }
+
+  saveRDS(comparator_iterated, file.path(path_data, "env_sim_simple_comparator_iter.rds"))
+
+  } else {
+
+    comparator_iterated <- readRDS(file.path(path_data, "env_sim_simple_comparator_iter.rds"))
+
+}
+
+
+res3 <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="r")
+plotclust(res1, as.matrix(biclust_input_data))
+plotclust(res2, as.matrix(biclust_input_data))
+plotclust(res3, as.matrix(biclust_input_data))
+
+str(res2)
+res2@RowxNumber
+sort(unique(unlist(sapply(1:nrow(biclust_input_data), FUN = function(i) which(res2@RowxNumber[i,])))))
+
 
 res1@RowxNumber
 
 image(res1@RowxNumber)
+?biclust::heatmapBC
+
+
+# Celda variant?
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+#
+# BiocManager::install("celda", force = TRUE)
+#
+# browseVignettes("celda")
+
+library("celda")
+
+sce <- celda_CG(x = t(as.matrix(biclust_input_data_test)), K = 2, L = 10, verbose = FALSE, nchains = 1)
 
 # print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
 # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
