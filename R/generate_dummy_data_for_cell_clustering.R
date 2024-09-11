@@ -393,8 +393,8 @@ generate_dummy_data_for_cell_clustering <- function(
   true_Pi_numbers <- vector(mode = "list", length = length(true_Pi))
   for(i in 1:length(true_Pi)){
     true_Pi_numbers[[i]] <- apply(true_Pi[[i]], 2, function(col) which.max(col != 0))
-    new_target_gene_indexes <- order(true_Pi_numbers[[i]])
-    true_Pi_numbers[[i]] <- true_Pi_numbers[[i]][new_target_gene_indexes]
+    # new_target_gene_indexes <- order(true_Pi_numbers[[i]])
+    # true_Pi_numbers[[i]] <- true_Pi_numbers[[i]][new_target_gene_indexes]
     # n_target_genes <- max(new_target_gene_indexes)
     # dat[true_cluster_allocation==i, 1:n_target_genes] <- dat[true_cluster_allocation==i, new_target_gene_indexes]
   }
