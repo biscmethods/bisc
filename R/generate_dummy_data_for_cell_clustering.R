@@ -84,7 +84,7 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                   regulator_mean = regulator_means[i_cluster],
                                                                   coefficient_mean = coefficient_means[[i_cluster]],
                                                                   coefficient_sd = coefficient_sds[[i_cluster]],
-                                                                  make_regulator_network_plot = TRUE,
+                                                                  make_regulator_network_plot = F,
                                                                   plot_suffix = paste0(plot_suffix, "_", i_cluster),
                                                                   testing_penalization = testing_penalization[i_cluster]
                                                                   )
@@ -387,11 +387,21 @@ generate_dummy_data_for_cell_clustering <- function(
 
   }
 
-  return(list(disturbed_initial_cell_clust = disturbed_initial_cell_clust,
+  true_Pi      <- lapply(dummy_data, function(x) x$Pi)
+  true_S <- lapply(dummy_data, function(x) x$S)
+
+
+  return(list(
+              disturbed_initial_cell_clust = disturbed_initial_cell_clust,
               initial_cell_clust = initial_cell_clust,
               true_cell_clust = true_cluster_allocation,
               true_betas = betas,
-              dat = dat))
+              dat = dat,
+              true_Pi = true_Pi,
+              true_S = true_S
+
+              )
+         )
 }
 
 
