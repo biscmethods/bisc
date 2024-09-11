@@ -390,6 +390,14 @@ generate_dummy_data_for_cell_clustering <- function(
   true_Pi      <- lapply(dummy_data, function(x) x$Pi)
   true_S <- lapply(dummy_data, function(x) x$S)
 
+  true_Pi_numbers <- vector(mode = "list", length = length(true_Pi))
+  for(i in 1:length(true_Pi)){
+    true_Pi_numbers[[i]] <- apply(true_Pi[[i]], 2, function(col) which.max(col != 0))
+    new_target_gene_indexes <- order(true_Pi_numbers[[i]])
+    true_Pi_numbers[[i]] <- true_Pi_numbers[[i]][new_target_gene_indexes]
+    # n_target_genes <- max(new_target_gene_indexes)
+    # dat[true_cluster_allocation==i, 1:n_target_genes] <- dat[true_cluster_allocation==i, new_target_gene_indexes]
+  }
 
   return(list(
               disturbed_initial_cell_clust = disturbed_initial_cell_clust,
@@ -397,6 +405,7 @@ generate_dummy_data_for_cell_clustering <- function(
               true_cell_clust = true_cluster_allocation,
               true_betas = betas,
               dat = dat,
+              true_target_gene_allocation = true_Pi_numbers,
               true_Pi = true_Pi,
               true_S = true_S
 
