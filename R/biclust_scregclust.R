@@ -145,7 +145,8 @@ biclust_scregclust <- function(
   calculate_davies_bouldin_index = FALSE,
   plot_suffix = "",
   always_use_flat_prior = FALSE,
-  use_garbage_cluster_targets = FALSE
+  use_garbage_cluster_targets = FALSE,
+  retain_gene_clusters        = TRUE
 ) {
 
   if (!is.factor(initial_clustering)) {
@@ -173,6 +174,9 @@ biclust_scregclust <- function(
   target_genes_residual_var_all <- vector(mode = "list", length = max_iter)
   # Set the current cell clustering
   current_cell_cluster_allocation <- initial_clustering
+
+  # preallocate gene cluster tracker
+  previous_gene_modules = vector(mode = "list", length = n_cell_clusters)
 
   stop_iterating_flag <- 0  # Flag if we have converged
   # (results1[[1]][[3]]$results[[1]]$output[[1]]$models)
@@ -243,19 +247,61 @@ biclust_scregclust <- function(
         non_constant_ind_genes <- sort(intersect(non_constant_genes_ind_test, non_constant_genes_ind_train))
         non_constant_ind_regulator_genes <- non_constant_ind_genes[non_constant_ind_genes > n_target_genes] - n_target_genes
 
-        sink(tempfile()) # Shut scregclust up
-        screg_out <- scregclust::scregclust(
-          expression = indata_for_scregclust,  # p rows of genes, n columns of cells
-          split_indices = data_split_for_scregclust[[i_cell_cluster]],
-          genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
-          is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
-          n_modules = n_target_gene_clusters[[i_cell_cluster]],
-          penalization = penalization_lambda,
-          verbose = FALSE,
-          n_cycles = 200,
-          center = FALSE,
-        )
-        sink()
+
+        if(retain_gene_clusters){
+          if(i_main == 1){
+
+            sink(tempfile()) # Shut scregclust up
+            screg_out <- scregclust::scregclust(
+              expression = indata_for_scregclust,  # p rows of genes, n columns of cells
+              split_indices = data_split_for_scregclust[[i_cell_cluster]],
+              genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+              is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
+              n_modules = n_target_gene_clusters[[i_cell_cluster]],
+              penalization = penalization_lambda,
+              verbose = FALSE,
+              n_cycles = 200,
+              center = FALSE,
+            )
+            sink()
+
+            previous_gene_modules[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module_all
+
+          }else{
+
+            is_regulator <- inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes)
+
+            sink(tempfile()) # Shut scregclust up
+            screg_out <- scregclust::scregclust(
+              expression = indata_for_scregclust,  # p rows of genes, n columns of cells
+              split_indices = data_split_for_scregclust[[i_cell_cluster]],
+              genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+              is_regulator = is_regulator,  # Vector indicating which genes are regulators
+              n_modules = n_target_gene_clusters[[i_cell_cluster]],
+              penalization = penalization_lambda,
+              initial_target_modules = previous_gene_modules[[i_cell_cluster]][!is_regulator],
+              verbose = FALSE,
+              n_cycles = 200,
+              center = FALSE,
+            )
+            sink()
+
+          }
+
+        }else{
+          screg_out <- scregclust::scregclust(
+            expression = indata_for_scregclust,  # p rows of genes, n columns of cells
+            split_indices = data_split_for_scregclust[[i_cell_cluster]],
+            genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+            is_regulator = inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes),  # Vector indicating which genes are regulators
+            n_modules = n_target_gene_clusters[[i_cell_cluster]],
+            penalization = penalization_lambda,
+            verbose = FALSE,
+            n_cycles = 200,
+            center = FALSE,
+          )
+        }
+
 
         scregclust_final_result_module[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
         scregclust_final_result_models[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$models
