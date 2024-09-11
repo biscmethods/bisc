@@ -175,6 +175,12 @@ generate_dummy_data_for_scregclust <- function(
   }
 
   # R
+  # browser()
+   order_vector <- apply(R, 2, function(x) sum(x * 2^(nrow(R):1)))
+  #  order_vector <- apply(R, 2, function(x) sum((x == 1) * 2^(nrow(R):1)) - sum((x == -1) * 2^(nrow(R):1)))
+  # #
+  # # # Order the matrix by this order vector
+   R <- R[,order(order_vector, decreasing = TRUE)]
 
   # R[1,]  # Cluster 1 is affected by these regulators
   # sum(R[1,])  # R_1 in the manuscript is which regulators affect cluster 1
