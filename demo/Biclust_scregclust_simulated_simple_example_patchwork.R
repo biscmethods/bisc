@@ -98,7 +98,7 @@ cell_id <- 1:n_total_cells
 #############################################
 
 
-penalization_lambdas <- c(0.1, 0.2, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
+penalization_lambdas <- c(0.0001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
@@ -191,9 +191,15 @@ res1 <- biclust::biclust(
 res1 <- biclust::biclust(
   as.matrix(biclust_input_data[, 1:n_target_genes]),
   method=BCPlaid(),
+  background=FALSE,
+  iter.startup=100,
   iter.layer=100,
-  shuffle=10,
-  max.layers=10)
+  back.fit=100,
+  row.release=0.7,
+  col.release=0.7,
+  shuffle=100,
+  max.layers=5,
+  verbose=FALSE)
 
 # a <- as.matrix(biclust_input_data)
 # # colnames(a) <- 1:ncol(a)
@@ -212,6 +218,28 @@ res1 <- biclust::biclust(
 # )
 # dev.off()
 
+calc_hamming <- function(matrix_data){
+  hamming_dist <- function(vec1, vec2) {
+    sum(vec1 != vec2)
+  }
+
+  # Number of rows (vectors)
+  n <- nrow(matrix_data)
+
+  # Initialize a distance matrix
+  dist_matrix <- matrix(0, n, n)
+
+  # Calculate pairwise Hamming distances between rows
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      dist_matrix[i, j] <- hamming_dist(matrix_data[i, ], matrix_data[j, ])
+      dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+    }
+  }
+
+  # Print the distance matrix
+  print(dist_matrix)
+}
 
 b <- as.matrix(biclust_input_data)[,1:n_target_genes]
 b <- matrix(0, nrow = nrow(b), ncol = ncol(b))
@@ -219,17 +247,44 @@ for (i_n in 1:res1@Number) {
   a <- as.matrix((res1@RowxNumber[, i_n, drop = FALSE] %*% res1@NumberxCol[i_n, , drop = FALSE]) == 1)
   b[a] <- i_n
 }
-unique(as.vector(b))
+matrix_data <- unique(b, MARGIN = 1)
+dist_matrix <- calc_hamming(matrix_data)
+distance_object <- as.dist(dist_matrix)
+
+# Perform hierarchical clustering
+hc <- hclust(distance_object)
+
+# Plot the dendrogram to visualize the clustering
+plot(hc, labels = rownames(matrix_data))
+clusters <- cutree(hc, k = 3)
+clusters[clusters>2] = 2
+
+# Print the cluster assignments
+print(clusters)
+
+res_cell_cluster <- vector(length=nrow(b))
+for (i in 1:nrow(matrix_data)) {
+  inds <- which(apply(b, 1, function(x) return(all(x == matrix_data[i,]))))
+  res_cell_cluster[inds] <- clusters[i]
+}
+
+
 
 # b <- raster::ratify(raster::raster(b))
 n <- length(unique(as.vector(b)))
 regions <- seq(1, n, length.out = n + 1)
 middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
 odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+if(n %% 2 == 1){
+  keep_these_colors = 1:n
+}else{
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+}
 rasterVis::levelplot(b, att = n,
-                     col.regions = rainbow(odd_number_larger),
-                     colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     # col.regions = rainbow(odd_number_larger),
+                     colorkey = list(at = regions,
+                                     # col=rainbow(odd_number_larger)[keep_these_colors],
+                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
                      xlab = 'Cells',
                      ylab = 'Target genes',
                      main='biclust')
@@ -252,6 +307,9 @@ for (i in 1:n_total_cells) {
 # Convert the result to numeric matrix
 result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
 result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
+correct_clustering <- as.vector(result_matrix)
+calc_hamming(unique(result_matrix, MARGIN = 1))
+
 
 n <- length(unique(as.vector(result_matrix)))
 if(n!=max(as.vector(result_matrix))){
@@ -260,10 +318,16 @@ if(n!=max(as.vector(result_matrix))){
 regions <- seq(1, n, length.out = n + 1)
 middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
 odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+if(n %% 2 == 1){
+  keep_these_colors = 1:n
+}else{
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+}
 rasterVis::levelplot(result_matrix, att = n,
-                     col.regions = rainbow(odd_number_larger),
-                     colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     # col.regions = rainbow(odd_number_larger),
+                     colorkey = list(at = regions,
+                                     # col=rainbow(odd_number_larger)[keep_these_colors],
+                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
                      xlab = 'Cells',
                      ylab = 'Target genes',
                      main='Generated data')
@@ -291,20 +355,32 @@ for(i_res in 1:length(penalization_lambdas)){
   result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
   result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
 
+  # calc_hamming(unique(result_matrix, MARGIN = 1))
+
+  RI <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
+  print(RI)
+
   n <- length(unique(as.vector(result_matrix)))
-  regions <- round(seq(1, n, length.out = n + 1),3)
+  regions <- seq(1, n, length.out = n + 1)
   middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
   odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
-  plots[[i_res]] <- rasterVis::levelplot(result_matrix, att = n,
-                                         col.regions = rainbow(odd_number_larger),
-                                         colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
+  if(n %% 2 == 1){
+    keep_these_colors = 1:n
+  }else{
+    keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+  }
+  plots[[i_res]] <- rasterVis::levelplot(result_matrix,
+                                         att = n,
+                                         # col.regions = rainbow(odd_number_larger),
+                                         colorkey = list(at = regions,
+                                                         # col=rainbow(odd_number_larger)[keep_these_colors],
+                                                         labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                          xlab = 'Cells',
                                          ylab = 'Target genes',
-                                         main=paste('biclust_scregclust', penalization_lambdas[i_res]))
+                                         main=paste0('biclust_scregclust, lambda:', penalization_lambdas[i_res], ", RI:", RI))
 }
 
-cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr', ncol=1)
+cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
 #-------------------------
 
 #
