@@ -5,6 +5,7 @@ library(here)  # To work with paths
 library(patchwork)
 library(biclust)
 library(rasterVis)
+library(cowplot)
 sink()
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
@@ -41,7 +42,7 @@ disturbed_fraction <- 0.1  # Value between 0 and 1. How large portion of cells s
 testing_penalization_data_gen <- c(0.1, 0.5)
 
 if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
-  redo_flag) {
+    redo_flag) {
   generated_data <- generate_dummy_data_for_cell_clustering(
     n_cell_clusters = n_cell_clusters,
     n_target_gene_clusters = n_target_gene_clusters,
@@ -62,6 +63,7 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen
   )
+
 
   saveRDS(generated_data,
           file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
@@ -100,14 +102,14 @@ penalization_lambdas <- c(0.1, 0.2, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
-  redo_flag) {
+    redo_flag) {
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
     print(paste(
       "Running biclust for penalization_lambda",
       penalization_lambdas[i_penalization_lambda]
     ),
-          quote = FALSE)
+    quote = FALSE)
     BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
       dat = biclust_input_data,
       cell_id = cell_id,
@@ -126,7 +128,7 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
       calculate_davies_bouldin_index = FALSE,
       plot_suffix = "Simple_cluster_all",
       always_use_flat_prior = FALSE,
-      use_garbage_cluster_targets = F
+      use_garbage_cluster_targets = FALSE
     )
   }
 
@@ -187,11 +189,11 @@ res1 <- biclust::biclust(
   number = 2
 )
 res1 <- biclust::biclust(
-              as.matrix(biclust_input_data[, 1:n_target_genes]),
-                method=BCPlaid(),
-              iter.layer=100,
-              shuffle=10,
-              max.layers=10)
+  as.matrix(biclust_input_data[, 1:n_target_genes]),
+  method=BCPlaid(),
+  iter.layer=100,
+  shuffle=10,
+  max.layers=10)
 
 # a <- as.matrix(biclust_input_data)
 # # colnames(a) <- 1:ncol(a)
@@ -223,17 +225,19 @@ unique(as.vector(b))
 n <- length(unique(as.vector(b)))
 regions <- seq(1, n, length.out = n + 1)
 middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
 rasterVis::levelplot(b, att = n,
-                     col.regions = rainbow(n),
-                     colorkey = list(at = regions, labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     col.regions = rainbow(odd_number_larger),
+                     colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
                      xlab = 'Cells',
                      ylab = 'Target genes',
                      main='biclust')
 
-#----- Construct hatmap for our biclust
-res <- BICLUST_RESULTS[[1]]
-cell_cluster_allocation <- res$cell_cluster_allocation
-target_gene_allocation <- res$scregclust_final_result_module
+#----- Construct heatmap for generated data
+res <- generated_data
+cell_cluster_allocation <- res$true_cell_clust
+target_gene_allocation <- res$true_target_gene_allocation
 
 result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
 
@@ -250,25 +254,67 @@ result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = 
 result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
 
 n <- length(unique(as.vector(result_matrix)))
+if(n!=max(as.vector(result_matrix))){
+  print("Warning")
+}
 regions <- seq(1, n, length.out = n + 1)
 middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
 rasterVis::levelplot(result_matrix, att = n,
-                     col.regions = rainbow(n),
-                     colorkey = list(at = regions, labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     col.regions = rainbow(odd_number_larger),
+                     colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
                      xlab = 'Cells',
                      ylab = 'Target genes',
-                     main='biclust_scregclust')
+                     main='Generated data')
 
 #-------
+#----- Construct heatmap for our biclust
 
+plots <- vector(mode = "list", length = length(penalization_lambdas))
+for(i_res in 1:length(penalization_lambdas)){
+  res <- BICLUST_RESULTS[[i_res]]
+  cell_cluster_allocation <- res$cell_cluster_allocation
+  target_gene_allocation <- res$scregclust_final_result_module
 
-stats::heatmap(x = a,
-               Rowv = res1@RowxNumber,
-               Colv = res1@NumberxCol)
+  result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
 
-res1@RowxNumber
+  for (i in 1:n_total_cells) {
+    cluster <- cell_cluster_allocation[i]
+    gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+    gene_allocation[gene_allocation==-1] <- 0
+    # Create unique numbers for each pair
+    result_matrix[i, ] <- paste0(cluster, gene_allocation)
+  }
 
-image(res1@RowxNumber)
+  # Convert the result to numeric matrix
+  result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
+  result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
+
+  n <- length(unique(as.vector(result_matrix)))
+  regions <- round(seq(1, n, length.out = n + 1),3)
+  middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+  odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+  plots[[i_res]] <- rasterVis::levelplot(result_matrix, att = n,
+                                         col.regions = rainbow(odd_number_larger),
+                                         colorkey = list(at = regions, col=rainbow(odd_number_larger)[keep_these_colors], labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                                         xlab = 'Cells',
+                                         ylab = 'Target genes',
+                                         main=paste('biclust_scregclust', penalization_lambdas[i_res]))
+}
+
+cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr', ncol=1)
+#-------------------------
+
+#
+# stats::heatmap(x = a,
+#                Rowv = res1@RowxNumber,
+#                Colv = res1@NumberxCol)
+#
+# res1@RowxNumber
+#
+# image(res1@RowxNumber)
 
 # print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
 # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
