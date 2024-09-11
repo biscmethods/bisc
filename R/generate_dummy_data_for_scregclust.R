@@ -139,6 +139,13 @@ generate_dummy_data_for_scregclust <- function(
     }
   }
 
+  order_vector <- apply(Pi, 2, function(x) sum(x * 2^(nrow(Pi):1)))
+
+  # Order the matrix by this order vector
+  Pi <- Pi[,order(order_vector, decreasing = TRUE)]
+
+  # browser()
+
   if (!all(colSums(Pi) == 1)) {
     stop("True cluster allocation matrix is wrong. At least one target gene belongs to several clusters.")
   }
