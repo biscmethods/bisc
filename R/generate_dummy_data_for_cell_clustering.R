@@ -133,7 +133,7 @@ generate_dummy_data_for_cell_clustering <- function(
   ###########################################################################
   ##################### Create corresponding count data #####################
   ###########################################################################
-  num_genes <- n_target_genes + num_regulator_genes
+  num_genes <- n_target_genes + n_regulator_genes
   num_cells <- sum(n_cells)
 
   theta <- runif(n = num_genes,
@@ -145,7 +145,7 @@ generate_dummy_data_for_cell_clustering <- function(
 
   counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
 
-  temp_dat <-dat/max(data$dat) #hack to make sensible counts for now
+  temp_dat <-dat/max(dat) #hack to make sensible counts for now
 
   for(cell in 1:num_cells){
     for(gene in 1:num_genes){
