@@ -128,6 +128,37 @@ generate_dummy_data_for_cell_clustering <- function(
 
   dat <- cbind(Z_t, Z_r)
 
+  # print("now jump into debug")
+  # browser()
+  ###########################################################################
+  ##################### Create corresponding count data #####################
+  ###########################################################################
+  num_genes <- n_target_genes + num_regulator_genes
+  num_cells <- sum(n_cells)
+
+  theta <- runif(n = num_genes,
+                 min = 0,
+                 max = 1
+  )  #dispersion per gene
+
+  avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
+
+  counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
+
+  temp_dat <-dat/max(data$dat) #hack to make sensible counts for now
+
+  for(cell in 1:num_cells){
+    for(gene in 1:num_genes){
+      counts[cell, gene] <- rnegbin(1,
+                                    mu = avg_counts_per_cell * exp(temp_dat[cell, gene]),
+                                    theta = theta[gene])
+    }
+  }
+
+  ##########################################################################
+  ###################### Do some other clustering stuff? ###################
+  ##############################Consider removing ##########################
+
   # Split into train and test data for cell clustering
   # Skip for now
   # cell_data_split    <- sample(c(1,2), nrow(Z_t), replace = T)
@@ -407,7 +438,8 @@ generate_dummy_data_for_cell_clustering <- function(
               dat = dat,
               true_target_gene_allocation = true_Pi_numbers,
               true_Pi = true_Pi,
-              true_S = true_S
+              true_S = true_S,
+              counts = counts
 
               )
          )
