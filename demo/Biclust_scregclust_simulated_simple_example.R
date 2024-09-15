@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 path_data <- here::here('data')
 
-redo_flag = T
+redo_flag = F
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -210,9 +210,9 @@ if (
 print("", quote = FALSE)
 print("", quote = FALSE)
 for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-  if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
+  if (is.na(BICLUST_RESULTS_train[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
-  } else if (is.null(BICLUST_RESULTS[i_penalization_lambda])) {
+  } else if (is.null(BICLUST_RESULTS_train[i_penalization_lambda])) {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"), quote = FALSE)
   }else {
     print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", BICLUST_RESULTS_train[[i_penalization_lambda]]$rand_index), quote = FALSE)
@@ -294,11 +294,7 @@ if (
 #### what stats/ results do we want?
 #######################################
 
-str(BICLUST_RESULTS_test)
-BICLUST_RESULTS_test$cell_cluster_allocation %>% table()
-factor(generated_data$true_cell_clust[test_indices]) %>% table()
 
- RI(unlist(BICLUST_RESULTS_test$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
 
 ##############################
 # run again many times for stats
@@ -347,13 +343,24 @@ if (
 }
 
 str(BICLUST_RESULTS_iterated[[1]])
-BICLUST_RESULTS_iterated[[1]]$cell_cluster_allocation %>% table()
+BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation %>% table()
 factor(generated_data$true_cell_clust[test_indices]) %>% table()
 RI(unlist(BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
 
+all(is.na(BICLUST_RESULTS_iterated[[2]]))
 
+BICLUST_RESULTS_iterated[[2]]$rand_index
 #make some plots of results
-RIs <-  sapply(BICLUST_RESULTS_iterated, function(x) as.numeric(x$rand_index))
+RIs <-  sapply(seq_along(BICLUST_RESULTS_iterated),
+               function(x) {
+                 print(x)
+                 if(all(is.na(BICLUST_RESULTS_iterated[[x]]))){
+                   NA
+                 }else{
+                   as.numeric(BICLUST_RESULTS_iterated[[x]]$rand_index)
+                 }
+               }
+               )
 
 
 png(file.path(output_path, paste0("biclust_screg_iterated_RI_histogram_simple_ex",".png")),
@@ -397,11 +404,14 @@ if (
 
 }
 
+str(comparator_iterated[[1]])
 
-res3 <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="r")
-plotclust(res1, as.matrix(biclust_input_data))
-plotclust(res2, as.matrix(biclust_input_data))
-plotclust(res3, as.matrix(biclust_input_data))
+clusters_comparator <-  lapply(comparator_iterated, function(x) x@RowxNumber )
+
+
+
+sapply(1:nrow(clusters_comparator), FUN = function(i) which(clusters_comparator@RowxNumber[i,]))
+
 
 str(res2)
 res2@RowxNumber
