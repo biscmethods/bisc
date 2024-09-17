@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 path_data <- here::here('data')
 
-redo_flag = F
+redo_flag = T
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -29,10 +29,10 @@ set.seed(1234)
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 n_cell_clusters = 2
 n_target_gene_clusters = c(4, 2)  # Number of target gene clusters in each cell cluster
-n_target_genes = 1000
-n_regulator_genes = 100
-n_cells = c(1000, 1000)
-regulator_means = c(0, 0) # For generating dummy data, regulator mean in each cell cluster
+n_target_genes = 100
+n_regulator_genes = 10
+n_cells = c(100, 100)
+regulator_means = c(0, 1) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1,3,5,7),              c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
 coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01 ))
 disturbed_fraction = 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
@@ -69,7 +69,7 @@ if (
     coefficient_means <- coefficient_means,  # For generating dummy data, coefficient means in each cell cluster
     coefficient_sds <- coefficient_sds,
     disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-    plot_stuff = TRUE,
+    plot_stuff = FALSE,
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen
   )
@@ -81,8 +81,7 @@ if (
   generated_data <- readRDS(file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
 
 }
-
-
+#str(generated_data)
 
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
@@ -345,7 +344,7 @@ if (
 str(BICLUST_RESULTS_iterated[[1]])
 BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation %>% table()
 factor(generated_data$true_cell_clust[test_indices]) %>% table()
-RI(unlist(BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
+# RI(unlist(BICLUST_RESULTS_iterated[[2]]$cell_cluster_allocation),factor(generated_data$true_cell_clust[test_indices]) )
 
 all(is.na(BICLUST_RESULTS_iterated[[2]]))
 
@@ -434,7 +433,57 @@ image(res1@RowxNumber)
 
 library("celda")
 
-sce <- celda_CG(x = t(as.matrix(biclust_input_data_test)), K = 2, L = 10, verbose = FALSE, nchains = 1)
+test <- SingleCellExperiment(  assays = list ( counts = t(as.matrix(generated_data$counts
+                                                                    ) + 1
+                                                          )
+                                              )
+                               )
+str(test)
+rowData(test)
+colData(test)
+
+test <- selectFeatures(test)
+sce <- celda_CG(x = test , # cells should be columns here
+                K = 2, L = 4, verbose = TRUE, nchains = 1)
+
+table(celdaClusters(sce))
+table(celdaModules(sce))
+sce <- celdaUmap(sce)
+
+plotDimReduceCluster(x = sce, reducedDimName = "celda_UMAP")
+celdaProbabilityMap(sce)
+plot(celdaHeatmap(sce = sce, nfeatures = 10))
+
+moduleHeatmap(sce, featureModule = c(1,2), topCells = 100)
+
+
+###############################################################################
+################## try running the counts through sctransform #################
+################## nd see if biclust does anything useful######################
+
+library(Seurat)
+library(sctransform)
+simdata <- CreateSeuratObject(counts = t(generated_data$counts))
+
+# store mitochondrial percentage in object meta data
+simdata <- PercentageFeatureSet(simdata, pattern = "^MT-", col.name = "percent.mt")
+
+# run sctransform
+simdata <- SCTransform(simdata, vars.to.regress = "percent.mt", verbose = FALSE)
+
+
+simdata <- RunPCA(simdata, verbose = FALSE)
+simdata <- RunUMAP(simdata, dims = 1:30, verbose = FALSE)
+
+simdata <- FindNeighbors(simdata, dims = 1:30, verbose = FALSE)
+simdata <- FindClusters(simdata, verbose = FALSE)
+DimPlot(simdata, label = TRUE)
+
+simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
+
+z <- GetAssayData(simdata, layer = "scale.data")
+dim(z)
+
 
 # print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
 # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)

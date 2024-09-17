@@ -21,9 +21,9 @@
 #' res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100));
 #' @export
 generate_dummy_data_for_scregclust <- function(
-  n_target_genes = 2193,  # Number of target genes               2193
-  n_regulator_genes = 493,  # Number of regulator genes          493
-  n_cells = 6000,  # Number of cells                             6000
+  n_target_genes = 200,  # Number of target genes               2193
+  n_regulator_genes = 40,  # Number of regulator genes          493
+  n_cells = 600,  # Number of cells                             6000
   n_target_gene_clusters = 10,  # Number of target gene clusters 10
   regulator_mean = 0,  # Mean expression of regulator genes      0
   coefficient_mean = c(0.0417,
@@ -219,17 +219,44 @@ generate_dummy_data_for_scregclust <- function(
   # Matrix Zr ---------------------------------------------------------------
   # n_cells x n_regulator_genes, cells are rows, regulator genes are columns
   # Just get some random expression for regulator genes for now
-  #Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes, mean = regulator_mean, sd = 0.1),
+  # Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes, mean = regulator_mean, sd = 0.1),
   #              nrow = n_cells,
   #              ncol = n_regulator_genes)
 
   cat("Generating Z_r\n")
 
+
+  # old way
   Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes,
                              mean = regulator_mean,
                              sd   = 1),
                 nrow = n_cells,
                 ncol = n_regulator_genes)
+
+
+  # generate Z_r from counts simulated
+
+  library(celda)
+  library(Seurat)
+
+  simulated_data <- simulateCells("celda_G",
+                          # S = 5,   # Number of "samples"???
+                          # K = 1, # unused
+                          L = 1,
+                          C = n_cells,
+                          G = n_regulator_genes,
+                          # CRange = c(30, 50)
+                          )
+  counts_matrix_r <- assay(simulated_data, "counts") #this is now in genes-on-rows-format
+
+  # sctransform these fricks
+  simdata <- Seurat::CreateSeuratObject(counts = counts_matrix_r)
+  simdata <- Seurat::SCTransform(simdata)
+  thetas  <- simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
+  Z_r     <- t(simdata@assays$SCT$scale.data)
+
+
+
 
   # Z_r <- sapply(1:n_regulator_genes, function(i)  rnorm(n_cells, mean = runif(1, 0.1,1), sd = 0.1) )
 
@@ -362,6 +389,33 @@ generate_dummy_data_for_scregclust <- function(
     # cat(paste0("building cluster ", i,"\n_cells"))
   }
 
+  ########################################################################
+  ##### map back the target genes to generate their counts ###############
+  #######################################################################
+
+
+  theta <- runif(n = n_target_genes,
+                 min = min(thetas),  #observed thetas among the simulated regulator genes
+                 max = min(10 * min(thetas),max(thetas))
+  )  #dispersion per gene
+  # theta[] <- 2
+  # theta <- linspace(0.1, 1, num_genes)
+
+  avg_counts_per_cell <-  mean(t(counts_matrix_r)) # / n_target_genes  # sensitivity of the sequencing machine isch, using simulation from celda as baseline
+
+  counts_matrix_t <- matrix(data = 0, nrow = n_cells, ncol = n_target_genes)
+
+  # temp_dat <-dat/max(dat) #hack to make sensible counts for now
+
+  for(cell in 1:n_cells){
+    for(gene in 1:n_target_genes){
+      counts_matrix_t[cell, gene] <- MASS::rnegbin(1,
+                                    mu = avg_counts_per_cell * exp(Z_t[cell, gene]),
+                                    theta = theta[gene])
+    }
+  }
+
+  counts  <- cbind(counts_matrix_t, t(counts_matrix_r))
   # Check if generated data gives rand index 1. If not stop execution
 
   cat("Checking if scRegClust can re-create objective clusters\n")
@@ -460,7 +514,8 @@ generate_dummy_data_for_scregclust <- function(
     Pi = Pi,
     R = R,
     S = S,
-    B = Beta_with_signs
+    B = Beta_with_signs,
+    counts = counts
   )
 }
 

@@ -97,12 +97,14 @@ generate_dummy_data_for_cell_clustering <- function(
 
 
   # Create Z_r and Z_t from dummy data
-  Z_t <- dummy_data[[1]]$Z_t  # cells x genes
-  Z_r <- dummy_data[[1]]$Z_r  # cells x genes
+  Z_t <- dummy_data[[1]]$Z_t  # cells x targ genes
+  Z_r <- dummy_data[[1]]$Z_r  # cells x reg genes
+  counts <- dummy_data[[1]]$counts # cells x genes
   if (n_cell_clusters > 1) {
     for (i_cluster in 2:n_cell_clusters) {
       Z_t <- rbind(Z_t, dummy_data[[i_cluster]]$Z_t)
       Z_r <- rbind(Z_r, dummy_data[[i_cluster]]$Z_r)
+      counts <- rbind(counts, dummy_data[[i_cluster]]$counts)
     }
   }
 
@@ -130,35 +132,41 @@ generate_dummy_data_for_cell_clustering <- function(
 
   # print("now jump into debug")
   # browser()
+
+  ###########################################################################
+  ##################### OLD VERSION                     #####################
+  ###########################################################################
+
+
   ###########################################################################
   ##################### Create corresponding count data #####################
   ###########################################################################
-
-  print("Generate Counts")
-
-  num_genes <- n_target_genes + n_regulator_genes
-  num_cells <- sum(n_cells)
-
-  theta <- runif(n = num_genes,
-                 min = 0,
-                 max = 1
-  )  #dispersion per gene
-  # theta[] <- 2
-  # theta <- linspace(0.1, 1, num_genes)
-
-  avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
-
-  counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
-
-  temp_dat <-dat/max(dat) #hack to make sensible counts for now
-
-  for(cell in 1:num_cells){
-    for(gene in 1:num_genes){
-      counts[cell, gene] <- rnegbin(1,
-                                    mu = avg_counts_per_cell * exp(temp_dat[cell, gene]),
-                                    theta = theta[gene])
-    }
-  }
+#
+#   print("Generate Counts")
+#
+#   num_genes <- n_target_genes + n_regulator_genes
+#   num_cells <- sum(n_cells)
+#
+#   theta <- runif(n = num_genes,
+#                  min = 0,
+#                  max = 1
+#   )  #dispersion per gene
+#   # theta[] <- 2
+#   # theta <- linspace(0.1, 1, num_genes)
+#
+#   avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
+#
+#   counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
+#
+#   temp_dat <-dat/max(dat) #hack to make sensible counts for now
+#
+#   for(cell in 1:num_cells){
+#     for(gene in 1:num_genes){
+#       counts[cell, gene] <- rnegbin(1,
+#                                     mu = avg_counts_per_cell * exp(temp_dat[cell, gene]),
+#                                     theta = theta[gene])
+#     }
+#   }
 
   ##########################################################################
   ###################### Do some other clustering stuff? ###################
