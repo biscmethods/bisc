@@ -81,12 +81,26 @@ colors <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(11, "RdYlBu"))(ma
 colors[1] <- "#000000"
 colors <- structure(colors, names = as.character(d_u))
 ComplexHeatmap::Heatmap(d,
-                        name = "Count",
                         col = colors,
-                        column_title = "Generated data counts",
+                        name = "Generated data counts",
                         cluster_rows = FALSE,
-                        cluster_columns = FALSE)
-#--------------
+                        cluster_columns = FALSE,
+                        column_title = paste(ncol(d), "Genes"),
+                        row_title = paste(nrow(d), "Cells"))
+
+
+# library(Seurat)
+# library(sctransform)
+# Cells as columns according to:
+# https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html
+simdata <- Seurat::CreateSeuratObject(counts = t(generated_data$counts))
+simdata <- Seurat::SCTransform(simdata)
+simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
+simdata <- simdata@assays$SCT$scale.data
+
+
+
+#------------------------------------------------------------------
 
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
@@ -95,7 +109,7 @@ ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 
 disturbed_initial_cell_clust <- factor(generated_data$disturbed_initial_cell_clust)
 
-biclust_input_data <- generated_data$dat
+biclust_input_data <- t(simdata)
 colnames(biclust_input_data) <- c(paste0("t", 1:n_target_genes),
                                   paste0("r", 1:n_regulator_genes))
 biclust_input_data <- tibble::as_tibble(biclust_input_data)
@@ -262,47 +276,50 @@ for (i_n in 1:res1@Number) {
   b[a] <- i_n
 }
 matrix_data <- unique(b, MARGIN = 1)
-dist_matrix <- calc_hamming(matrix_data)
-distance_object <- as.dist(dist_matrix)
-
-# Perform hierarchical clustering
-hc <- hclust(distance_object)
-
-# Plot the dendrogram to visualize the clustering
-plot(hc, labels = rownames(matrix_data))
-clusters <- cutree(hc, k = 3)
-clusters[clusters>2] = 2
-
-# Print the cluster assignments
-print(clusters)
-
-res_cell_cluster <- vector(length=nrow(b))
-for (i in 1:nrow(matrix_data)) {
-  inds <- which(apply(b, 1, function(x) return(all(x == matrix_data[i,]))))
-  res_cell_cluster[inds] <- clusters[i]
-}
-
-
-
-# b <- raster::ratify(raster::raster(b))
-n <- length(unique(as.vector(b)))
-regions <- seq(1, n, length.out = n + 1)
-middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
-odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-if(n %% 2 == 1){
-  keep_these_colors = 1:n
+if(nrow(matrix_data)==1){
+  print("only one type of vector")
 }else{
-  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
-}
-rasterVis::levelplot(b, att = n,
-                     # col.regions = rainbow(odd_number_larger),
-                     colorkey = list(at = regions,
-                                     # col=rainbow(odd_number_larger)[keep_these_colors],
-                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
-                     xlab = 'Cells',
-                     ylab = 'Target genes',
-                     main='biclust')
+  dist_matrix <- calc_hamming(matrix_data)
+  distance_object <- as.dist(dist_matrix)
 
+  # Perform hierarchical clustering
+  hc <- hclust(distance_object)
+
+  # Plot the dendrogram to visualize the clustering
+  plot(hc, labels = rownames(matrix_data))
+  clusters <- cutree(hc, k = 3)
+  clusters[clusters>2] = 2
+
+  # Print the cluster assignments
+  print(clusters)
+
+  res_cell_cluster <- vector(length=nrow(b))
+  for (i in 1:nrow(matrix_data)) {
+    inds <- which(apply(b, 1, function(x) return(all(x == matrix_data[i,]))))
+    res_cell_cluster[inds] <- clusters[i]
+  }
+
+
+
+  # b <- raster::ratify(raster::raster(b))
+  n <- length(unique(as.vector(b)))
+  regions <- seq(1, n, length.out = n + 1)
+  middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+  odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+  if(n %% 2 == 1){
+    keep_these_colors = 1:n
+  }else{
+    keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+  }
+  rasterVis::levelplot(b, att = n,
+                       # col.regions = rainbow(odd_number_larger),
+                       colorkey = list(at = regions,
+                                       # col=rainbow(odd_number_larger)[keep_these_colors],
+                                       labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                       xlab = 'Cells',
+                       ylab = 'Target genes',
+                       main='biclust')
+}
 #----- Construct heatmap for generated data
 res <- generated_data
 cell_cluster_allocation <- res$true_cell_clust
@@ -395,20 +412,3 @@ for(i_res in 1:length(penalization_lambdas)){
 }
 
 cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
-#-------------------------
-
-#
-# stats::heatmap(x = a,
-#                Rowv = res1@RowxNumber,
-#                Colv = res1@NumberxCol)
-#
-# res1@RowxNumber
-#
-# image(res1@RowxNumber)
-
-# print(paste("rand_index for result vs true cluster:", biclust_result$rand_index), quote = FALSE)
-# print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
-# print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
-# print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
-# print(paste("taget_genes_residual_var:"), quote = FALSE)
-# print(biclust_result$taget_genes_residual_var, quote = FALSE)

@@ -143,6 +143,8 @@ generate_dummy_data_for_cell_clustering <- function(
                  min = 0,
                  max = 1
   )  #dispersion per gene
+  # theta[] <- 2
+  # theta <- linspace(0.1, 1, num_genes)
 
   avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
 
@@ -443,7 +445,6 @@ generate_dummy_data_for_cell_clustering <- function(
               true_Pi = true_Pi,
               true_S = true_S,
               counts = counts
-
               )
          )
 }
