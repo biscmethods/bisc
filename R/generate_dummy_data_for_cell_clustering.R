@@ -133,6 +133,9 @@ generate_dummy_data_for_cell_clustering <- function(
   ###########################################################################
   ##################### Create corresponding count data #####################
   ###########################################################################
+
+  print("Generate Counts")
+
   num_genes <- n_target_genes + n_regulator_genes
   num_cells <- sum(n_cells)
 
