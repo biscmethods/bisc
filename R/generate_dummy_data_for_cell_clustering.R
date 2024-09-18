@@ -99,14 +99,22 @@ generate_dummy_data_for_cell_clustering <- function(
   # Create Z_r and Z_t from dummy data
   Z_t <- dummy_data[[1]]$Z_t  # cells x targ genes
   Z_r <- dummy_data[[1]]$Z_r  # cells x reg genes
-  counts <- dummy_data[[1]]$counts # cells x genes
   if (n_cell_clusters > 1) {
     for (i_cluster in 2:n_cell_clusters) {
       Z_t <- rbind(Z_t, dummy_data[[i_cluster]]$Z_t)
       Z_r <- rbind(Z_r, dummy_data[[i_cluster]]$Z_r)
-      counts <- rbind(counts, dummy_data[[i_cluster]]$counts)
     }
   }
+
+  if(!is.na(dummy_data[[1]]$counts)){
+    counts <- dummy_data[[1]]$counts # cells x genes
+    if (n_cell_clusters > 1) {
+      for (i_cluster in 2:n_cell_clusters) {
+        counts <- rbind(counts, dummy_data[[i_cluster]]$counts)
+      }
+    }
+  }
+
 
   #
   # regulator_genes_index <- (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0
