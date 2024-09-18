@@ -48,8 +48,10 @@ generate_dummy_data_for_scregclust <- function(
                      0.0394
   ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
   make_regulator_network_plot = TRUE,
-  plot_suffix = "vignette",
-  testing_penalization = 0.1 # optional, for the screg run in the end
+  plot_suffix                 = "vignette",
+  testing_penalization        = 0.1, # optional, for the screg run in the end
+  generate_counts             = TRUE,
+  check_results               = TRUE
 )
 {
   # Check arguments
@@ -226,36 +228,37 @@ generate_dummy_data_for_scregclust <- function(
   cat("Generating Z_r\n")
 
 
-  # old way
-  Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes,
-                             mean = regulator_mean,
-                             sd   = 1),
-                nrow = n_cells,
-                ncol = n_regulator_genes)
+
 
 
   # generate Z_r from counts simulated
+  if(generate_counts){
+    library(celda)
+    library(Seurat)
 
-  library(celda)
-  library(Seurat)
+    simulated_data <- simulateCells("celda_G",
+                                    # S = 5,   # Number of "samples"???
+                                    # K = 1, # unused
+                                    L = 1,
+                                    C = n_cells,
+                                    G = n_regulator_genes,
+                                    # CRange = c(30, 50)
+    )
+    counts_matrix_r <- assay(simulated_data, "counts") #this is now in genes-on-rows-format
 
-  simulated_data <- simulateCells("celda_G",
-                          # S = 5,   # Number of "samples"???
-                          # K = 1, # unused
-                          L = 1,
-                          C = n_cells,
-                          G = n_regulator_genes,
-                          # CRange = c(30, 50)
-                          )
-  counts_matrix_r <- assay(simulated_data, "counts") #this is now in genes-on-rows-format
-
-  # sctransform these fricks
-  simdata <- Seurat::CreateSeuratObject(counts = counts_matrix_r)
-  simdata <- Seurat::SCTransform(simdata)
-  thetas  <- simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
-  Z_r     <- t(simdata@assays$SCT$scale.data)
-
-
+    # sctransform these fricks
+    simdata <- Seurat::CreateSeuratObject(counts = counts_matrix_r)
+    simdata <- Seurat::SCTransform(simdata)
+    thetas  <- simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
+    Z_r     <- t(simdata@assays$SCT$scale.data)
+  }else{
+    # old way
+    Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes,
+                               mean = regulator_mean,
+                               sd   = 1),
+                  nrow = n_cells,
+                  ncol = n_regulator_genes)
+  }
 
 
   # Z_r <- sapply(1:n_regulator_genes, function(i)  rnorm(n_cells, mean = runif(1, 0.1,1), sd = 0.1) )
@@ -389,33 +392,38 @@ generate_dummy_data_for_scregclust <- function(
     # cat(paste0("building cluster ", i,"\n_cells"))
   }
 
-  ########################################################################
-  ##### map back the target genes to generate their counts ###############
-  #######################################################################
+  if(generate_counts){
+    ########################################################################
+    ##### map back the target genes to generate their counts ###############
+    #######################################################################
 
 
-  theta <- runif(n = n_target_genes,
-                 min = min(thetas),  #observed thetas among the simulated regulator genes
-                 max = min(10 * min(thetas),max(thetas))
-  )  #dispersion per gene
-  # theta[] <- 2
-  # theta <- linspace(0.1, 1, num_genes)
+    theta <- runif(n = n_target_genes,
+                   min = min(thetas),  #observed thetas among the simulated regulator genes
+                   max = min(10 * min(thetas),max(thetas))
+    )  #dispersion per gene
+    # theta[] <- 2
+    # theta <- linspace(0.1, 1, num_genes)
 
-  avg_counts_per_cell <-  mean(t(counts_matrix_r)) # / n_target_genes  # sensitivity of the sequencing machine isch, using simulation from celda as baseline
+    avg_counts_per_cell <-  mean(t(counts_matrix_r)) # / n_target_genes  # sensitivity of the sequencing machine isch, using simulation from celda as baseline
 
-  counts_matrix_t <- matrix(data = 0, nrow = n_cells, ncol = n_target_genes)
+    counts_matrix_t <- matrix(data = 0, nrow = n_cells, ncol = n_target_genes)
 
-  # temp_dat <-dat/max(dat) #hack to make sensible counts for now
+    # temp_dat <-dat/max(dat) #hack to make sensible counts for now
 
-  for(cell in 1:n_cells){
-    for(gene in 1:n_target_genes){
-      counts_matrix_t[cell, gene] <- MASS::rnegbin(1,
-                                    mu = avg_counts_per_cell * exp(Z_t[cell, gene]),
-                                    theta = theta[gene])
+    for(cell in 1:n_cells){
+      for(gene in 1:n_target_genes){
+        counts_matrix_t[cell, gene] <- MASS::rnegbin(1,
+                                                     mu = avg_counts_per_cell * exp(Z_t[cell, gene]),
+                                                     theta = theta[gene])
+      }
     }
+
+    counts  <- cbind(counts_matrix_t, t(counts_matrix_r))
+  }else{
+    counts <- NULL
   }
 
-  counts  <- cbind(counts_matrix_t, t(counts_matrix_r))
   # Check if generated data gives rand index 1. If not stop execution
 
   cat("Checking if scRegClust can re-create objective clusters\n")
@@ -431,79 +439,81 @@ generate_dummy_data_for_scregclust <- function(
   #   n_cycles = 50L, noise_threshold = 0.05, center = FALSE,
   #   sample_assignment = sample_assignment
   # )
+  if(check_results){
+    scregclust::scregclust(
+      expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
+      genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers
+      is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # vector indicating which genes are regulators
+      n_modules = n_target_gene_clusters,
+      penalization = testing_penalization, #generated data is supposed to resemble results from this
+      n_cycles     = 10,
+      verbose = TRUE,
+      min_module_size = 0L,
+      noise_threshold = 0,
+      center = F
+    ) -> scRegOut
 
-  scregclust::scregclust(
-    expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
-    genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers
-    is_regulator = (1:(n_target_genes + n_regulator_genes) > n_target_genes) + 0,  # vector indicating which genes are regulators
-    n_modules = n_target_gene_clusters,
-    penalization = testing_penalization, #generated data is supposed to resemble results from this
-    n_cycles     = 10,
-    verbose = TRUE,
-    min_module_size = 0L,
-    noise_threshold = 0,
-    center = F
-  ) -> scRegOut
+    if(make_regulator_network_plot){
 
-  if(make_regulator_network_plot){
+      cat("Plotting regulator network\n")
 
-    cat("Plotting regulator network\n")
+      demo_path <- here::here("demo")
+      R_path <- here::here("R")
+      output_path <- demo_path
 
-    demo_path <- here::here("demo")
-    R_path <- here::here("R")
-    output_path <- demo_path
+      tryCatch(
+        {
+          p <- scregclust::plot_regulator_network(scRegOut$results[[1]]$output[[1]])
+        },
+        error = function(cond) {
+          print("error generated building network plot")
+        },
+        warning = function(cond) {
+          print("Warning generated building network plot")
+        },
+        finally = function(cond){
+          png(file.path(output_path, paste0("screg_network_",plot_suffix ,".png")),
+              width = 1024, height = 480, units = "px")
+          print(p)
+          dev.off()
+        }
+      )
+    }
 
-    tryCatch(
-      {
-        p <- scregclust::plot_regulator_network(scRegOut$results[[1]]$output[[1]])
-      },
-      error = function(cond) {
-        print("error generated building network plot")
-      },
-      warning = function(cond) {
-        print("Warning generated building network plot")
-      },
-      finally = function(cond){
-        png(file.path(output_path, paste0("screg_network_",plot_suffix ,".png")),
-            width = 1024, height = 480, units = "px")
-        print(p)
-      dev.off()
-      }
-    )
+    # str(scRegOut)
+    # str(scRegOut$results)
+    # str(scRegOut$results[[1]])
+    # str(scRegOut$results[[1]]$output)
+    # scRegOut$results[[1]]$output[[1]]$coeffs
+    # scRegOut$results[[1]]$output[[1]]$models
+    # scRegOut$results[[1]]$output[[1]]$cluster[!is_regulator]
+    #
+    # beta2scregcoeffmat <- function(mat){
+    #    mat[, colSums(mat != 0) > 0]
+    # }
+    #
+    # ncol(beta2scregcoeffmat(Beta_with_signs[[1]]))
+    # beta2scregcoeffmat(Beta_with_signs[[2]])
+    # ncol(scRegOut$results[[1]]$output[[1]]$coeffs[[1]])
+    # scRegOut$results[[1]]$output[[1]]$coeffs[[1]] - beta2scregcoeffmat(Beta_with_signs[[2]])
+
+
+    #compare Beta_with_signs and scRegOut$results[[1]]$output[[1]]$coeffs
+
+    true_clust_allocation <- apply(X = Pi, MARGIN = 2, FUN = function(x) which(x == 1))
+    # cat(true_clust_allocation)
+    predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$module_all[1:n_target_genes]
+    # cat(predicted_cluster_allocation)
+    rand_index <- aricode::RI(true_clust_allocation, predicted_cluster_allocation)
+    rand_index <- rand_index - sum(predicted_cluster_allocation == -1) / length(predicted_cluster_allocation)
+
+    cat(paste0("Rand index: ", rand_index, "\n"))
+
+    if (rand_index < 0.85) {
+      cat("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index, "\n")
+    }
   }
 
-  # str(scRegOut)
-  # str(scRegOut$results)
-  # str(scRegOut$results[[1]])
-  # str(scRegOut$results[[1]]$output)
-  # scRegOut$results[[1]]$output[[1]]$coeffs
-  # scRegOut$results[[1]]$output[[1]]$models
-  # scRegOut$results[[1]]$output[[1]]$cluster[!is_regulator]
-  #
-  # beta2scregcoeffmat <- function(mat){
-  #    mat[, colSums(mat != 0) > 0]
-  # }
-  #
-  # ncol(beta2scregcoeffmat(Beta_with_signs[[1]]))
-  # beta2scregcoeffmat(Beta_with_signs[[2]])
-  # ncol(scRegOut$results[[1]]$output[[1]]$coeffs[[1]])
-  # scRegOut$results[[1]]$output[[1]]$coeffs[[1]] - beta2scregcoeffmat(Beta_with_signs[[2]])
-
-
-  #TODO: somehow compare Beta_with_signs and scRegOut$results[[1]]$output[[1]]$coeffs
-
-  true_clust_allocation <- apply(X = Pi, MARGIN = 2, FUN = function(x) which(x == 1))
-  # cat(true_clust_allocation)
-  predicted_cluster_allocation <- scRegOut$results[[1]]$output[[1]]$module_all[1:n_target_genes]
-  # cat(predicted_cluster_allocation)
-  rand_index <- aricode::RI(true_clust_allocation, predicted_cluster_allocation)
-  rand_index <- rand_index - sum(predicted_cluster_allocation == -1) / length(predicted_cluster_allocation)
-
-  cat(paste0("Rand index: ", rand_index, "\n"))
-
-  if (rand_index < 0.85) {
-    cat("scregclust couldn't find correct clusters in generated data. Rand index:", rand_index, "\n")
-  }
 
   # This can probably be vectorized
   # For this we are omitting the variance terms.
