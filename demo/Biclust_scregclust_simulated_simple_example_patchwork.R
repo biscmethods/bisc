@@ -34,7 +34,7 @@ n_cell_clusters <- 2
 n_target_gene_clusters <- c(4, 2)  # Number of target gene clusters in each cell cluster
 n_target_genes <- 100
 n_regulator_genes <- 10
-n_cells <- c(1000, 1000)
+n_cells <- c(200, 200)
 regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
 coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01))
@@ -61,7 +61,9 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
     # Value between 0 and 1. How large portion of cells should move to other cell clusters.
     plot_stuff = FALSE,
     plot_suffix = "Simple",
-    testing_penalization = testing_penalization_data_gen
+    testing_penalization = testing_penalization_data_gen,
+    generate_counts             = FALSE,
+    check_results               = FALSE
   )
 
 
@@ -73,19 +75,20 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
 
 }
 
-# plot counts
+
+# Plot Counts -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # devtools::install_github("jokergoo/ComplexHeatmap")
-d <- generated_data$counts
-d_u <- sort(unique(as.vector(d)))
-colors <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(11, "RdYlBu"))(max(length(d_u), max(d_u)))
-colors[1] <- "#000000"
-colors <- structure(colors, names = as.character(d_u))
-ComplexHeatmap::Heatmap(d,
-                        name = "Count",
-                        col = colors,
-                        column_title = "Generated data counts",
-                        cluster_rows = FALSE,
-                        cluster_columns = FALSE)
+# d <- generated_data$counts
+# d_u <- sort(unique(as.vector(d)))
+# colors <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(11, "RdYlBu"))(max(length(d_u), max(d_u)))
+# colors[1] <- "#000000"
+# colors <- structure(colors, names = as.character(d_u))
+# ComplexHeatmap::Heatmap(d,
+#                         name = "Count",
+#                         col = colors,
+#                         column_title = "Generated data counts",
+#                         cluster_rows = FALSE,
+#                         cluster_columns = FALSE)
 #--------------
 
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
@@ -184,24 +187,27 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
 ###########################
 
 # compare with other biclust variant
-standard_biclust_results <- biclust::biclust(
-  x = as.matrix(biclust_input_data),
-  method = BCSpectral(),
-  normalization = "irrc",
-  numberOfEigenvalues = 6,
-  minr = 2,
-  minc = 2,
-  withinVar = 1
-)
+# standard_biclust_results <- biclust::biclust(
+#   x = as.matrix(biclust_input_data),
+#   method = BCSpectral(),
+#   normalization = "irrc",
+#   numberOfEigenvalues = 6,
+#   minr = 2,
+#   minc = 2,
+#   withinVar = 1
+# )
 
 
-res1 <- biclust::biclust(
-  as.matrix(biclust_input_data[, 1:n_target_genes]),
-  method = BCCC(),
-  delta = 1.5,
-  alpha = 1,
-  number = 2
-)
+# Do Biclust ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# res1 <- biclust::biclust(
+#   as.matrix(biclust_input_data[, 1:n_target_genes]),
+#   method = BCCC(),
+#   delta = 1.5,
+#   alpha = 1,
+#   number = 2
+# )
 res1 <- biclust::biclust(
   as.matrix(biclust_input_data[, 1:n_target_genes]),
   method=BCPlaid(),
@@ -232,60 +238,125 @@ res1 <- biclust::biclust(
 # )
 # dev.off()
 
-calc_hamming <- function(matrix_data){
+
+calc_hamming <- function(matrix_data, between_rows=TRUE){
   hamming_dist <- function(vec1, vec2) {
     sum(vec1 != vec2)
   }
 
   # Number of rows (vectors)
-  n <- nrow(matrix_data)
+  if(between_rows){
+    n <- nrow(matrix_data)
+  }else{
+    n <- ncol(matrix_data)
+  }
 
   # Initialize a distance matrix
   dist_matrix <- matrix(0, n, n)
 
-  # Calculate pairwise Hamming distances between rows
-  for (i in 1:(n-1)) {
-    for (j in (i+1):n) {
-      dist_matrix[i, j] <- hamming_dist(matrix_data[i, ], matrix_data[j, ])
-      dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+  if(between_rows){
+    # Calculate pairwise Hamming distances between ROWS
+    for (i in 1:(n-1)) {
+      for (j in (i+1):n) {
+        dist_matrix[i, j] <- hamming_dist(matrix_data[i, ], matrix_data[j, ])
+        dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+      }
+    }
+  }else{
+    # Calculate pairwise Hamming distances between COLS
+    for (i in 1:(n-1)) {
+      for (j in (i+1):n) {
+        dist_matrix[i, j] <- hamming_dist(matrix_data[, i], matrix_data[, j])
+        dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+      }
     }
   }
 
   # Print the distance matrix
-  print(dist_matrix)
+  return(dist_matrix)
 }
 
-b <- as.matrix(biclust_input_data)[,1:n_target_genes]
-b <- matrix(0, nrow = nrow(b), ncol = ncol(b))
-for (i_n in 1:res1@Number) {
-  a <- as.matrix((res1@RowxNumber[, i_n, drop = FALSE] %*% res1@NumberxCol[i_n, , drop = FALSE]) == 1)
-  b[a] <- i_n
+cluster_biclust <- function(biclust_result, biclust_input_data, n_target_genes, n_total_cells, n_target_gene_clusters, n_cell_clusters){
+  biclust_input_data <- as.matrix(biclust_input_data)[,1:n_target_genes]
+
+  # Result of biclustering as a matrix
+  biclust_results_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+  for (i_n in 1:biclust_result@Number) {
+    a <- as.matrix((biclust_result@RowxNumber[, i_n, drop = FALSE] %*% biclust_result@NumberxCol[i_n, , drop = FALSE]) == 1)
+    biclust_results_matrix[a] <- i_n
+  }
+
+  # Cell clustering  -------------------
+  # E.g. 400 cells x 100 genes
+  # MARGIN=1 keeps the second/column/gene dimension intact - meaning it's cell clustering
+  # e.g. 8 cells with 100 genes each
+  unique_cells <- unique(biclust_results_matrix, MARGIN = 1)
+  dist_matrix <- calc_hamming(unique_cells, between_rows=TRUE)
+  distance_object <- stats::as.dist(dist_matrix)
+
+  # Perform hierarchical clustering
+  hc <- stats::hclust(distance_object)
+
+  # Plot the dendrogram to visualize the clustering
+  # plot(hc, labels = rownames(unique_cells))
+  unique_cell_clusters <- stats::cutree(hc, k = n_cell_clusters)
+  # unique_cell_clusters[unique_cell_clusters>2] = 2
+
+  res_cell_cluster <- vector(length=nrow(biclust_results_matrix))
+  for (i in 1:nrow(unique_cells)) {
+    inds <- which(apply(biclust_results_matrix, 1, function(x) return(all(x == unique_cells[i,]))))
+    res_cell_cluster[inds] <- unique_cell_clusters[i]
+  }
+
+  # Print the cluster assignments
+  print("Cell clusters found in biclust", quote=FALSE)
+  print(res_cell_cluster, quote=FALSE)
+
+  res_gene_cluster_per_cell_cluster <- vector("list", length = max(unique_cell_clusters))
+  # Gene clusters inside cell clusters  -------------------
+  for(i_cell_cluster in 1:max(unique_cell_clusters)){
+    ind_cell_cluster <- res_cell_cluster==i_cell_cluster
+    unique_genes <- unique(biclust_results_matrix[ind_cell_cluster,], MARGIN = 2)
+    dist_matrix <- calc_hamming(unique_genes, between_rows=FALSE)
+    distance_object <- stats::as.dist(dist_matrix)
+
+    # Perform hierarchical clustering
+    hc <- stats::hclust(distance_object)
+
+    # Plot the dendrogram to visualize the clustering
+    # plot(hc, labels = rownames(unique_cells))
+    unique_gene_clusters <- stats::cutree(hc, k = min(n_target_gene_clusters[i_cell_cluster], length(hc$order)))
+    # unique_gene_clusters[unique_gene_clusters>2] = 4
+
+    res_gene_cluster <- vector(length=ncol(biclust_results_matrix))
+    for (i in 1:ncol(unique_genes)) {
+      inds <- which(apply(biclust_results_matrix[ind_cell_cluster,], 2, function(x) return(all(x == unique_genes[,i]))))
+      res_gene_cluster[inds] <- unique_gene_clusters[i]
+    }
+
+    res_gene_cluster_per_cell_cluster[[i_cell_cluster]] <- res_gene_cluster
+    # Print the cluster assignments
+    print(paste("Gene clusters found in biclust for cell cluster", i_cell_cluster), quote=FALSE)
+    print(res_gene_cluster, quote=FALSE)
+  }
+
+  return(list("res_cell_cluster"=res_cell_cluster,
+              "res_gene_cluster"=res_gene_cluster_per_cell_cluster,
+              "biclust_results_matrix"=biclust_results_matrix))
 }
-matrix_data <- unique(b, MARGIN = 1)
-dist_matrix <- calc_hamming(matrix_data)
-distance_object <- as.dist(dist_matrix)
 
-# Perform hierarchical clustering
-hc <- hclust(distance_object)
-
-# Plot the dendrogram to visualize the clustering
-plot(hc, labels = rownames(matrix_data))
-clusters <- cutree(hc, k = 3)
-clusters[clusters>2] = 2
-
-# Print the cluster assignments
-print(clusters)
-
-res_cell_cluster <- vector(length=nrow(b))
-for (i in 1:nrow(matrix_data)) {
-  inds <- which(apply(b, 1, function(x) return(all(x == matrix_data[i,]))))
-  res_cell_cluster[inds] <- clusters[i]
-}
-
-
+res_biclust_clustering <- cluster_biclust(biclust_result=res1,
+                                          biclust_input_data=biclust_input_data,
+                                          n_target_genes=n_target_genes,
+                                          n_total_cells=n_total_cells,
+                                          n_target_gene_clusters=n_target_gene_clusters,
+                                          n_cell_clusters=n_cell_clusters)
+res_cell_cluster <- res_biclust_clustering$res_cell_cluster
+res_gene_cluster <- res_biclust_clustering$res_gene_cluster
+biclust_results_matrix <- res_biclust_clustering$biclust_results_matrix
 
 # b <- raster::ratify(raster::raster(b))
-n <- length(unique(as.vector(b)))
+n <- length(unique(as.vector(biclust_results_matrix)))
 regions <- seq(1, n, length.out = n + 1)
 middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
 odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
@@ -294,7 +365,7 @@ if(n %% 2 == 1){
 }else{
   keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
 }
-rasterVis::levelplot(b, att = n,
+rasterVis::levelplot(biclust_results_matrix, att = n,
                      # col.regions = rainbow(odd_number_larger),
                      colorkey = list(at = regions,
                                      # col=rainbow(odd_number_larger)[keep_these_colors],
@@ -302,6 +373,9 @@ rasterVis::levelplot(b, att = n,
                      xlab = 'Cells',
                      ylab = 'Target genes',
                      main='biclust')
+
+
+# rand_index <- aricode::RI(
 
 #----- Construct heatmap for generated data
 res <- generated_data
@@ -352,46 +426,48 @@ rasterVis::levelplot(result_matrix, att = n,
 plots <- vector(mode = "list", length = length(penalization_lambdas))
 for(i_res in 1:length(penalization_lambdas)){
   res <- BICLUST_RESULTS[[i_res]]
-  cell_cluster_allocation <- res$cell_cluster_allocation
-  target_gene_allocation <- res$scregclust_final_result_module
+  if(is.list(res)){
+    cell_cluster_allocation <- res$cell_cluster_allocation
+    target_gene_allocation <- res$scregclust_final_result_module
 
-  result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+    result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
 
-  for (i in 1:n_total_cells) {
-    cluster <- cell_cluster_allocation[i]
-    gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
-    gene_allocation[gene_allocation==-1] <- 0
-    # Create unique numbers for each pair
-    result_matrix[i, ] <- paste0(cluster, gene_allocation)
+    for (i in 1:n_total_cells) {
+      cluster <- cell_cluster_allocation[i]
+      gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+      gene_allocation[gene_allocation==-1] <- 0
+      # Create unique numbers for each pair
+      result_matrix[i, ] <- paste0(cluster, gene_allocation)
+    }
+
+    # Convert the result to numeric matrix
+    result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
+    result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
+
+    # calc_hamming(unique(result_matrix, MARGIN = 1))
+
+    RI <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
+    print(RI)
+
+    n <- length(unique(as.vector(result_matrix)))
+    regions <- seq(1, n, length.out = n + 1)
+    middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+    odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+    if(n %% 2 == 1){
+      keep_these_colors = 1:n
+    }else{
+      keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+    }
+    plots[[i_res]] <- rasterVis::levelplot(result_matrix,
+                                           att = n,
+                                           # col.regions = rainbow(odd_number_larger),
+                                           colorkey = list(at = regions,
+                                                           # col=rainbow(odd_number_larger)[keep_these_colors],
+                                                           labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                                           xlab = 'Cells',
+                                           ylab = 'Target genes',
+                                           main=paste0('biclust_scregclust, lambda:', penalization_lambdas[i_res], ", RI:", RI))
   }
-
-  # Convert the result to numeric matrix
-  result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
-  result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
-
-  # calc_hamming(unique(result_matrix, MARGIN = 1))
-
-  RI <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
-  print(RI)
-
-  n <- length(unique(as.vector(result_matrix)))
-  regions <- seq(1, n, length.out = n + 1)
-  middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
-  odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-  if(n %% 2 == 1){
-    keep_these_colors = 1:n
-  }else{
-    keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
-  }
-  plots[[i_res]] <- rasterVis::levelplot(result_matrix,
-                                         att = n,
-                                         # col.regions = rainbow(odd_number_larger),
-                                         colorkey = list(at = regions,
-                                                         # col=rainbow(odd_number_larger)[keep_these_colors],
-                                                         labels = list(at = middle_of_regions, labels = as.character(1:n))),
-                                         xlab = 'Cells',
-                                         ylab = 'Target genes',
-                                         main=paste0('biclust_scregclust, lambda:', penalization_lambdas[i_res], ", RI:", RI))
 }
 
 cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
