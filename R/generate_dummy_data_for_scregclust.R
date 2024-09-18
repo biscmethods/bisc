@@ -21,37 +21,37 @@
 #' res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100));
 #' @export
 generate_dummy_data_for_scregclust <- function(
-  n_target_genes = 200,  # Number of target genes               2193
-  n_regulator_genes = 40,  # Number of regulator genes          493
-  n_cells = 600,  # Number of cells                             6000
-  n_target_gene_clusters = 10,  # Number of target gene clusters 10
-  regulator_mean = 0,  # Mean expression of regulator genes      0
-  coefficient_mean = c(0.0417,
-                       0.0343,
-                       0.0576,
-                       0.043 ,
-                       0.0576,
-                       0.0413,
-                       0.0473,
-                       0.0444,
-                       0.0481,
-                       -0.0139),
-  coefficient_sd = c(0.0556,
-                     0.037,
-                     0.0638,
-                     0.0466,
-                     0.0761,
-                     0.0471,
-                     0.0468,
-                     0.0611,
-                     0.0623,
-                     0.0394
-  ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
-  make_regulator_network_plot = TRUE,
-  plot_suffix                 = "vignette",
-  testing_penalization        = 0.1, # optional, for the screg run in the end
-  generate_counts             = TRUE,
-  check_results               = TRUE
+    n_target_genes = 200,  # Number of target genes               2193
+    n_regulator_genes = 40,  # Number of regulator genes          493
+    n_cells = 600,  # Number of cells                             6000
+    n_target_gene_clusters = 10,  # Number of target gene clusters 10
+    regulator_mean = 0,  # Mean expression of regulator genes      0
+    coefficient_mean = c(0.0417,
+                         0.0343,
+                         0.0576,
+                         0.043 ,
+                         0.0576,
+                         0.0413,
+                         0.0473,
+                         0.0444,
+                         0.0481,
+                         -0.0139),
+    coefficient_sd = c(0.0556,
+                       0.037,
+                       0.0638,
+                       0.0466,
+                       0.0761,
+                       0.0471,
+                       0.0468,
+                       0.0611,
+                       0.0623,
+                       0.0394
+    ),  # Mean coefficients/betas in true model, length n_target_gene_clusters
+    make_regulator_network_plot = TRUE,
+    plot_suffix                 = "vignette",
+    testing_penalization        = 0.1, # optional, for the screg run in the end
+    generate_counts             = TRUE,
+    check_results               = TRUE
 )
 {
   # Check arguments
@@ -178,11 +178,11 @@ generate_dummy_data_for_scregclust <- function(
 
   # R
   # browser()
-   order_vector <- apply(R, 2, function(x) sum(x * 2^(nrow(R):1)))
+  order_vector <- apply(R, 2, function(x) sum(x * 2^(nrow(R):1)))
   #  order_vector <- apply(R, 2, function(x) sum((x == 1) * 2^(nrow(R):1)) - sum((x == -1) * 2^(nrow(R):1)))
   # #
   # # # Order the matrix by this order vector
-   R <- R[,order(order_vector, decreasing = TRUE)]
+  R <- R[,order(order_vector, decreasing = TRUE)]
 
   # R[1,]  # Cluster 1 is affected by these regulators
   # sum(R[1,])  # R_1 in the manuscript is which regulators affect cluster 1
@@ -348,17 +348,17 @@ generate_dummy_data_for_scregclust <- function(
 
       diagonal_matrix <- diag_(S2S_i(i_target_gene_cluster))
 
-        target_gene <-
-          (
-            # Gene expression of regulators of cluster i
-            Z_r[, R2R_i(i_target_gene_cluster)]
-            %*%
-              # Signs for whether regulators are stimulating or repressing
-              diagonal_matrix
-            %*%
-              # How much reg of cluster i affects target j
-              Beta2Beta_i(i_target_gene_cluster)[, i_target_gen]
-          )
+      target_gene <-
+        (
+          # Gene expression of regulators of cluster i
+          Z_r[, R2R_i(i_target_gene_cluster)]
+          %*%
+            # Signs for whether regulators are stimulating or repressing
+            diagonal_matrix
+          %*%
+            # How much reg of cluster i affects target j
+            Beta2Beta_i(i_target_gene_cluster)[, i_target_gen]
+        )
 
       error_mean <- 0  # mean(target_gene) / 10
 
@@ -381,10 +381,10 @@ generate_dummy_data_for_scregclust <- function(
 
       Z_t[, i_target_gen] <-
         Z_t[, i_target_gen] +
-          Pi[i_target_gene_cluster, i_target_gen] *                #  True cluster allocation, zero if Z_t[,j] is not in cluster i
-            (
-              target_gene + error_term
-            )
+        Pi[i_target_gene_cluster, i_target_gen] *                #  True cluster allocation, zero if Z_t[,j] is not in cluster i
+        (
+          target_gene + error_term
+        )
 
 
     }
@@ -426,7 +426,7 @@ generate_dummy_data_for_scregclust <- function(
 
   # Check if generated data gives rand index 1. If not stop execution
 
-  cat("Checking if scRegClust can re-create objective clusters\n")
+
 
 
   # set.seed(8374)
@@ -440,6 +440,7 @@ generate_dummy_data_for_scregclust <- function(
   #   sample_assignment = sample_assignment
   # )
   if(check_results){
+    cat("Checking if scRegClust can re-create objective clusters\n")
     scregclust::scregclust(
       expression = rbind(t(Z_t), t(Z_r)),  # scRegClust wants this form: row x col: genes x cells.
       genesymbols = 1:(n_target_genes + n_regulator_genes),  # gene row numbers

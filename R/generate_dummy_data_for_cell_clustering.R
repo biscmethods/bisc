@@ -16,55 +16,57 @@ library(plyr)
 
 
 generate_dummy_data_for_cell_clustering <- function(
-  n_cell_clusters = 2,
-  n_target_gene_clusters = c(10, 7),  # Number of target gene clusters in each cell cluster
-  n_target_genes = 2193,          #from vignette
-  n_regulator_genes = 493,        # from vignette
-  n_cells = c(6000, 6000),
-  regulator_means = c(0, 0),  # For generating dummy data, regulator mean in each cell cluster
-  coefficient_means = list(c(0.0417,
-                             0.0343,
-                             0.0576,
-                             0.043 ,
-                             0.0576,
-                             0.0413,
-                             0.0473,
-                             0.0444,
-                             0.0481,
-                            -0.0139),
-                           c(0.0404,
-                             0.0519,
-                             0.0545,
-                             0.0915,
-                             0.0663,
-                             0.0512,
-                            -0.0064
-                            )
-                           ),  # For generating dummy data, coefficient means in each cell cluster
-  coefficient_sds = list(c(0.0556,
-                           0.037,
-                           0.0638,
-                           0.0466,
-                           0.0761,
-                           0.0471,
-                           0.0468,
-                           0.0611,
-                           0.0623,
-                           0.0394
-                           ),
-                         c(0.0462,
-                           0.0496,
-                           0.0807,
-                           0.1086,
-                           0.071,
-                           0.0716,
-                           0.057
-                           )
-                         ),
-  disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
-  plot_stuff = TRUE,
-  plot_suffix = "vignette",
-  testing_penalization = c(0.1, 0.3) #vector of length n_cell_clusters
+    n_cell_clusters = 2,
+    n_target_gene_clusters = c(10, 7),  # Number of target gene clusters in each cell cluster
+    n_target_genes = 2193,          #from vignette
+    n_regulator_genes = 493,        # from vignette
+    n_cells = c(6000, 6000),
+    regulator_means = c(0, 0),  # For generating dummy data, regulator mean in each cell cluster
+    coefficient_means = list(c(0.0417,
+                               0.0343,
+                               0.0576,
+                               0.043 ,
+                               0.0576,
+                               0.0413,
+                               0.0473,
+                               0.0444,
+                               0.0481,
+                               -0.0139),
+                             c(0.0404,
+                               0.0519,
+                               0.0545,
+                               0.0915,
+                               0.0663,
+                               0.0512,
+                               -0.0064
+                             )
+    ),  # For generating dummy data, coefficient means in each cell cluster
+    coefficient_sds = list(c(0.0556,
+                             0.037,
+                             0.0638,
+                             0.0466,
+                             0.0761,
+                             0.0471,
+                             0.0468,
+                             0.0611,
+                             0.0623,
+                             0.0394
+    ),
+    c(0.0462,
+      0.0496,
+      0.0807,
+      0.1086,
+      0.071,
+      0.0716,
+      0.057
+    )
+    ),
+    disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+    plot_stuff = TRUE,
+    plot_suffix = "vignette",
+    testing_penalization = c(0.1, 0.3), #vector of length n_cell_clusters
+    generate_counts             = TRUE,
+    check_results               = TRUE
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -86,8 +88,10 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                   coefficient_sd = coefficient_sds[[i_cluster]],
                                                                   make_regulator_network_plot = F,
                                                                   plot_suffix = paste0(plot_suffix, "_", i_cluster),
-                                                                  testing_penalization = testing_penalization[i_cluster]
-                                                                  )
+                                                                  testing_penalization = testing_penalization[i_cluster],
+                                                                  generate_counts             = generate_counts,
+                                                                  check_results               = check_results
+    )
     # list of list of models. with dimension regulators x targets
     # Top level list is each cell cluster
     # in each of those elements is the model generating each target gene cluster in that cell cluster
@@ -106,7 +110,8 @@ generate_dummy_data_for_cell_clustering <- function(
     }
   }
 
-  if(!is.na(dummy_data[[1]]$counts)){
+  counts <- NA
+  if(generate_counts && ("counts" %in% names(dummy_data[[1]])) && !is.na(dummy_data[[1]]$counts)){
     counts <- dummy_data[[1]]$counts # cells x genes
     if (n_cell_clusters > 1) {
       for (i_cluster in 2:n_cell_clusters) {
@@ -149,32 +154,32 @@ generate_dummy_data_for_cell_clustering <- function(
   ###########################################################################
   ##################### Create corresponding count data #####################
   ###########################################################################
-#
-#   print("Generate Counts")
-#
-#   num_genes <- n_target_genes + n_regulator_genes
-#   num_cells <- sum(n_cells)
-#
-#   theta <- runif(n = num_genes,
-#                  min = 0,
-#                  max = 1
-#   )  #dispersion per gene
-#   # theta[] <- 2
-#   # theta <- linspace(0.1, 1, num_genes)
-#
-#   avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
-#
-#   counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
-#
-#   temp_dat <-dat/max(dat) #hack to make sensible counts for now
-#
-#   for(cell in 1:num_cells){
-#     for(gene in 1:num_genes){
-#       counts[cell, gene] <- rnegbin(1,
-#                                     mu = avg_counts_per_cell * exp(temp_dat[cell, gene]),
-#                                     theta = theta[gene])
-#     }
-#   }
+  #
+  #   print("Generate Counts")
+  #
+  #   num_genes <- n_target_genes + n_regulator_genes
+  #   num_cells <- sum(n_cells)
+  #
+  #   theta <- runif(n = num_genes,
+  #                  min = 0,
+  #                  max = 1
+  #   )  #dispersion per gene
+  #   # theta[] <- 2
+  #   # theta <- linspace(0.1, 1, num_genes)
+  #
+  #   avg_counts_per_cell <-  30 / num_genes  # sensitivity of the sequencing machine isch
+  #
+  #   counts <- matrix(data = 0, nrow = num_cells, ncol = num_genes)
+  #
+  #   temp_dat <-dat/max(dat) #hack to make sensible counts for now
+  #
+  #   for(cell in 1:num_cells){
+  #     for(gene in 1:num_genes){
+  #       counts[cell, gene] <- rnegbin(1,
+  #                                     mu = avg_counts_per_cell * exp(temp_dat[cell, gene]),
+  #                                     theta = theta[gene])
+  #     }
+  #   }
 
   ##########################################################################
   ###################### Do some other clustering stuff? ###################
@@ -274,9 +279,9 @@ generate_dummy_data_for_cell_clustering <- function(
     dev.off()
 
     tsne_plot <- function(
-      indata = dat,
-      cluster_allocation = true_cluster_allocation,
-      title = "tSNE plot"
+    indata = dat,
+    cluster_allocation = true_cluster_allocation,
+    title = "tSNE plot"
     ){
       tsne_result <- Rtsne::Rtsne(
         indata, dims = 2,
@@ -338,18 +343,18 @@ generate_dummy_data_for_cell_clustering <- function(
     ggplot(df_combined, aes(x = regulator,
                             y = as.factor(target_gene_cluster),
                             fill = as.factor(value))
-          )+
+    )+
       geom_tile() +
       facet_wrap(~ plot, ncol = 2) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1),
             plot.title = element_text(hjust = 0.5)) +
       scale_fill_manual( values = c(
-                                    "-1" = "#075AFF",
-                                    "0" = "#FFFFCC",
-                                    "1" = "#FF0000"
-                                    )
-                         )+
+        "-1" = "#075AFF",
+        "0" = "#FFFFCC",
+        "1" = "#FF0000"
+      )
+      )+
       xlab("Regulator gene") +
       ylab("Target gene cluster")  +
       ggtitle("Heatmap of S matrices") -> p
@@ -374,11 +379,11 @@ generate_dummy_data_for_cell_clustering <- function(
     df_combined <- do.call(rbind, df_list)
 
     ggplot(df_combined, aes(
-                            x = target_gene,
-                            y = as.factor(target_gene_cluster),
-                            fill = as.factor(value)
-                            )
-          ) +
+      x = target_gene,
+      y = as.factor(target_gene_cluster),
+      fill = as.factor(value)
+    )
+    ) +
       geom_tile() +
       facet_wrap(~ plot, ncol = 1) +
       theme_minimal() +
@@ -386,13 +391,13 @@ generate_dummy_data_for_cell_clustering <- function(
             plot.title = element_text(hjust = 0.5)) +
       scale_fill_manual(
         values = c("0" = "#075AFF", "1" = "#FF0000")
-                       ) +
+      ) +
       xlab("Target gene") +
       ylab("Target gene cluster")  +
       ggtitle("Heatmap of Pi matrices") -> p
 
     png(file.path(output_path, paste0("biclust_data_gen_Pi_",plot_suffix,".png")),
-          width = 1024, height = 480, units = "px")
+        width = 1024, height = 480, units = "px")
     print(p)
     dev.off()
 
@@ -452,17 +457,17 @@ generate_dummy_data_for_cell_clustering <- function(
   }
 
   return(list(
-              disturbed_initial_cell_clust = disturbed_initial_cell_clust,
-              initial_cell_clust = initial_cell_clust,
-              true_cell_clust = true_cluster_allocation,
-              true_betas = betas,
-              dat = dat,
-              true_target_gene_allocation = true_Pi_numbers,
-              true_Pi = true_Pi,
-              true_S = true_S,
-              counts = counts
-              )
-         )
+    disturbed_initial_cell_clust = disturbed_initial_cell_clust,
+    initial_cell_clust = initial_cell_clust,
+    true_cell_clust = true_cluster_allocation,
+    true_betas = betas,
+    dat = dat,
+    true_target_gene_allocation = true_Pi_numbers,
+    true_Pi = true_Pi,
+    true_S = true_S,
+    counts = counts
+  )
+  )
 }
 
 
