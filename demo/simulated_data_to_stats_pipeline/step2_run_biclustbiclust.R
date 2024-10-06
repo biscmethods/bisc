@@ -1,5 +1,5 @@
 #!/usr/bin/Rscript
-rm(list = ls())
+# rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
@@ -149,9 +149,9 @@ cluster_biclust <- function(biclust_result, biclust_input_data, n_target_genes, 
     print(res_gene_cluster, quote=FALSE)
   }
 
-  return(list("res_cell_cluster"=res_cell_cluster,
-              "res_gene_cluster"=res_gene_cluster_per_cell_cluster,
-              "biclust_results_matrix"=biclust_results_matrix))
+  return(list("res_cell_cluster"       = res_cell_cluster,
+              "res_gene_cluster"       = res_gene_cluster_per_cell_cluster,
+              "biclust_results_matrix" = biclust_results_matrix))
 }
 
 res_biclust_clustering <- cluster_biclust(biclust_result=res1,

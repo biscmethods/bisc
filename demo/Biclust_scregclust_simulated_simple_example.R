@@ -73,7 +73,8 @@ if (
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen,
     generate_counts = F,
-    trivial_regulator_networks = T
+    trivial_regulator_networks = T,
+    pearson_regulators          = T
   )
 
   saveRDS(generated_data, file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
@@ -83,7 +84,8 @@ if (
   generated_data <- readRDS(file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
 
 }
- # str(generated_data)
+
+  str(generated_data)
 
  # generated_data$true_target_gene_allocation
 
@@ -211,7 +213,6 @@ if (
 }
 
 str(BICLUST_RESULTS_train)
-BICLUST_RESULTS_train$scregclust_final_result_module
 
 
 print("", quote = FALSE)

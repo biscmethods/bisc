@@ -1,5 +1,5 @@
 #!/usr/bin/Rscript
-rm(list = ls())
+# rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
@@ -26,7 +26,7 @@ set.seed(1234)
 # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # TODO: Which lambda result shall we use? All? The best knowing the solution? Best would be if we can get some selection criteria working but shall we skip that for now?
 
-penalization_lambdas <- c(0.0001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7) # c( 0.00001, 0.1, 0.2, 0.5)
+penalization_lambdas <- c( 0.1, 0.3, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
 if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
@@ -54,9 +54,9 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
       calculate_BIC = FALSE,
       calculate_silhoutte = FALSE,
       calculate_davies_bouldin_index = FALSE,
-      plot_suffix = "Simple_cluster_all",
-      always_use_flat_prior = FALSE,
-      use_garbage_cluster_targets = FALSE
+      plot_suffix                  = "step3_biclust_screg",
+      always_use_flat_prior        = FALSE,
+      use_garbage_cluster_targets  = FALSE
     )
   }
 

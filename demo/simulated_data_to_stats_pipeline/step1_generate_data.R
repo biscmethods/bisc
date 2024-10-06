@@ -21,9 +21,11 @@ redo_flag <- TRUE
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 
 
-#############################################
-############ data for dev ###################
-#############################################
+################################################################
+############ Generate initial simple example ###################
+################################################################
+
+
 
 # Set seed for example
 set.seed(1234)
@@ -32,7 +34,7 @@ set.seed(1234)
 n_cell_clusters <- 2
 n_target_gene_clusters <- c(4, 2)  # Number of target gene clusters in each cell cluster
 n_target_genes <- 100
-n_regulator_genes <- 10
+n_regulator_genes <- 6
 n_cells <- c(200, 200)
 regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
@@ -62,7 +64,9 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen,
     generate_counts             = FALSE,
-    check_results               = FALSE
+    check_results               = FALSE,
+    trivial_regulator_networks  = TRUE,
+    pearson_regulators          = TRUE
   )
 
 
@@ -153,4 +157,87 @@ rasterVis::levelplot(result_matrix, att = n,
                      xlab = 'Cells',
                      ylab = 'Target genes',
                      main='Generated data')
+
+
+###########################################
+############ TODO plot data ###############
+###########################################
+
+
+
+######################################################################
+############ Generate further complicated examples ###################
+######################################################################
+
+
+
+
+# Set seed for example
+set.seed(1234)
+
+# Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# preallocate data list
+generated_complicated_data_list <- vector(mode = "list", length = n_cell_clusters)
+num_iter <- 20
+
+
+if (!file.exists(file.path(path_data, "env_sim_complicated_data_data_biclust.rds")) |
+    redo_flag) {
+
+  for(iter in 1:num_iter){
+
+    n_cell_clusters <- 2
+    n_target_gene_clusters <- c(4, 2)  # Number of target gene clusters in each cell cluster
+    n_target_genes <- 100
+    n_regulator_genes <- 10
+    n_cells <- c(200, 200)
+    regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each cell cluster
+    coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
+    coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01))
+    disturbed_fraction <- 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+    testing_penalization_data_gen <- c(0.1, 0.5)
+
+
+
+    generated_complicated_data <- generate_dummy_data_for_cell_clustering(
+      n_cell_clusters = n_cell_clusters,
+      n_target_gene_clusters = n_target_gene_clusters,
+      # Number of target gene clusters in each cell cluster
+      n_target_genes = n_target_genes,
+      #from vignette
+      n_regulator_genes = n_regulator_genes,
+      # from vignette
+      n_cells = n_cells,
+      regulator_means = regulator_means,
+      # For generating dummy data, regulator mean in each cell cluster
+      coefficient_means <- coefficient_means,
+      # For generating dummy data, coefficient means in each cell cluster
+      coefficient_sds <- coefficient_sds,
+      disturbed_fraction = disturbed_fraction,
+      # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+      plot_stuff = FALSE,
+      plot_suffix = "Simple",
+      testing_penalization = testing_penalization_data_gen,
+      generate_counts             = FALSE,
+      check_results               = FALSE,
+      trivial_regulator_networks  = FALSE,
+      pearson_regulators          = TRUE
+    )
+
+    generated_complicated_data_list[[iter]] <- generated_complicated_data
+
+  }
+
+
+
+
+  saveRDS(generated_complicated_data_list,
+          file.path(path_data, "env_sim_complicated_data_data_biclust.rds"))
+
+} else {
+  generated_complicated_data_list <- readRDS(file.path(path_data, "env_sim_complicated_data_data_biclust.rds"))
+
+}
+
 
