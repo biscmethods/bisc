@@ -267,6 +267,20 @@ res1 <- biclust::biclust(
   max.layers=5,
   verbose=FALSE)
 
+res2 <- biclust::biclust(
+  as.matrix(biclust_input_data[, 1:n_target_genes]),
+  method=BCPlaid(),
+  background=FALSE,
+  iter.startup=100,
+  iter.layer=100,
+  back.fit=100,
+  row.release=0.7,
+  col.release=0.7,
+  shuffle=100,
+  max.layers=5,
+  verbose=FALSE)
+
+
 # a <- as.matrix(biclust_input_data)
 # # colnames(a) <- 1:ncol(a)
 # png("heatmap.png",
@@ -408,9 +422,11 @@ RI_cell_clustering_biclustbiclust <- round(aricode::RI(res_cell_cluster, true_ce
 print("Cell clustering RI for biclust::biclust", quote=FALSE)
 print(paste(" ", RI_cell_clustering_biclustbiclust), quote=FALSE)
 print("Gene module clustering RI for biclust::biclust", quote=FALSE)
+RI_gene_clustering_biclustbiclust_all <- ""
 for(i_cell_cluster in 1:length(res_gene_cluster)){
   RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster[[i_cell_cluster]], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
   print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
+  RI_gene_clustering_biclustbiclust_all <- paste(RI_gene_clustering_biclustbiclust_all, RI_gene_clustering_biclustbiclust, sep=" ")
 }
 print("Bicluster RI för biclust::biclust",quote=FALSE)
 RI_biclust_biclustbiclust <- round(aricode::RI(as.vector(biclust_results_matrix), correct_clustering), 2)
@@ -434,7 +450,9 @@ plot_biclust_heatmap <- function(biclust_results_matrix){
                                        labels = list(at = middle_of_regions, labels = as.character(1:n_unique_biclusters))),
                        xlab = 'Cells',
                        ylab = 'Target genes',
-                       main='Biclust')
+                       main=paste0('biclust::biclust.\nCell cluster RI:',RI_cell_clustering_biclustbiclust,
+                                   "\nGene modules RI:", RI_gene_clustering_biclustbiclust_all,
+                                   "\nBiclust RI:", RI_biclust_biclustbiclust))
 }
 
 plot_biclust_heatmap(biclust_results_matrix)
@@ -469,8 +487,25 @@ for(i_res in 1:length(penalization_lambdas)){
     result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
     result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
 
-    RI <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
-    print(RI)
+    # CALC RIs
+    true_cell_cluster_allocation <- generated_data$true_cell_clust
+    true_target_gene_allocation <- generated_data$true_target_gene_allocation
+    RI_cell_clustering_biclustscreg <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
+    print(paste("Lambda", penalization_lambdas[i_res]), quote=FALSE)
+    print(" Cell clustering RI for biclust_screg", quote=FALSE)
+    print(paste("  ", RI_cell_clustering_biclustscreg), quote=FALSE)
+    print(" Gene module clustering RI for biclust_screg", quote=FALSE)
+    RI_gene_clustering_biclustscreg_all <- ""
+    for(i_cell_cluster in 1:length(res_gene_cluster)){
+      RI_gene_clustering_biclustscreg <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
+      print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustscreg), quote=FALSE)
+      RI_gene_clustering_biclustscreg_all <- paste(RI_gene_clustering_biclustscreg_all, RI_gene_clustering_biclustscreg, sep=" ")
+    }
+    print(" Bicluster RI för biclust_screg",quote=FALSE)
+    RI_biclust_biclustscreg <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
+    print(paste("  ", RI_biclust_biclustscreg), quote=FALSE)
+
+
 
     n <- length(unique(as.vector(result_matrix)))
     regions <- seq(1, n, length.out = n + 1)
@@ -489,11 +524,17 @@ for(i_res in 1:length(penalization_lambdas)){
                                                            labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                            xlab = 'Cells',
                                            ylab = 'Target genes',
-                                           main=paste0('biclust_scregclust, lambda:', penalization_lambdas[i_res], ", RI:", RI))
+                                           main=paste0('biclust_screg, lambda: ', penalization_lambdas[i_res],
+                                                       "\nCell cluster RI:", RI_cell_clustering_biclustscreg,
+                                                       "\nGene modules RI: ", RI_gene_clustering_biclustscreg_all,
+                                                       "\nBiclust RI:", RI_biclust_biclustscreg))
   }
 }
 
 cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
+
+
+
 #-------------------------
 
 #
