@@ -32,8 +32,8 @@ set.seed(1234)
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 n_cell_clusters <- 2
 n_target_gene_clusters <- c(4, 2)  # Number of target gene clusters in each cell cluster
-n_target_genes <- 100
-n_regulator_genes <- 10
+n_target_genes <- 1000
+n_regulator_genes <- 100
 n_cells <- c(1000, 1000)
 regulator_means <- c(0, 0) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1, 3, 5, 7), c(10, 20))  # For generating dummy data, coefficient means in each cell cluster

@@ -32,7 +32,7 @@ n_target_gene_clusters = c(4, 2)  # Number of target gene clusters in each cell 
 n_target_genes = 100
 n_regulator_genes = 10
 n_cells = c(100, 100)
-regulator_means = c(0, 1) # For generating dummy data, regulator mean in each cell cluster
+regulator_means = c(0, 0) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1,3,5,7),              c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
 coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01 ))
 disturbed_fraction = 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
@@ -372,55 +372,55 @@ dev.off()
 
 
 #start by using biclust to get som cell clusters only, and use that one for plots, update later.
-
-# compare with other biclust variant
-library(biclust)
-
-# ?biclust
-
-# test <- matrix(rbinom(400, 50, 0.4), 20, 20)
-# res1 <- biclust(as.matrix(biclust_input_data), method=BCCC(), delta=1.5,  alpha=1, number=10)
-# res2 <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="b")
-
-
-comparator_iterated <- vector(mode = "list", length = iterations)
-
-if (
-  !file.exists(file.path(path_data, "env_sim_simple_comparator_iter.rds"))  | redo_flag
-) {
-
-  for (iter in 1:iterations) {
-    print(iter)
-    comparator_iterated[[iter]] <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="r")
-
-  }
-
-  saveRDS(comparator_iterated, file.path(path_data, "env_sim_simple_comparator_iter.rds"))
-
-  } else {
-
-    comparator_iterated <- readRDS(file.path(path_data, "env_sim_simple_comparator_iter.rds"))
-
-}
-
-str(comparator_iterated[[1]])
-
-clusters_comparator <-  lapply(comparator_iterated, function(x) x@RowxNumber )
-
-
-
-sapply(1:nrow(clusters_comparator), FUN = function(i) which(clusters_comparator@RowxNumber[i,]))
-
-
-str(res2)
-res2@RowxNumber
-sort(unique(unlist(sapply(1:nrow(biclust_input_data), FUN = function(i) which(res2@RowxNumber[i,])))))
-
-
-res1@RowxNumber
-
-image(res1@RowxNumber)
-?biclust::heatmapBC
+#
+# # compare with other biclust variant
+# library(biclust)
+#
+# # ?biclust
+#
+# # test <- matrix(rbinom(400, 50, 0.4), 20, 20)
+# # res1 <- biclust(as.matrix(biclust_input_data), method=BCCC(), delta=1.5,  alpha=1, number=10)
+# # res2 <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="b")
+#
+#
+# comparator_iterated <- vector(mode = "list", length = iterations)
+#
+# if (
+#   !file.exists(file.path(path_data, "env_sim_simple_comparator_iter.rds"))  | redo_flag
+# ) {
+#
+#   for (iter in 1:iterations) {
+#     print(iter)
+#     comparator_iterated[[iter]] <- biclust(as.matrix(biclust_input_data), method=BCPlaid(),  cluster="r")
+#
+#   }
+#
+#   saveRDS(comparator_iterated, file.path(path_data, "env_sim_simple_comparator_iter.rds"))
+#
+#   } else {
+#
+#     comparator_iterated <- readRDS(file.path(path_data, "env_sim_simple_comparator_iter.rds"))
+#
+# }
+#
+# str(comparator_iterated[[1]])
+#
+# clusters_comparator <-  lapply(comparator_iterated, function(x) x@RowxNumber )
+#
+#
+#
+# sapply(1:nrow(clusters_comparator), FUN = function(i) which(clusters_comparator@RowxNumber[i,]))
+#
+#
+# str(res2)
+# res2@RowxNumber
+# sort(unique(unlist(sapply(1:nrow(biclust_input_data), FUN = function(i) which(res2@RowxNumber[i,])))))
+#
+#
+# res1@RowxNumber
+#
+# image(res1@RowxNumber)
+# ?biclust::heatmapBC
 
 
 # Celda variant?
