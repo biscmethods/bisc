@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 path_data <- here::here('data')
 
-redo_flag = T
+redo_flag = F
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -71,7 +71,8 @@ if (
     disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
     plot_stuff = FALSE,
     plot_suffix = "Simple",
-    testing_penalization = testing_penalization_data_gen
+    testing_penalization = testing_penalization_data_gen,
+    generate_counts = F
   )
 
   saveRDS(generated_data, file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
@@ -81,7 +82,9 @@ if (
   generated_data <- readRDS(file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
 
 }
-#str(generated_data)
+ # str(generated_data)
+
+ # generated_data$true_target_gene_allocation
 
 # Because "dat <- cbind(Z_t, Z_r)" in generate_dummy_data_for_cell_clustering
 ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
@@ -205,6 +208,10 @@ if (
   BICLUST_RESULTS_train <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
 
 }
+
+str(BICLUST_RESULTS_train)
+BICLUST_RESULTS_train$scregclust_final_result_module
+
 
 print("", quote = FALSE)
 print("", quote = FALSE)

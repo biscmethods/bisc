@@ -51,7 +51,9 @@ generate_dummy_data_for_scregclust <- function(
     plot_suffix                 = "vignette",
     testing_penalization        = 0.1, # optional, for the screg run in the end
     generate_counts             = TRUE,
-    check_results               = TRUE
+    check_results               = TRUE,
+    trivial_regulator_networks  = FALSE,
+    regulator_offset            = 4  # only use if trivial_regulator_networks = TRUE, countr the offset (sum of number of regulator genes affecting gene modules in other cell clusters)
 )
 {
   # Check arguments
@@ -164,25 +166,44 @@ generate_dummy_data_for_scregclust <- function(
 
   cat("Generating R\n")
 
-  r_data <- rbinom(n_target_gene_clusters * n_regulator_genes, 1, 1 / n_target_gene_clusters)
-  R <- matrix(data = r_data,
-              nrow = n_target_gene_clusters,
-              ncol = n_regulator_genes)  # Row i is an indicator version of R_i in manuscript
 
-  # Check if any cluster (row) has no regulator, and if so assign one
-  for (row in 1:n_target_gene_clusters) {
-    if (sum(R[row,]) == 0) {
-      R[row, sample.int(n_regulator_genes, 1)] <- 1
+  if (!trivial_regulator_networks){
+
+    r_data <- rbinom(n_target_gene_clusters * n_regulator_genes, 1, 1 / n_target_gene_clusters)
+    R <- matrix(data = r_data,
+                nrow = n_target_gene_clusters,
+                ncol = n_regulator_genes)  # Row i is an indicator version of R_i in manuscript
+    # Check if any cluster (row) has no regulator, and if so assign one
+    for (row in 1:n_target_gene_clusters) {
+      if (sum(R[row,]) == 0) {
+        R[row, sample.int(n_regulator_genes, 1)] <- 1
+      }
     }
-  }
 
-  # R
-  # browser()
-  order_vector <- apply(R, 2, function(x) sum(x * 2^(nrow(R):1)))
-  #  order_vector <- apply(R, 2, function(x) sum((x == 1) * 2^(nrow(R):1)) - sum((x == -1) * 2^(nrow(R):1)))
-  # #
-  # # # Order the matrix by this order vector
-  R <- R[,order(order_vector, decreasing = TRUE)]
+    # R
+    # browser()
+    order_vector <- apply(R, 2, function(x) sum(x * 2^(nrow(R):1)))
+    #  order_vector <- apply(R, 2, function(x) sum((x == 1) * 2^(nrow(R):1)) - sum((x == -1) * 2^(nrow(R):1)))
+    # #
+    # # # Order the matrix by this order vector
+    R <- R[,order(order_vector, decreasing = TRUE)]
+
+  }else{
+    R <- matrix(0, n_target_gene_clusters, n_regulator_genes)
+
+    # Minst en etta per rad. Exakt en etta per kolumn.
+    # To guarantee at least one target gene per cluster,
+    # assign the first n_target_gene_clusters target
+    # gene to different clusters
+    for (i_target_gene_cluster in 1:n_target_gene_clusters) {
+      for (n_regulator_gene in i_target_gene_cluster:min(i_target_gene_cluster,
+                                                      ncol(R))) {
+        print(paste("Target gene cluster", i_target_gene_cluster, "regulator gene", n_regulator_gene))
+        R[i_target_gene_cluster, n_regulator_gene + (regulator_offset )] <- 1
+      }
+    }
+
+  }
 
   # R[1,]  # Cluster 1 is affected by these regulators
   # sum(R[1,])  # R_1 in the manuscript is which regulators affect cluster 1
@@ -201,15 +222,19 @@ generate_dummy_data_for_scregclust <- function(
   # set.seed(10) # to get a nice matrix
 
   cat("Generating S\n")
+  if (!trivial_regulator_networks){
+    s_data <- rbinom(n = n_target_gene_clusters * n_regulator_genes, 1, 0.8) * 2 - 1
+    S <- R * matrix(data = s_data,
+                    nrow = n_target_gene_clusters,
+                    ncol = n_regulator_genes)  # Just randomize signs
 
-  s_data <- rbinom(n = n_target_gene_clusters * n_regulator_genes, 1, 0.8) * 2 - 1
-  S <- R * matrix(data = s_data,
-                  nrow = n_target_gene_clusters,
-                  ncol = n_regulator_genes)  # Just randomize signs
-
-  S2S_i <- function(i, mat = S) {
-    mat[i, which(mat[i,] != 0)]
+    S2S_i <- function(i, mat = S) {
+      mat[i, which(mat[i,] != 0)]
+    }
+  }else{
+    S <- R
   }
+
 
   # S2S_i(2)  # Non-zero entries of this is s_i in manuscript
 

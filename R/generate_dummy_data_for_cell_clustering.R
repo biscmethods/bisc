@@ -66,7 +66,8 @@ generate_dummy_data_for_cell_clustering <- function(
     plot_suffix = "vignette",
     testing_penalization = c(0.1, 0.3), #vector of length n_cell_clusters
     generate_counts             = TRUE,
-    check_results               = TRUE
+    check_results               = TRUE,
+    trivial_regulator_networks  = FALSE
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -77,25 +78,61 @@ generate_dummy_data_for_cell_clustering <- function(
 
   dummy_data <- vector(mode = "list", length = n_cell_clusters)
   betas      <- dummy_data
-  for (i_cluster in 1:n_cell_clusters) {
-    print(paste(" Generating data for cell cluster", i_cluster), quote = FALSE)
-    dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
-                                                                  n_regulator_genes,
-                                                                  n_cells = n_cells[i_cluster],
-                                                                  n_target_gene_clusters = n_target_gene_clusters[i_cluster],
-                                                                  regulator_mean = regulator_means[i_cluster],
-                                                                  coefficient_mean = coefficient_means[[i_cluster]],
-                                                                  coefficient_sd = coefficient_sds[[i_cluster]],
-                                                                  make_regulator_network_plot = F,
-                                                                  plot_suffix = paste0(plot_suffix, "_", i_cluster),
-                                                                  testing_penalization = testing_penalization[i_cluster],
-                                                                  generate_counts             = generate_counts,
-                                                                  check_results               = check_results
-    )
-    # list of list of models. with dimension regulators x targets
-    # Top level list is each cell cluster
-    # in each of those elements is the model generating each target gene cluster in that cell cluster
-    betas[[i_cluster]] <- dummy_data[[i_cluster]]$B
+
+  if(!trivial_regulator_networks){
+    for (i_cluster in 1:n_cell_clusters) {
+      print(paste(" Generating data for cell cluster", i_cluster), quote = FALSE)
+      dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
+                                                                    n_regulator_genes,
+                                                                    n_cells = n_cells[i_cluster],
+                                                                    n_target_gene_clusters = n_target_gene_clusters[i_cluster],
+                                                                    regulator_mean = regulator_means[i_cluster],
+                                                                    coefficient_mean = coefficient_means[[i_cluster]],
+                                                                    coefficient_sd = coefficient_sds[[i_cluster]],
+                                                                    make_regulator_network_plot = F,
+                                                                    plot_suffix = paste0(plot_suffix, "_", i_cluster),
+                                                                    testing_penalization = testing_penalization[i_cluster],
+                                                                    generate_counts             = generate_counts,
+                                                                    check_results               = check_results
+      )
+      # list of list of models. with dimension regulators x targets
+      # Top level list is each cell cluster
+      # in each of those elements is the model generating each target gene cluster in that cell cluster
+      betas[[i_cluster]] <- dummy_data[[i_cluster]]$B
+    }
+
+  }else{
+
+    # First do some checks
+    if(sum(n_target_gene_clusters) != n_regulator_genes){
+      stop("Can't create trivial regulator networks unless the sum of target gene clusters matches the number of regulator genes")
+    }
+
+
+    for (i_cluster in 1:n_cell_clusters) {
+      print(paste(" Generating data for cell cluster", i_cluster), quote = FALSE)
+      dummy_data[[i_cluster]] <- generate_dummy_data_for_scregclust(n_target_genes,
+                                                                    n_regulator_genes,
+                                                                    n_cells = n_cells[i_cluster],
+                                                                    n_target_gene_clusters = n_target_gene_clusters[i_cluster],
+                                                                    regulator_mean = regulator_means[i_cluster],
+                                                                    coefficient_mean = coefficient_means[[i_cluster]],
+                                                                    coefficient_sd = coefficient_sds[[i_cluster]],
+                                                                    make_regulator_network_plot = F,
+                                                                    plot_suffix = paste0(plot_suffix, "_", i_cluster),
+                                                                    testing_penalization = testing_penalization[i_cluster],
+                                                                    generate_counts             = generate_counts,
+                                                                    check_results               = check_results,
+                                                                    trivial_regulator_networks  = trivial_regulator_networks,
+                                                                    regulator_offset = ifelse(i_cluster == 1,
+                                                                                              0,
+                                                                                              cumsum(n_target_gene_clusters)[i_cluster-1])
+      )
+      # list of list of models. with dimension regulators x targets
+      # Top level list is each cell cluster
+      # in each of those elements is the model generating each target gene cluster in that cell cluster
+      betas[[i_cluster]] <- dummy_data[[i_cluster]]$B
+    }
   }
 
 
