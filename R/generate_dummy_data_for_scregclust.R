@@ -53,7 +53,8 @@ generate_dummy_data_for_scregclust <- function(
     generate_counts             = TRUE,
     check_results               = TRUE,
     trivial_regulator_networks  = FALSE,
-    regulator_offset            = 4  # only use if trivial_regulator_networks = TRUE, countr the offset (sum of number of regulator genes affecting gene modules in other cell clusters)
+    regulator_offset            = 0, # only use if trivial_regulator_networks = TRUE, countr the offset (sum of number of regulator genes affecting gene modules in other cell clusters)
+    pearson_regulators          = FALSE
 )
 {
   # Check arguments
@@ -196,9 +197,10 @@ generate_dummy_data_for_scregclust <- function(
     # assign the first n_target_gene_clusters target
     # gene to different clusters
     for (i_target_gene_cluster in 1:n_target_gene_clusters) {
-      for (n_regulator_gene in i_target_gene_cluster:min(i_target_gene_cluster,
-                                                      ncol(R))) {
-        print(paste("Target gene cluster", i_target_gene_cluster, "regulator gene", n_regulator_gene))
+      for (n_regulator_gene in i_target_gene_cluster:min( i_target_gene_cluster, ncol(R)
+                                                        )
+           ) {
+        # print(paste("Target gene cluster", i_target_gene_cluster, "regulator gene", n_regulator_gene))
         R[i_target_gene_cluster, n_regulator_gene + (regulator_offset )] <- 1
       }
     }
@@ -228,13 +230,14 @@ generate_dummy_data_for_scregclust <- function(
                     nrow = n_target_gene_clusters,
                     ncol = n_regulator_genes)  # Just randomize signs
 
-    S2S_i <- function(i, mat = S) {
-      mat[i, which(mat[i,] != 0)]
-    }
+
   }else{
     S <- R
   }
 
+  S2S_i <- function(i, mat = S) {
+    mat[i, which(mat[i,] != 0)]
+  }
 
   # S2S_i(2)  # Non-zero entries of this is s_i in manuscript
 
@@ -245,23 +248,21 @@ generate_dummy_data_for_scregclust <- function(
 
   # Matrix Zr ---------------------------------------------------------------
   # n_cells x n_regulator_genes, cells are rows, regulator genes are columns
-  # Just get some random expression for regulator genes for now
-  # Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes, mean = regulator_mean, sd = 0.1),
-  #              nrow = n_cells,
-  #              ncol = n_regulator_genes)
+  # Generated either by first simulating counts using celda and normalising with sctransform
+  # OR, just using
+
 
   cat("Generating Z_r\n")
 
 
-
-
-
   # generate Z_r from counts simulated
   if(generate_counts){
+    # using zelda:
     library(celda)
     library(Seurat)
+    library(sctransform)
 
-    simulated_data <- simulateCells("celda_G",
+    simulated_data <- celda::simulateCells("celda_G",
                                     # S = 5,   # Number of "samples"???
                                     # K = 1, # unused
                                     L = 1,
@@ -276,7 +277,27 @@ generate_dummy_data_for_scregclust <- function(
     simdata <- Seurat::SCTransform(simdata)
     thetas  <- simdata@assays$SCT@SCTModel.list$counts@feature.attributes$theta
     Z_r     <- t(simdata@assays$SCT$scale.data)
-  }else{
+
+
+
+  } else if(pearson_regulators) {
+    # simulate very naive counts
+    counts <- rnbinom(n_cells * n_regulator_genes, mu = 10, size = 1)
+    # Fit a negative binomial regression model
+    model <- glm.nb(counts ~ 1)
+
+    # Calculate expected values
+    expected <- fitted(model)
+
+    # Compute Pearson residuals
+    pearson_residuals <- (counts - expected) / sqrt(expected)
+
+    # build Z_r
+    Z_r <- matrix(data = pearson_residuals,
+                  nrow = n_cells,
+                  ncol = n_regulator_genes)
+  } else {
+
     # old way
     Z_r <- matrix(data = rnorm(n_cells * n_regulator_genes,
                                mean = regulator_mean,
@@ -560,15 +581,23 @@ generate_dummy_data_for_scregclust <- function(
 if (sys.nframe() == 0) {
   # ... do main stuff
 
-  # n_target_genes = 50  # Number of target genes
-  # n_regulator_genes = 30  # Number of regulator genes
-  # n_cells = 10000 # Number of cells
-  # n_target_gene_clusters = 3  # Number of target gene clusters
-  # regulator_mean = 1  # Mean expression of regulator genes
-  # coefficient_mean = c(5, 20, 100)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
-  # coefficient_sd = c(0.1, 0.1, 0.1)
-  #
+  n_target_genes = 10  # Number of target genes
+  n_regulator_genes = 2  # Number of regulator genes
+  n_cells = 1000 # Number of cells
+  n_target_gene_clusters = 2  # Number of target gene clusters
+  regulator_mean = 1  # Mean expression of regulator genes
+  coefficient_mean = c(1,10)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
+  coefficient_sd = c(0.1, 0.1)
+  make_regulator_network_plot = FALSE
+  plot_suffix                 = "vignette"
+  testing_penalization        = 0.1 # optional, for the screg run in the end
+  generate_counts             = FALSE
+  check_results               = FALSE
+  trivial_regulator_networks  = FALSE
+  regulator_offset            = 0
+
   set.seed(1234)
+
   res <- generate_dummy_data_for_scregclust()
 
   print(str(res))

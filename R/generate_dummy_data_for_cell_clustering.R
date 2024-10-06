@@ -67,7 +67,8 @@ generate_dummy_data_for_cell_clustering <- function(
     testing_penalization = c(0.1, 0.3), #vector of length n_cell_clusters
     generate_counts             = TRUE,
     check_results               = TRUE,
-    trivial_regulator_networks  = FALSE
+    trivial_regulator_networks  = FALSE,
+    pearson_regulators          = TRUE
 ) {
 
   # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -93,7 +94,8 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                     plot_suffix = paste0(plot_suffix, "_", i_cluster),
                                                                     testing_penalization = testing_penalization[i_cluster],
                                                                     generate_counts             = generate_counts,
-                                                                    check_results               = check_results
+                                                                    check_results               = check_results,
+                                                                    pearson_regulators          = pearson_regulators
       )
       # list of list of models. with dimension regulators x targets
       # Top level list is each cell cluster
@@ -126,7 +128,8 @@ generate_dummy_data_for_cell_clustering <- function(
                                                                     trivial_regulator_networks  = trivial_regulator_networks,
                                                                     regulator_offset = ifelse(i_cluster == 1,
                                                                                               0,
-                                                                                              cumsum(n_target_gene_clusters)[i_cluster-1])
+                                                                                              cumsum(n_target_gene_clusters)[i_cluster-1]),
+                                                                    pearson_regulators          = pearson_regulators
       )
       # list of list of models. with dimension regulators x targets
       # Top level list is each cell cluster

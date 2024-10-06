@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 path_data <- here::here('data')
 
-redo_flag = F
+redo_flag = T
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 source(file.path(R_path, "biclust_scregclust.R"))
@@ -29,8 +29,8 @@ set.seed(1234)
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 n_cell_clusters = 2
 n_target_gene_clusters = c(4, 2)  # Number of target gene clusters in each cell cluster
-n_target_genes = 100
-n_regulator_genes = 10
+n_target_genes = 10
+n_regulator_genes = 6
 n_cells = c(100, 100)
 regulator_means = c(0, 0) # For generating dummy data, regulator mean in each cell cluster
 coefficient_means <- list(c(1,3,5,7),              c(10, 20))  # For generating dummy data, coefficient means in each cell cluster
@@ -72,7 +72,8 @@ if (
     plot_stuff = FALSE,
     plot_suffix = "Simple",
     testing_penalization = testing_penalization_data_gen,
-    generate_counts = F
+    generate_counts = F,
+    trivial_regulator_networks = T
   )
 
   saveRDS(generated_data, file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
