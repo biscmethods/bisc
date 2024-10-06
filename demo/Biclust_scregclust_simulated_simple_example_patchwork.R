@@ -355,25 +355,28 @@ res_cell_cluster <- res_biclust_clustering$res_cell_cluster
 res_gene_cluster <- res_biclust_clustering$res_gene_cluster
 biclust_results_matrix <- res_biclust_clustering$biclust_results_matrix
 
+# Plot the biclustering results
 # b <- raster::ratify(raster::raster(b))
-n <- length(unique(as.vector(biclust_results_matrix)))
-regions <- seq(1, n, length.out = n + 1)
-middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
-odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-if(n %% 2 == 1){
-  keep_these_colors = 1:n
-}else{
-  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+plot_biclust_heatmap <- function(biclust_results_matrix){
+  # This is just to fix colors with a unique legend
+  n_unique_biclusters <- length(unique(as.vector(biclust_results_matrix)))
+  regions <- seq(1, n_unique_biclusters, length.out = n_unique_biclusters + 1)
+  middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+  odd_number_larger <- ifelse(n_unique_biclusters %% 2 == 0, n_unique_biclusters + 1, n_unique_biclusters)
+  if(n_unique_biclusters %% 2 == 1){
+    keep_these_colors = 1:n_unique_biclusters
+  }else{
+    keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+  }
+  rasterVis::levelplot(biclust_results_matrix, att = n_unique_biclusters,
+                       colorkey = list(at = regions,
+                                       labels = list(at = middle_of_regions, labels = as.character(1:n_unique_biclusters))),
+                       xlab = 'Cells',
+                       ylab = 'Target genes',
+                       main='Biclust')
 }
-rasterVis::levelplot(biclust_results_matrix, att = n,
-                     # col.regions = rainbow(odd_number_larger),
-                     colorkey = list(at = regions,
-                                     # col=rainbow(odd_number_larger)[keep_these_colors],
-                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
-                     xlab = 'Cells',
-                     ylab = 'Target genes',
-                     main='biclust')
 
+plot_biclust_heatmap(biclust_results_matrix)
 
 # rand_index <- aricode::RI(
 
@@ -384,6 +387,7 @@ target_gene_allocation <- res$true_target_gene_allocation
 
 result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
 
+# Check each entry in the matrix (each cell and gene pair), and assign a string-number to each unique "cell-cluster-gene-module".
 for (i in 1:n_total_cells) {
   cluster <- cell_cluster_allocation[i]
   gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
@@ -392,11 +396,11 @@ for (i in 1:n_total_cells) {
   result_matrix[i, ] <- paste0(cluster, gene_allocation)
 }
 
-# Convert the result to numeric matrix
+# Convert the string-numbers to numeric matrix (starting from 1 this time)
 result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
 result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
 correct_clustering <- as.vector(result_matrix)
-calc_hamming(unique(result_matrix, MARGIN = 1))
+# calc_hamming(unique(result_matrix, MARGIN = 1))
 
 
 n <- length(unique(as.vector(result_matrix)))
@@ -421,7 +425,7 @@ rasterVis::levelplot(result_matrix, att = n,
                      main='Generated data')
 
 #-------
-#----- Construct heatmap for our biclust
+#----- Construct heatmap for our biclust_screg
 
 plots <- vector(mode = "list", length = length(penalization_lambdas))
 for(i_res in 1:length(penalization_lambdas)){
@@ -432,6 +436,7 @@ for(i_res in 1:length(penalization_lambdas)){
 
     result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
 
+    # Check each entry in the matrix (each cell and gene pair), and assign a string-number to each unique "cell-cluster-gene-module".
     for (i in 1:n_total_cells) {
       cluster <- cell_cluster_allocation[i]
       gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
@@ -440,11 +445,9 @@ for(i_res in 1:length(penalization_lambdas)){
       result_matrix[i, ] <- paste0(cluster, gene_allocation)
     }
 
-    # Convert the result to numeric matrix
+    # Convert the string-numbers to numeric matrix (starting from 1 this time)
     result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
     result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
-
-    # calc_hamming(unique(result_matrix, MARGIN = 1))
 
     RI <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
     print(RI)
