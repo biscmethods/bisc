@@ -198,6 +198,52 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
 # )
 
 
+
+# Construct heatmap for generated data ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cell_cluster_allocation <- generated_data$true_cell_clust
+target_gene_allocation <- generated_data$true_target_gene_allocation
+
+result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+
+# Check each entry in the matrix (each cell and gene pair), and assign a string-number to each unique "cell-cluster-gene-module".
+for (i in 1:n_total_cells) {
+  cluster <- cell_cluster_allocation[i]
+  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+  gene_allocation[gene_allocation==-1] <- 0
+  # Create unique numbers for each pair
+  result_matrix[i, ] <- paste0(cluster, gene_allocation)
+}
+
+# Convert the string-numbers to numeric matrix (starting from 1 this time)
+result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
+result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
+correct_clustering <- as.vector(result_matrix)
+# calc_hamming(unique(result_matrix, MARGIN = 1))
+
+
+n <- length(unique(as.vector(result_matrix)))
+if(n!=max(as.vector(result_matrix))){
+  print("Warning")
+}
+regions <- seq(1, n, length.out = n + 1)
+middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+if(n %% 2 == 1){
+  keep_these_colors = 1:n
+}else{
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+}
+rasterVis::levelplot(result_matrix, att = n,
+                     # col.regions = rainbow(odd_number_larger),
+                     colorkey = list(at = regions,
+                                     # col=rainbow(odd_number_larger)[keep_these_colors],
+                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                     xlab = 'Cells',
+                     ylab = 'Target genes',
+                     main='Generated data')
+
+
 # Do Biclust ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -336,7 +382,7 @@ cluster_biclust <- function(biclust_result, biclust_input_data, n_target_genes, 
 
     res_gene_cluster_per_cell_cluster[[i_cell_cluster]] <- res_gene_cluster
     # Print the cluster assignments
-    print(paste("Gene clusters found in biclust for cell cluster", i_cell_cluster), quote=FALSE)
+    print(paste("Gene modules found in biclust for cell cluster", i_cell_cluster), quote=FALSE)
     print(res_gene_cluster, quote=FALSE)
   }
 
@@ -354,6 +400,21 @@ res_biclust_clustering <- cluster_biclust(biclust_result=res1,
 res_cell_cluster <- res_biclust_clustering$res_cell_cluster
 res_gene_cluster <- res_biclust_clustering$res_gene_cluster
 biclust_results_matrix <- res_biclust_clustering$biclust_results_matrix
+
+# Get RI for cell and gene clustering
+true_cell_cluster_allocation <- generated_data$true_cell_clust
+true_target_gene_allocation <- generated_data$true_target_gene_allocation
+RI_cell_clustering_biclustbiclust <- round(aricode::RI(res_cell_cluster, true_cell_cluster_allocation), 2)
+print("Cell clustering RI for biclust::biclust", quote=FALSE)
+print(paste(" ", RI_cell_clustering_biclustbiclust), quote=FALSE)
+print("Gene module clustering RI for biclust::biclust", quote=FALSE)
+for(i_cell_cluster in 1:length(res_gene_cluster)){
+  RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster[[i_cell_cluster]], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
+  print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
+}
+print("Bicluster RI för biclust::biclust",quote=FALSE)
+RI_biclust_biclustbiclust <- round(aricode::RI(as.vector(biclust_results_matrix), correct_clustering), 2)
+print(paste(" ", RI_biclust_biclustbiclust), quote=FALSE)
 
 # Plot the biclustering results
 # b <- raster::ratify(raster::raster(b))
@@ -380,52 +441,11 @@ plot_biclust_heatmap(biclust_results_matrix)
 
 # rand_index <- aricode::RI(
 
-#----- Construct heatmap for generated data
-res <- generated_data
-cell_cluster_allocation <- res$true_cell_clust
-target_gene_allocation <- res$true_target_gene_allocation
-
-result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
-
-# Check each entry in the matrix (each cell and gene pair), and assign a string-number to each unique "cell-cluster-gene-module".
-for (i in 1:n_total_cells) {
-  cluster <- cell_cluster_allocation[i]
-  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
-  gene_allocation[gene_allocation==-1] <- 0
-  # Create unique numbers for each pair
-  result_matrix[i, ] <- paste0(cluster, gene_allocation)
-}
-
-# Convert the string-numbers to numeric matrix (starting from 1 this time)
-result_matrix <- matrix(as.numeric(result_matrix), nrow = n_total_cells, ncol = n_target_genes)
-result_matrix <- matrix(as.integer(as.factor(result_matrix)), nrow=nrow(result_matrix), ncol=ncol(result_matrix))
-correct_clustering <- as.vector(result_matrix)
-# calc_hamming(unique(result_matrix, MARGIN = 1))
 
 
-n <- length(unique(as.vector(result_matrix)))
-if(n!=max(as.vector(result_matrix))){
-  print("Warning")
-}
-regions <- seq(1, n, length.out = n + 1)
-middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
-odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-if(n %% 2 == 1){
-  keep_these_colors = 1:n
-}else{
-  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
-}
-rasterVis::levelplot(result_matrix, att = n,
-                     # col.regions = rainbow(odd_number_larger),
-                     colorkey = list(at = regions,
-                                     # col=rainbow(odd_number_larger)[keep_these_colors],
-                                     labels = list(at = middle_of_regions, labels = as.character(1:n))),
-                     xlab = 'Cells',
-                     ylab = 'Target genes',
-                     main='Generated data')
 
-#-------
-#----- Construct heatmap for our biclust_screg
+# Construct heatmap for our biclust_screg -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 plots <- vector(mode = "list", length = length(penalization_lambdas))
 for(i_res in 1:length(penalization_lambdas)){
