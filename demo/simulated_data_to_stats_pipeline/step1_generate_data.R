@@ -178,8 +178,9 @@ set.seed(1234)
 # Set variables ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # preallocate data list
-generated_complicated_data_list <- vector(mode = "list", length = n_cell_clusters)
 num_iter <- 20
+generated_complicated_data_list <- vector(mode = "list", length = num_iter)
+
 
 
 if (!file.exists(file.path(path_data, "env_sim_complicated_data_data_biclust.rds")) |
