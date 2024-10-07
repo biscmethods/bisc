@@ -13,7 +13,7 @@ sink()
 # Get absolute path where script is located, by using relative paths.
 demo_path <- here::here("demo")
 R_path <- here::here("R")
-output_path <- demo_path
+output_path <- here::here("demo/simulated_data_to_stats_pipeline")
 path_data <- here::here('data')
 
 source(file.path(R_path, "biclust_scregclust.R"))
