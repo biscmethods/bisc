@@ -29,19 +29,24 @@ set.seed(1234)
 
 # Run biclust::biclust --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+bicluctbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+  biclust::biclust(
+    data,
+    method=BCPlaid(),
+    background=FALSE,
+    iter.startup=100,
+    iter.layer=100,
+    back.fit=100,
+    row.release=0.7,
+    col.release=0.7,
+    shuffle=100,
+    max.layers=5,
+    verbose=FALSE)
+}
 
-res1 <- biclust::biclust(
-  as.matrix(biclust_input_data[, 1:n_target_genes]),
-  method=BCPlaid(),
-  background=FALSE,
-  iter.startup=100,
-  iter.layer=100,
-  back.fit=100,
-  row.release=0.7,
-  col.release=0.7,
-  shuffle=100,
-  max.layers=5,
-  verbose=FALSE)
+res1 <- bicluctbiclust(
+    data = as.matrix(biclust_input_data[, 1:n_target_genes])
+  )
 
 
 
@@ -172,6 +177,7 @@ print("Cell clustering RI for biclust::biclust", quote=FALSE)
 print(paste(" ", RI_cell_clustering_biclustbiclust), quote=FALSE)
 print("Gene module clustering RI for biclust::biclust", quote=FALSE)
 RI_gene_clustering_biclustbiclust_all <- ""
+
 for(i_cell_cluster in 1:length(res_gene_cluster)){
   RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster[[i_cell_cluster]], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
   print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
