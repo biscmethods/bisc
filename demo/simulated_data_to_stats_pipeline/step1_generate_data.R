@@ -5,7 +5,7 @@
 library(patchwork)
 library(rasterVis)
 library(cowplot)
-sink()
+# sink()
 #
 # # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 #
@@ -42,7 +42,7 @@ coefficient_sds <- list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01))
 disturbed_fraction <- 0.1  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
 testing_penalization_data_gen <- c(0.1, 0.5)
 
-if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
+if (!file.exists(file.path(output_path, "env_sim_simple_data_biclust_sc.rds")) |
     redo_flag) {
   generated_data <- generate_dummy_data_for_cell_clustering(
     n_cell_clusters = n_cell_clusters,
@@ -71,10 +71,10 @@ if (!file.exists(file.path(path_data, "env_sim_simple_data_biclust_sc.rds")) |
 
 
   saveRDS(generated_data,
-          file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
+          file.path(output_path, "env_sim_simple_data_biclust_sc.rds"))
 
 } else {
-  generated_data <- readRDS(file.path(path_data, "env_sim_simple_data_biclust_sc.rds"))
+  generated_data <- readRDS(file.path(output_path, "env_sim_simple_data_biclust_sc.rds"))
 
 }
 
@@ -183,7 +183,7 @@ generated_complicated_data_list <- vector(mode = "list", length = num_iter)
 
 
 
-if (!file.exists(file.path(path_data, "env_sim_complicated_data_data_biclust.rds")) |
+if (!file.exists(file.path(output_path, "env_sim_complicated_data_data_biclust.rds")) |
     redo_flag) {
 
   for(iter in 1:num_iter){
@@ -234,10 +234,10 @@ if (!file.exists(file.path(path_data, "env_sim_complicated_data_data_biclust.rds
 
 
   saveRDS(generated_complicated_data_list,
-          file.path(path_data, "env_sim_complicated_data_data_biclust.rds"))
+          file.path(output_path, "env_sim_complicated_data_data_biclust.rds"))
 
 } else {
-  generated_complicated_data_list <- readRDS(file.path(path_data, "env_sim_complicated_data_data_biclust.rds"))
+  generated_complicated_data_list <- readRDS(file.path(output_path, "env_sim_complicated_data_data_biclust.rds"))
 
 }
 

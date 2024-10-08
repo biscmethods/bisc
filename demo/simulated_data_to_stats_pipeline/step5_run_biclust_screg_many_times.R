@@ -8,7 +8,9 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
 
   for(iter in 1:length(generated_complicated_data_list )){
 
+    cat("\n")
     print(paste0('Now running outer iteration ', iter))
+    cat("\n")
 
     biclust_screg_results_list[[iter]] <- run_biclust_scregclust(
       dat = generated_complicated_data_list[[iter]]$dat

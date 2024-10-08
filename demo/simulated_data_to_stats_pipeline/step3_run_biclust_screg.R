@@ -38,7 +38,7 @@ run_biclust_scregclust <- function(data, suffix = ''){
 penalization_lambdas <- c( 0.1, 0.3, 0.5) # c( 0.00001, 0.1, 0.2, 0.5)
 BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
 
-if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
+if (!file.exists(file.path(output_path, "env_sim_simple_nogarb_res_biclust_sc.rds")) |
     redo_flag) {
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
 
@@ -58,11 +58,11 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
 
   saveRDS(
     BICLUST_RESULTS,
-    file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds")
+    file.path(output_path, "env_sim_simple_nogarb_res_biclust_sc.rds")
   )
 
 } else {
-  BICLUST_RESULTS <- readRDS(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"))
+  BICLUST_RESULTS <- readRDS(file.path(output_path, "env_sim_simple_nogarb_res_biclust_sc.rds"))
 
 }
 
