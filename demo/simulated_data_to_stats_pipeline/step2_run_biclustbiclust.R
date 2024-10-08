@@ -187,3 +187,9 @@ plot_biclust_heatmap <- function(biclust_results_matrix){
 
 plot_biclust_heatmap(biclust_results_matrix)
 
+
+
+png(file.path(output_path, paste0("biclustbiclust_heatmap.png")),
+    width = 1024, height = 480, units = "px")
+print(plot_biclust_heatmap(biclust_results_matrix))
+dev.off()

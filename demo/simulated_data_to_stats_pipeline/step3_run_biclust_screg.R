@@ -161,3 +161,10 @@ for(i_res in 1:length(penalization_lambdas)){
 cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
 
 
+
+png(file.path(output_path, paste0("biclustscreg_heatmap.png")),
+    width = 1024, height = 480, units = "px")
+print(cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr'))
+dev.off()
+
+
