@@ -3,7 +3,6 @@ rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
-library(biclust)
 library(rasterVis)
 library(cowplot)
 sink()
@@ -15,6 +14,7 @@ demo_path <- here::here("demo")
 R_path <- here::here("R")
 output_path <- here::here("demo/simulated_data_to_stats_pipeline")
 path_data <- here::here('data')
+
 
 redo_flag <- TRUE
 
