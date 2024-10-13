@@ -100,7 +100,7 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
       print(" Gene module clustering RI for biclust_screg", quote=FALSE)
       RI_gene_clustering_biclustscreg_all_string <- ""
       RI_gene_clustering_biclustscreg_all <- vector(length = n_cell_clusters)
-      for(i_cell_cluster in 1:length(res_gene_cluster)){
+      for(i_cell_cluster in 1:length(target_gene_allocation)){
         RI_gene_clustering_biclustscreg <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
         print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustscreg), quote=FALSE)
         RI_gene_clustering_biclustscreg_all_string <- paste(RI_gene_clustering_biclustscreg_all_string, RI_gene_clustering_biclustscreg, sep=" ")
@@ -177,18 +177,18 @@ if (sys.nframe() == 0) {
   res <- biclustscreg_iteration(plot_heatmap = FALSE,
                                 penalization_lambdas = c(0.2, 1.0), # c( 0.00001, 0.1, 0.2, 0.5)
                                 biclustscreg_results = NULL, # You can feed old results or calculate new ones
-                                cell_id,
-                                biclust_input_data,
+                                cell_id = scenarios[[1]]$cell_id,
+                                biclust_input_data = scenarios[[1]]$biclust_input_data,
                                 output_path,  # Output path for biclust_screg for alluvial plots etc
-                                n_target_genes,
-                                n_total_cells,
-                                n_target_gene_clusters,
-                                n_cell_clusters,
-                                ind_targetgenes,
-                                ind_reggenes,
-                                generated_data,
-                                correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                disturbed_initial_cell_clust)
+                                n_target_genes = scenarios[[1]]$n_target_genes,
+                                n_total_cells = scenarios[[1]]$n_total_cells,
+                                n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
+                                n_cell_clusters = scenarios[[1]]$n_cell_clusters,
+                                ind_targetgenes = scenarios[[1]]$ind_targetgenes,
+                                ind_reggenes = scenarios[[1]]$ind_reggenes,
+                                generated_data = scenarios[[1]]$generated_data,
+                                correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
+                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
 
 }
 
