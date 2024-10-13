@@ -18,7 +18,8 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                    ind_reggenes,
                                    generated_data,
                                    correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                   disturbed_initial_cell_clust){
+                                   disturbed_initial_cell_clust,
+                                   itercap                     = 20){
   # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   if(is.null(biclustscreg_results)){
     biclustscreg_results <- vector(mode = "list", length = length(penalization_lambdas))
@@ -31,7 +32,7 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
         dat = biclust_input_data,
         cell_id = cell_id,
         true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
-        max_iter = 100,
+        max_iter = itercap,
         n_target_gene_clusters = n_target_gene_clusters,
         initial_clustering = disturbed_initial_cell_clust,
         n_cell_clusters = n_cell_clusters,
