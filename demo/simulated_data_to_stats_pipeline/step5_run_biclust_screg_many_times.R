@@ -10,9 +10,9 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
   for(iter in 1:length(biclust_screg_results_list )){
 
     cat("\n")
-    print(paste0('Now running outer iteration ', iter))
+    print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 5.'))
     cat("\n")
-    set.seed(1234)
+    set.seed(12)
     biclust_screg_results_list[[iter]] <- biclustscreg_iteration(plot_heatmap = FALSE,
                                                                  plot_title = paste0("biclustscreg_heatmap_", iter),
                                                                  penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)

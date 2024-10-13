@@ -197,26 +197,26 @@ if (sys.nframe() == 0) {
                                 disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
 
   # Run for all scenarios
-  res <- vector(mode = "list", length = length(scenarios))
-  for(i in 1:length(scenarios)){
-    set.seed(12)
-    res[[i]] <- biclustscreg_iteration(plot_heatmap = TRUE,
-                                       plot_title = "biclustscreg_heatmap",
-                                       penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
-                                       biclustscreg_results = NULL, # You can feed old results or calculate new ones
-                                       cell_id = scenarios[[i]]$cell_id,
-                                       biclust_input_data = scenarios[[i]]$biclust_input_data,
-                                       output_path,  # Output path for biclust_screg for alluvial plots etc
-                                       n_target_genes = scenarios[[i]]$n_target_genes,
-                                       n_total_cells = scenarios[[i]]$n_total_cells,
-                                       n_target_gene_clusters = scenarios[[i]]$n_target_gene_clusters,
-                                       n_cell_clusters = scenarios[[i]]$n_cell_clusters,
-                                       ind_targetgenes = scenarios[[i]]$ind_targetgenes,
-                                       ind_reggenes = scenarios[[i]]$ind_reggenes,
-                                       generated_data = scenarios[[i]]$generated_data,
-                                       correct_clustering = scenarios[[i]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                       disturbed_initial_cell_clust = scenarios[[i]]$disturbed_initial_cell_clust,
-                                       itercap = 50)
-
-  }
+  # res <- vector(mode = "list", length = length(scenarios))
+  # for(i in 1:length(scenarios)){
+  #   set.seed(12)
+  #   res[[i]] <- biclustscreg_iteration(plot_heatmap = FALSE,
+  #                                      plot_title = "biclustscreg_heatmap",
+  #                                      penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
+  #                                      biclustscreg_results = NULL, # You can feed old results or calculate new ones
+  #                                      cell_id = scenarios[[i]]$cell_id,
+  #                                      biclust_input_data = scenarios[[i]]$biclust_input_data,
+  #                                      output_path,  # Output path for biclust_screg for alluvial plots etc
+  #                                      n_target_genes = scenarios[[i]]$n_target_genes,
+  #                                      n_total_cells = scenarios[[i]]$n_total_cells,
+  #                                      n_target_gene_clusters = scenarios[[i]]$n_target_gene_clusters,
+  #                                      n_cell_clusters = scenarios[[i]]$n_cell_clusters,
+  #                                      ind_targetgenes = scenarios[[i]]$ind_targetgenes,
+  #                                      ind_reggenes = scenarios[[i]]$ind_reggenes,
+  #                                      generated_data = scenarios[[i]]$generated_data,
+  #                                      correct_clustering = scenarios[[i]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
+  #                                      disturbed_initial_cell_clust = scenarios[[i]]$disturbed_initial_cell_clust,
+  #                                      itercap = 20)
+  #
+  # }
 }
