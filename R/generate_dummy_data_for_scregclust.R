@@ -281,10 +281,11 @@ generate_dummy_data_for_scregclust <- function(
 
 
   } else if(pearson_regulators) {
+    library(MASS)
     # simulate very naive counts
     counts <- rnbinom(n_cells * n_regulator_genes, mu = 10, size = 1)
     # Fit a negative binomial regression model
-    model <- glm.nb(counts ~ 1)
+    model <- MASS::glm.nb(counts ~ 1)
 
     # Calculate expected values
     expected <- fitted(model)
