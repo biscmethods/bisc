@@ -4,6 +4,7 @@ source(file.path(R_path, "biclust_scregclust.R"))
 
 
 biclustscreg_iteration <- function(plot_heatmap=FALSE,
+                                   plot_title = "biclustscreg_heatmap",
                                    penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
                                    biclustscreg_results = NULL,  # You can feed old results or calculate new ones
                                    cell_id,
@@ -158,7 +159,7 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
     plot_construction <- cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
     print(plot_construction)
     # Plot to file
-    png(file.path(output_path, paste0("biclustscreg_heatmap.png")), width = 1024, height = 480, units = "px")
+    png(file.path(output_path, paste0(plot_title, ".png")), width = 1024, height = 480, units = "px")
     print(cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr'))
     dev.off()
   }
@@ -177,6 +178,7 @@ if (sys.nframe() == 0) {
   # Set seed for example
   set.seed(1234)
   res <- biclustscreg_iteration(plot_heatmap = TRUE,
+                                plot_title = "biclustscreg_heatmap",
                                 penalization_lambdas = c(0.2, 1.0), # c( 0.00001, 0.1, 0.2, 0.5)
                                 biclustscreg_results = NULL, # You can feed old results or calculate new ones
                                 cell_id = scenarios[[1]]$cell_id,

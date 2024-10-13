@@ -14,6 +14,7 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
     cat("\n")
 
     biclust_screg_results_list[[iter]] <- biclustscreg_iteration(plot_heatmap = TRUE,
+                                                                 plot_title = paste0("biclustscreg_heatmap_", iter),
                                                                  penalization_lambdas = c(0.2, 1.0), # c( 0.00001, 0.1, 0.2, 0.5)
                                                                  biclustscreg_results = NULL, # You can feed old results or calculate new ones
                                                                  cell_id = scenarios[[iter]]$cell_id,
