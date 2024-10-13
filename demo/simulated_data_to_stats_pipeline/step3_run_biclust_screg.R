@@ -1,3 +1,5 @@
+# !/usr/bin/Rscript
+
 source(file.path(R_path, "biclust_scregclust.R"))
 
 

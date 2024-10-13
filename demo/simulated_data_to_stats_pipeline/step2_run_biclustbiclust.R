@@ -1,4 +1,4 @@
-
+# !/usr/bin/Rscript
 
 library(biclust)
 
@@ -131,16 +131,16 @@ cluster_biclust <- function(biclust_result, biclust_input_data, n_target_genes, 
               "biclust_results_matrix" = biclust_results_matrix))
 }
 
-get_stats_biclustbiclust <- function(biclust_result         = res1,
-                                     biclust_input_data     = biclust_input_data,
-                                     n_target_genes         = n_target_genes,
-                                     n_total_cells          = n_total_cells,
-                                     n_target_gene_clusters = n_target_gene_clusters,
-                                     n_cell_clusters        = n_cell_clusters,
-                                     generated_data         = generated_data,
-                                     correct_clustering     = correct_clustering) {
+get_stats_biclustbiclust <- function(biclust_result,
+                                     biclust_input_data,
+                                     n_target_genes,
+                                     n_total_cells,
+                                     n_target_gene_clusters,
+                                     n_cell_clusters,
+                                     generated_data,
+                                     correct_clustering) {
 
-  res_biclust_clustering <- cluster_biclust(biclust_result         = res1,
+  res_biclust_clustering <- cluster_biclust(biclust_result         = biclust_result,
                                             biclust_input_data     = biclust_input_data,
                                             n_target_genes         = n_target_genes,
                                             n_total_cells          = n_total_cells,
@@ -181,10 +181,11 @@ get_stats_biclustbiclust <- function(biclust_result         = res1,
 
 # Plot the biclustering results
 # b <- raster::ratify(raster::raster(b))
-plot_biclust_heatmap <- function(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
-                                 RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
-                                 RI_gene_clustering_biclustbiclust_all = stats_biclustbiclust$RI_gene_clustering_biclustbiclust_all,
-                                 RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust){
+plot_biclust_heatmap <- function(biclust_results_matrix,
+                                 RI_cell_clustering_biclustbiclust,
+                                 RI_gene_clustering_biclustbiclust_all,
+                                 RI_biclust_biclustbiclust){
+
   # This is just to fix colors with a unique legend
   n_unique_biclusters <- length(unique(as.vector(biclust_results_matrix)))
   regions <- seq(1, n_unique_biclusters, length.out = n_unique_biclusters + 1)
@@ -195,14 +196,15 @@ plot_biclust_heatmap <- function(biclust_results_matrix                = stats_b
   }else{
     keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
   }
-  rasterVis::levelplot(biclust_results_matrix, att = n_unique_biclusters,
-                       colorkey = list(at = regions,
-                                       labels = list(at = middle_of_regions, labels = as.character(1:n_unique_biclusters))),
-                       xlab = 'Cells',
-                       ylab = 'Target genes',
-                       main=paste0('biclust::biclust.\nCell cluster RI:',RI_cell_clustering_biclustbiclust,
-                                   "\nGene modules RI:", RI_gene_clustering_biclustbiclust_all,
-                                   "\nBiclust RI:", RI_biclust_biclustbiclust))
+  constructed_plots <- rasterVis::levelplot(biclust_results_matrix, att = n_unique_biclusters,
+                                            colorkey = list(at = regions,
+                                                            labels = list(at = middle_of_regions, labels = as.character(1:n_unique_biclusters))),
+                                            xlab = 'Cells',
+                                            ylab = 'Target genes',
+                                            main=paste0('biclust::biclust.\nCell cluster RI:',RI_cell_clustering_biclustbiclust,
+                                                        "\nGene modules RI:", RI_gene_clustering_biclustbiclust_all,
+                                                        "\nBiclust RI:", RI_biclust_biclustbiclust))
+  return(constructed_plots)
 }
 
 
@@ -229,21 +231,33 @@ biclustbiclust_iteration <- function(biclust_input_data     = biclust_input_data
   return(stats_biclustbiclust)
 }
 
-stats_biclustbiclust <- biclustbiclust_iteration(biclust_input_data     = biclust_input_data,
-                                                 n_target_genes         = n_target_genes,
-                                                 n_total_cells          = n_total_cells,
-                                                 n_target_gene_clusters = n_target_gene_clusters,
-                                                 n_cell_clusters        = n_cell_clusters,
-                                                 generated_data         = generated_data,
-                                                 correct_clustering     = correct_clustering)
-
-plot_biclust_heatmap(biclust_results_matrix,
-                     RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
-                     RI_gene_clustering_biclustbiclust_all = stats_biclustbiclust$RI_gene_clustering_biclustbiclust_all,
-                     RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust)
 
 
-png(file.path(output_path, paste0("biclustbiclust_heatmap.png")),
-    width = 1024, height = 480, units = "px")
-print(plot_biclust_heatmap(biclust_results_matrix))
-dev.off()
+
+# Example use (run step1 first) -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Runs only when script is run by itself
+# || interactive()
+if (sys.nframe() == 0) {
+  # Set seed for example
+  set.seed(1234)
+
+  stats_biclustbiclust <- biclustbiclust_iteration(biclust_input_data     = scenarios[[1]]$biclust_input_data,
+                                                   n_target_genes         = scenarios[[1]]$n_target_genes,
+                                                   n_total_cells          = scenarios[[1]]$n_total_cells,
+                                                   n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
+                                                   n_cell_clusters        = scenarios[[1]]$n_cell_clusters,
+                                                   generated_data         = scenarios[[1]]$generated_data,
+                                                   correct_clustering     = scenarios[[1]]$correct_clustering)
+
+  constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
+                                            RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
+                                            RI_gene_clustering_biclustbiclust_all = stats_biclustbiclust$RI_gene_clustering_biclustbiclust_all,
+                                            RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust)
+
+  print(constructed_plots)
+  png(file.path(output_path, paste0("biclustbiclust_heatmap.png")),
+      width = 1024, height = 480, units = "px")
+  print(constructed_plots)
+  dev.off()
+
+}

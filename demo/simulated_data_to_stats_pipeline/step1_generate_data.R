@@ -1,4 +1,4 @@
-# #!/usr/bin/Rscript
+# !/usr/bin/Rscript
 rm(list = ls())
 
 library(patchwork)
