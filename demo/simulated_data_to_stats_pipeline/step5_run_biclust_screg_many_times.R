@@ -12,10 +12,10 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
     cat("\n")
     print(paste0('Now running outer iteration ', iter))
     cat("\n")
-
-    biclust_screg_results_list[[iter]] <- biclustscreg_iteration(plot_heatmap = TRUE,
+    set.seed(1234)
+    biclust_screg_results_list[[iter]] <- biclustscreg_iteration(plot_heatmap = FALSE,
                                                                  plot_title = paste0("biclustscreg_heatmap_", iter),
-                                                                 penalization_lambdas = c(0.2, 1.0), # c( 0.00001, 0.1, 0.2, 0.5)
+                                                                 penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
                                                                  biclustscreg_results = NULL, # You can feed old results or calculate new ones
                                                                  cell_id = scenarios[[iter]]$cell_id,
                                                                  biclust_input_data = scenarios[[iter]]$biclust_input_data,
@@ -28,7 +28,8 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
                                                                  ind_reggenes = scenarios[[iter]]$ind_reggenes,
                                                                  generated_data = scenarios[[iter]]$generated_data,
                                                                  correct_clustering = scenarios[[iter]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                                                 disturbed_initial_cell_clust = scenarios[[iter]]$disturbed_initial_cell_clust)
+                                                                 disturbed_initial_cell_clust = scenarios[[iter]]$disturbed_initial_cell_clust,
+                                                                 itercap = 20)
 
   }
 
