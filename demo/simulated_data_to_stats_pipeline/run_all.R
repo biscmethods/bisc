@@ -15,7 +15,7 @@ output_path <- here::here("demo/simulated_data_to_stats_pipeline")
 path_data <- here::here('data')
 
 
-redo_flag <- FALSE
+redo_flag <- T
 
 source(file.path(output_path, "step1_generate_data.R"))
 source(file.path(output_path, "step2_run_biclustbiclust.R"))
