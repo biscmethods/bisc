@@ -123,7 +123,6 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
 
       # Potentially construct plots -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
       if(plot_heatmap){
-        print(str(biclustscreg_results))
         n <- length(unique(as.vector(biclust_result_matrix)))
         regions <- seq(1, n, length.out = n + 1)
         middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
@@ -200,6 +199,7 @@ if (sys.nframe() == 0) {
   # Run for all scenarios
   res <- vector(mode = "list", length = length(scenarios))
   for(i in 1:length(scenarios)){
+    set.seed(12)
     res[[i]] <- biclustscreg_iteration(plot_heatmap = TRUE,
                                        plot_title = "biclustscreg_heatmap",
                                        penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
@@ -216,7 +216,7 @@ if (sys.nframe() == 0) {
                                        generated_data = scenarios[[i]]$generated_data,
                                        correct_clustering = scenarios[[i]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
                                        disturbed_initial_cell_clust = scenarios[[i]]$disturbed_initial_cell_clust,
-                                       itercap = 30)
+                                       itercap = 50)
 
   }
 }
