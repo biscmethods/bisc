@@ -17,6 +17,17 @@ genes$Simple <- c(length=unname(string_counts["Simple"]))
 genes$Complex <- c(length=unname(string_counts["Complex"]))
 
 
+cells_biclust <- list()
+cells_biclust$Simple <- c(length=unname(string_counts["Simple"]))
+cells_biclust$Complex <- c(length=unname(string_counts["Complex"]))
+
+biclust_biclust <- list()
+biclust_biclust$Simple <- c(length=unname(string_counts["Simple"]))
+biclust_biclust$Complex <- c(length=unname(string_counts["Complex"]))
+
+genes_biclust <- list()
+genes_biclust$Simple <- c(length=unname(string_counts["Simple"]))
+genes_biclust$Complex <- c(length=unname(string_counts["Complex"]))
 
 i_simple <- 0
 i_complex <- 0
@@ -31,12 +42,20 @@ for(i in 1:length(biclust_screg_results_list)){
     cells[[scenarios[[i]]$description]][i_simple] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg
     biclust[[scenarios[[i]]$description]][i_simple] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg
     genes[[scenarios[[i]]$description]][i_simple] <- median(biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
+
+    cells_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
+    biclust_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
+    genes_biclust[[scenarios[[i]]$description]][i_simple] <- median(as.numeric(strsplit(trimws(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all), " ")[[1]]))
   }else
   {
     i_complex <- i_complex +1
     cells[[scenarios[[i]]$description]][i_complex] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg
     biclust[[scenarios[[i]]$description]][i_complex] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg
     genes[[scenarios[[i]]$description]][i_complex] <- median(biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
+
+    cells_biclust[[scenarios[[i]]$description]][i_complex] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
+    biclust_biclust[[scenarios[[i]]$description]][i_complex] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
+    genes_biclust[[scenarios[[i]]$description]][i_complex] <- median(as.numeric(strsplit(trimws(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all), " ")[[1]]))
   }
 
 }
@@ -49,59 +68,67 @@ library(viridis)
 
 # Create the data frame
 cell_data <- bind_rows(
-  tibble(type = "Simple", value = unlist(cells$Simple)),
-  tibble(type = "Complex", value = unlist(cells$Complex))
+  tibble(method="BS", type = "Simple", value = unlist(cells$Simple)),
+  tibble(method="BS", type = "Complex", value = unlist(cells$Complex)),
+  tibble(method="BB", type = "Simple", value = unlist(cells_biclust$Simple)),
+  tibble(method="BB", type = "Complex", value = unlist(cells_biclust$Complex))
 )
 
 biclust_data <- bind_rows(
-  tibble(type = "Simple", value = unlist(biclust$Simple)),
-  tibble(type = "Complex", value = unlist(biclust$Complex))
+  tibble(method="BS", type = "Simple", value = unlist(biclust$Simple)),
+  tibble(method="BS", type = "Complex", value = unlist(biclust$Complex)),
+  tibble(method="BB", type = "Simple", value = unlist(biclust_biclust$Simple)),
+  tibble(method="BB", type = "Complex", value = unlist(biclust_biclust$Complex))
 )
 
 gene_data <- bind_rows(
-  tibble(type = "Simple", value = unlist(genes$Simple)),
-  tibble(type = "Complex", value = unlist(genes$Complex))
+  tibble(method="BS", type = "Simple", value = unlist(genes$Simple)),
+  tibble(method="BS", type = "Complex", value = unlist(genes$Complex)),
+  tibble(method="BB", type = "Simple", value = unlist(genes_biclust$Simple)),
+  tibble(method="BB", type = "Complex", value = unlist(genes_biclust$Complex))
 )
 
-# Plot
-cell_data %>%
-  ggplot( aes(x=type, y=value, fill=type)) +
-  geom_boxplot() +
-  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
-  geom_jitter(color="black", size=0.4, alpha=0.9) +
+
+
+
+
+ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
+  geom_boxplot(position = "dodge") +
+  scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
+  geom_jitter(color = "black", size = 0.4, alpha = 0.9) +
   theme_ipsum() +
   theme(
-    legend.position="none",
-    plot.title = element_text(size=11)
+    legend.position = "none",
+    plot.title = element_text(size = 11)
   ) +
   ggtitle("Cell clusters RI result for biclust_screg") +
-  xlab("")
+  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  ylab("RI")
 
-biclust_data %>%
-  ggplot( aes(x=type, y=value, fill=type)) +
-  geom_boxplot() +
-  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
-  geom_jitter(color="black", size=0.4, alpha=0.9) +
+ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type)) +
+  geom_boxplot(position = "dodge") +
+  scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
+  geom_jitter(color = "black", size = 0.4, alpha = 0.9) +
   theme_ipsum() +
   theme(
-    legend.position="none",
-    plot.title = element_text(size=11)
+    legend.position = "none",
+    plot.title = element_text(size = 11)
   ) +
   ggtitle("Biclust RI result for biclust_screg") +
-  xlab("")
+  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  ylab("RI")
 
 
-gene_data %>%
-  ggplot( aes(x=type, y=value, fill=type)) +
-  geom_boxplot() +
-  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
-  geom_jitter(color="black", size=0.4, alpha=0.9) +
+ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
+  geom_boxplot(position = "dodge") +
+  scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
+  geom_jitter(color = "black", size = 0.4, alpha = 0.9) +
   theme_ipsum() +
   theme(
-    legend.position="none",
-    plot.title = element_text(size=11)
+    legend.position = "none",
+    plot.title = element_text(size = 11)
   ) +
   ggtitle("Gene modules RI result for biclust_screg (median)") +
-  xlab("")
-
+  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  ylab("RI")
 
