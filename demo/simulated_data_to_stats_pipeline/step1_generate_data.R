@@ -235,7 +235,50 @@ scenarios <- create_scenario(scenario_list = scenarios,
                              trivial_regulator_networks = TRUE,
                              seed = 1234)
 
+scenarios <- create_scenario(scenario_list = scenarios,
+                             description = "Simple",
+                             n_cell_clusters = 3,
+                             n_target_gene_clusters = c(4, 2, 2),  # Number of target gene clusters in each cell cluster
+                             n_target_genes = 120,
+                             n_regulator_genes = 8,
+                             n_cells = c(220, 220, 220),
+                             regulator_means = c(0, 0, 0), # For generating dummy data, regulator mean in each cell cluster
+                             coefficient_means = list(c(1, 3, 5, 7), c(10, 12), c(22, 24)),  # For generating dummy data, coefficient means in each cell cluster
+                             coefficient_sds = list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01), c(0.01, 0.01)),
+                             disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+                             testing_penalization_data_gen = c(0.5, 0.5, 0.5),
+                             trivial_regulator_networks = TRUE,
+                             seed = 1234)
 
+scenarios <- create_scenario(scenario_list = scenarios,
+                             description = "Simple",
+                             n_cell_clusters = 4,
+                             n_target_gene_clusters = c(4, 2, 2, 3),  # Number of target gene clusters in each cell cluster
+                             n_target_genes = 120,
+                             n_regulator_genes = 11,
+                             n_cells = c(220, 220, 220, 220),
+                             regulator_means = c(0, 0, 0, 0), # For generating dummy data, regulator mean in each cell cluster
+                             coefficient_means = list(c(1, 3, 5, 7), c(10, 12), c(22, 24), c(33, 35, 37)),  # For generating dummy data, coefficient means in each cell cluster
+                             coefficient_sds = list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01), c(0.01, 0.01), c(0.01, 0.01, 0.01)),
+                             disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+                             testing_penalization_data_gen = c(0.5, 0.5, 0.5, 0.5),
+                             trivial_regulator_networks = TRUE,
+                             seed = 1234)
+
+scenarios <- create_scenario(scenario_list = scenarios,
+                             description = "Simple",
+                             n_cell_clusters = 4,
+                             n_target_gene_clusters = c(4, 3, 2, 3),  # Number of target gene clusters in each cell cluster
+                             n_target_genes = 160,
+                             n_regulator_genes = 12,
+                             n_cells = c(220, 220, 220, 220),
+                             regulator_means = c(0, 0, 0, 0), # For generating dummy data, regulator mean in each cell cluster
+                             coefficient_means = list(c(1, 3, 5, 7), c(10, 12, 13), c(22, 24), c(33, 35, 37)),  # For generating dummy data, coefficient means in each cell cluster
+                             coefficient_sds = list(c(0.01, 0.01, 0.01, 0.01), c(0.01, 0.01, 0.01), c(0.01, 0.01), c(0.01, 0.01, 0.01)),
+                             disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
+                             testing_penalization_data_gen = c(0.5, 0.5, 0.5, 0.5),
+                             trivial_regulator_networks = TRUE,
+                             seed = 1234)
 
 # Generate multiple complicated examples --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -271,7 +314,7 @@ for(iter in 1:20){
 
 
   scenarios <- create_scenario(scenario_list = scenarios,
-                               description = "Complicated",
+                               description = "Complex",
                                n_cell_clusters = n_cell_clusters,
                                n_target_gene_clusters = n_target_gene_clusters,
                                n_target_genes = n_target_genes,

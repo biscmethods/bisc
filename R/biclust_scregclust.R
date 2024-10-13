@@ -154,7 +154,7 @@ biclust_scregclust <- function(
   }
   n_target_genes <- length(ind_targetgenes)
   n_regulator_genes <- length(ind_reggenes)
-
+  converged <- FALSE
   # Preallocate cluster history
 
   cell_cluster_history <- tibble::tibble(cell_id, true_cell_cluster_allocation, initial_clustering)
@@ -602,6 +602,7 @@ biclust_scregclust <- function(
         print(paste0(" Rand Index of ", rand_index,
                      " when comparing iteration ", i_main,
                      " to iteration ", prev_clustering), quote = FALSE)
+        converged <- T
         stop_iterating_flag <- T
         break
       }
@@ -661,7 +662,8 @@ biclust_scregclust <- function(
       "silhouette_measure" = silhouette_measure,
       "davies_bouldin_index" = db,
       "BIC" = BIC_all[1:i_main],
-      "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main]
+      "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main],
+      "converged" = converged
       )
     )
 }
