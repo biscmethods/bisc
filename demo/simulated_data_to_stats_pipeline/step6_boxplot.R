@@ -31,6 +31,11 @@ genes_biclust$Complex <- c()
 
 i_simple <- 0
 i_complex <- 0
+
+null2NA <- function(x){
+  ifelse(is.null(x), NA, x)
+}
+
 for(i in 1:length(biclust_screg_results_list)){
   print(paste0('Now running outer iteration ', i))
   print(biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg)
@@ -45,17 +50,19 @@ for(i in 1:length(biclust_screg_results_list)){
 
     cells_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
     biclust_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
-    genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]], as.numeric(strsplit(trimws(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all), " ")[[1]]))
+    genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]],
+                                                    as.numeric(strsplit(trimws(null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
   }else
   {
     i_complex <- i_complex +1
-    cells[[scenarios[[i]]$description]][i_complex] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg
-    biclust[[scenarios[[i]]$description]][i_complex] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg
-    genes[[scenarios[[i]]$description]] <- c(genes[[scenarios[[i]]$description]], biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
+    cells[[scenarios[[i]]$description]][i_complex]   <- null2NA(biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg)
+    biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg)
+    genes[[scenarios[[i]]$description]]              <- c(genes[[scenarios[[i]]$description]], biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
 
-    cells_biclust[[scenarios[[i]]$description]][i_complex] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
-    biclust_biclust[[scenarios[[i]]$description]][i_complex] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
-    genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]], as.numeric(strsplit(trimws(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all), " ")[[1]]))
+    cells_biclust[[scenarios[[i]]$description]][i_complex]   <- null2NA(biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust)
+    biclust_biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust)
+    genes_biclust[[scenarios[[i]]$description]]              <- c(genes_biclust[[scenarios[[i]]$description]],
+                                                                  as.numeric(strsplit(trimws( null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
   }
 
 }
