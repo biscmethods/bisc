@@ -1,6 +1,5 @@
 
 # Run model fits
-redo_flag <- TRUE
 if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
     redo_flag) {
 
