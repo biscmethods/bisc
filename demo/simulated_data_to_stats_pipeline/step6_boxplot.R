@@ -51,7 +51,7 @@ for(i in 1:length(biclust_screg_results_list)){
     cells_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
     biclust_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
     genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]],
-                                                    as.numeric(strsplit(trimws(null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
+                                                     as.numeric(strsplit(trimws(null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
   }else
   {
     i_complex <- i_complex +1
@@ -96,10 +96,10 @@ gene_data <- bind_rows(
 )
 
 
+plot_height = 800
+plot_width = 750
 
-
-
-ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
+constructed_plot <- ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
@@ -109,11 +109,16 @@ ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
     legend.position = "none",
     plot.title = element_text(size = 11)
   ) +
-  ggtitle("Cell clusters RI result for biclust_screg") +
+  ggtitle("Cell clusters rand index comparison") +
   xlab("BB = biclustbiclust, BS = biclustscreg") +
-  ylab("RI")
+  ylab("RI") +
+  ylim(0, 1)
+print(constructed_plot)
+png(file.path(output_path, paste0("boxplot_cell_cluster_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
+print(constructed_plot)
+dev.off()
 
-ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type)) +
+constructed_plot <- ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
@@ -123,12 +128,16 @@ ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type))
     legend.position = "none",
     plot.title = element_text(size = 11)
   ) +
-  ggtitle("Biclust RI result for biclust_screg") +
+  ggtitle("Biclust rand index comparison") +
   xlab("BB = biclustbiclust, BS = biclustscreg") +
-  ylab("RI")
+  ylab("RI") +
+  ylim(0, 1)
+print(constructed_plot)
+png(file.path(output_path, paste0("boxplot_biclust_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
+print(constructed_plot)
+dev.off()
 
-
-ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
+constructed_plot <- ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
@@ -138,7 +147,11 @@ ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
     legend.position = "none",
     plot.title = element_text(size = 11)
   ) +
-  ggtitle("Gene modules RI result for biclust_screg (median)") +
+  ggtitle("Gene modules rand index comparison") +
   xlab("BB = biclustbiclust, BS = biclustscreg") +
-  ylab("RI")
-
+  ylab("RI") +
+  ylim(0, 1)
+print(constructed_plot)
+png(file.path(output_path, paste0("boxplot_gene_modules_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
+print(constructed_plot)
+dev.off()

@@ -11,13 +11,15 @@ if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 4.'))
     cat("\n")
 
-    biclustbiclust_results_list[[iter]] <- stats_biclustbiclust <- biclustbiclust_iteration(biclust_input_data     = scenarios[[iter]]$biclust_input_data,
+    biclustbiclust_results_list[[iter]] <- stats_biclustbiclust <- get_stats_biclustbiclust(biclust_input_data     = scenarios[[iter]]$biclust_input_data,
                                                                                             n_target_genes         = scenarios[[iter]]$n_target_genes,
+                                                                                            ind_targetgenes        = scenarios[[iter]]$ind_targetgenes,
                                                                                             n_total_cells          = scenarios[[iter]]$n_total_cells,
                                                                                             n_target_gene_clusters = scenarios[[iter]]$n_target_gene_clusters,
                                                                                             n_cell_clusters        = scenarios[[iter]]$n_cell_clusters,
                                                                                             generated_data         = scenarios[[iter]]$generated_data,
-                                                                                            correct_clustering     = scenarios[[iter]]$correct_clustering)
+                                                                                            correct_clustering     = scenarios[[iter]]$correct_clustering,
+                                                                                            do_biclust_with_regulators = TRUE)
 
     # constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
     #                                           RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
