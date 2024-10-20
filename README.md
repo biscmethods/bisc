@@ -1,5 +1,5 @@
-# biclust
-Cell clustering wrapper for [scregclust](https://github.com/sven-nelander/scregclust)
+# bisc
+Bisc is an abbrevation for "BI(clust) SC(regclust)". It's a cell clustering wrapper for [scregclust](https://github.com/scmethods/scregclust)
 
 ## Installation
 
@@ -8,7 +8,7 @@ You can install the development version of biclust from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("sebfranz/biclust")
+devtools::install_github("biscmethods/bisc")
 ```
 
 ## Example
