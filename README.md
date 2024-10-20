@@ -1,5 +1,5 @@
 # bisc
-Bisc is an abbrevation for "BI(clust) SC(regclust)". It's a cell clustering wrapper for [scregclust](https://github.com/scmethods/scregclust)
+Bisc is an abbrevation for "BI(clust) SC(regclust)". It's an iterative CEM-based cell clusterer that wraps a method clustering genes called [scregclust](https://github.com/scmethods/scregclust).
 
 ## Installation
 
