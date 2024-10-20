@@ -96,14 +96,14 @@ gene_data <- bind_rows(
 )
 
 
-plot_height = 800
-plot_width = 750
+plot_height <- 400
+plot_width <- 750
 
 constructed_plot <- ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
-  stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
+  stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
-  geom_jitter(color = "gray",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
+  geom_jitter(color = "black",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
   theme_ipsum() +
   theme(
     legend.position = "none",
@@ -120,9 +120,9 @@ dev.off()
 
 constructed_plot <- ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
-  stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
+  stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
-  geom_jitter(color = "gray",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
+  geom_jitter(color = "black",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
   theme_ipsum() +
   theme(
     legend.position = "none",
@@ -139,9 +139,9 @@ dev.off()
 
 constructed_plot <- ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
-  stat_summary(fun = median, geom = "crossbar", width = 0.5, color = "magenta") +
+  stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
-  geom_jitter(color = "gray", size=0.6, width = 0.3, alpha = 0.5, height = 0) +
+  geom_jitter(color = "black", size=0.6, width = 0.3, alpha = 0.5, height = 0) +
   theme_ipsum() +
   theme(
     legend.position = "none",

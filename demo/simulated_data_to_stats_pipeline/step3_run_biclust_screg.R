@@ -180,7 +180,7 @@ if (sys.nframe() == 0) {
   # Set seed for example
   set.seed(1234)
   res <- biclustscreg_iteration(plot_heatmap = TRUE,
-                                plot_title = "heatmap_biclustscreg",
+                                plot_title = "heatmap_biclustscreg_lambda_0.2",
                                 penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
                                 biclustscreg_results = NULL, # You can feed old results or calculate new ones
                                 cell_id = scenarios[[1]]$cell_id,
@@ -195,6 +195,24 @@ if (sys.nframe() == 0) {
                                 generated_data = scenarios[[1]]$generated_data,
                                 correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
                                 disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
+
+  res <- biclustscreg_iteration(plot_heatmap = TRUE,
+                                plot_title = "heatmap_biclustscreg_lambda_1.0",
+                                penalization_lambdas = c(1.0), # c( 0.00001, 0.1, 0.2, 0.5)
+                                biclustscreg_results = NULL, # You can feed old results or calculate new ones
+                                cell_id = scenarios[[1]]$cell_id,
+                                biclust_input_data = scenarios[[1]]$biclust_input_data,
+                                output_path,  # Output path for biclust_screg for alluvial plots etc
+                                n_target_genes = scenarios[[1]]$n_target_genes,
+                                n_total_cells = scenarios[[1]]$n_total_cells,
+                                n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
+                                n_cell_clusters = scenarios[[1]]$n_cell_clusters,
+                                ind_targetgenes = scenarios[[1]]$ind_targetgenes,
+                                ind_reggenes = scenarios[[1]]$ind_reggenes,
+                                generated_data = scenarios[[1]]$generated_data,
+                                correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
+                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
+
 
   # Run for all scenarios
   # res <- vector(mode = "list", length = length(scenarios))
