@@ -183,6 +183,9 @@ biclust_scregclust <- function(
   scregclust_final_result_models <- vector(mode = "list", length = n_cell_clusters)
   # (results1[[1]][[3]]$results[[1]]$output[[1]]$module)
   scregclust_final_result_module <- vector(mode = "list", length = n_cell_clusters)
+  scregclust_final_result_coeffs <- vector(mode = "list", length = n_cell_clusters)
+  scregclust_final_result_signs <- vector(mode = "list", length = n_cell_clusters)
+  scregclust_final_result_reg_table <- vector(mode = "list", length = n_cell_clusters)
 
 
   for (i_main in 1:max_iter) {
@@ -265,7 +268,11 @@ biclust_scregclust <- function(
             )
             sink()
 
-            previous_gene_modules[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module_all
+            if(use_garbage_cluster_targets){
+              previous_gene_modules[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
+            }else{
+              previous_gene_modules[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module_all
+            }
 
           }else{
 
@@ -302,9 +309,15 @@ biclust_scregclust <- function(
           )
         }
 
-
-        scregclust_final_result_module[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
+        if(use_garbage_cluster_targets){
+          scregclust_final_result_module[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
+        }else{
+          scregclust_final_result_module[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module_all
+        }
         scregclust_final_result_models[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$models
+        scregclust_final_result_coeffs[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$coeffs
+        scregclust_final_result_signs[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$signs
+        scregclust_final_result_reg_table[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$reg_table
 
 
         # v Step 1: Regulators selected (in 8ms)
@@ -657,6 +670,9 @@ biclust_scregclust <- function(
       "cell_cluster_allocation" = cell_cluster_history[,ncol(cell_cluster_history)][[1]],
       "scregclust_final_result_models" = scregclust_final_result_models,
       "scregclust_final_result_module" = scregclust_final_result_module,
+      "scregclust_final_result_coeffs" = scregclust_final_result_coeffs,
+      "scregclust_final_result_signs" = scregclust_final_result_signs,
+      "scregclust_final_result_reg_table" = scregclust_final_result_reg_table,
       "rand_index" = rand_index_true_cluster,
       "n_iterations" = i_main,
       "silhouette_measure" = silhouette_measure,
