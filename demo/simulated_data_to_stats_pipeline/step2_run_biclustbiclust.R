@@ -229,8 +229,7 @@ if (sys.nframe() == 0) {
                                             RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust)
 
   print(constructed_plots)
-  png(file.path(output_path, paste0("biclustbiclust_heatmap.png")),
-      width = 1024, height = 480, units = "px")
+  png(file.path(output_path, paste0("heatmap_biclustbiclust.png")), width = 1024, height = 480, units = "px")
   print(constructed_plots)
   dev.off()
 

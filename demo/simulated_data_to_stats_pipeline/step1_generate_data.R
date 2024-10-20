@@ -24,6 +24,7 @@ source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 create_scenario <- function(scenario_list,
                             description,
                             plot_heatmap = FALSE,
+                            plot_suffix = "",
                             n_cell_clusters,
                             n_target_gene_clusters,
                             n_target_genes,
@@ -117,7 +118,7 @@ create_scenario <- function(scenario_list,
     disturbed_fraction = disturbed_fraction,
     # Value between 0 and 1. How large portion of cells should move to other cell clusters.
     plot_stuff = FALSE,
-    plot_suffix = "",
+    plot_suffix = plot_suffix,
     testing_penalization = testing_penalization_data_gen,
     generate_counts             = FALSE,
     check_results               = FALSE,
@@ -185,6 +186,9 @@ create_scenario <- function(scenario_list,
                                              ylab = 'Target genes',
                                              main='Generated data')
     print(constructed_plot)
+    png(file.path(output_path, paste0("heatmap_generateddata_",plot_suffix,".png")), width = 1024, height = 480, units = "px")
+    print(constructed_plot)
+    dev.off()
   }
 
   scenario_list <- add_scenario_data(scenario_list,
@@ -233,7 +237,9 @@ scenarios <- create_scenario(scenario_list = scenarios,
                              disturbed_fraction = 0.1,  # Value between 0 and 1. How large portion of cells should move to other cell clusters.
                              testing_penalization_data_gen = c(0.1, 0.5),
                              trivial_regulator_networks = TRUE,
-                             seed = 1234)
+                             seed = 1234,
+                             plot_heatmap=TRUE,
+                             plot_suffix="simple-scenario-1")
 
 scenarios <- create_scenario(scenario_list = scenarios,
                              description = "Simple",

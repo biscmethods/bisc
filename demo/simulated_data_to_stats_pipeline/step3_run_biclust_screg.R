@@ -180,8 +180,8 @@ if (sys.nframe() == 0) {
   # Set seed for example
   set.seed(1234)
   res <- biclustscreg_iteration(plot_heatmap = TRUE,
-                                plot_title = "biclustscreg_heatmap",
-                                penalization_lambdas = c(0.2, 1.0), # c( 0.00001, 0.1, 0.2, 0.5)
+                                plot_title = "heatmap_biclustscreg",
+                                penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
                                 biclustscreg_results = NULL, # You can feed old results or calculate new ones
                                 cell_id = scenarios[[1]]$cell_id,
                                 biclust_input_data = scenarios[[1]]$biclust_input_data,
