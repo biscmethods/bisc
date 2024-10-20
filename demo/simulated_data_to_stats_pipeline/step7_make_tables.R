@@ -1,8 +1,27 @@
-stats2table <- function(tibble, outfile = '/out_temp.tex', caption = 'Your caption here'){
-  summary_stats <- summary(tibble$value)
-  summary_df <- data.frame(Statistic = names(summary_stats), Value = as.numeric(summary_stats))
+library(dplyr)
+library(xtable)
 
-  library(xtable)
+stats2table <- function(tibble, outfile = '/out_temp.tex', caption = 'Your caption here'){
+  # Group by method and calculate summary statistics
+  summary_stats <- tibble %>%
+    group_by(method) %>%
+    summarise(
+      Min = min(value, na.rm = TRUE),
+      Q1 = quantile(value, 0.25, na.rm = TRUE),
+      Median = median(value, na.rm = TRUE),
+      Mean = mean(value, na.rm = TRUE),
+      Q3 = quantile(value, 0.75, na.rm = TRUE),
+      Max = max(value, na.rm = TRUE)
+    )
+
+  # Convert to data frame for xtable
+  summary_df <- as.data.frame(summary_stats)
+
+  # Replace "BB" with "biclust::biclust()" and "BS" with "biclust_screg"
+  summary_df$method <- gsub("BB", "biclust::biclust()", summary_df$method)
+  summary_df$method <- gsub("BS", "biclust_screg", summary_df$method)
+
+  # Create LaTeX table
   latex_table <- xtable(summary_df)
   latex_code <- print(latex_table,
                       type = "latex",
@@ -12,6 +31,7 @@ stats2table <- function(tibble, outfile = '/out_temp.tex', caption = 'Your capti
   # Insert the caption after \begin{table}[ht]
   latex_code_ <- gsub("\\\\begin\\{table\\}\\[ht\\]", paste0("\\\\begin{table}[ht]\n\\\\caption{", caption, "}"), latex_code)
 
+  # Write to file
   sink(paste0(output_path, "/", outfile))
   cat(latex_code_)
   sink()
