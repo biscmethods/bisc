@@ -57,17 +57,30 @@ loglikelihood_calc_matrix <- function(all_genes,
   regulator_genes <- as.matrix(all_genes[, ind_reggenes, drop = FALSE])  # 1xr -> cxr
   target_genes <- as.matrix(all_genes[, ind_targetgenes, drop = FALSE])  # 1xt -> cxt
 
+  parameters <- vector(mode = "list", length = n_cell_clusters)
 
   for (i_cell_cluster in seq_len(n_cell_clusters)) {
     # Standardize data like in scregclust
     cell_cluster_rows_ind <- which(current_cell_cluster_allocation == i_cell_cluster)
+
     training_data_ind <- which(data_split_for_scregclust[[i_cell_cluster]] == 1)
+
     training_data_for_scregclust_ind <- cell_cluster_rows_ind[training_data_ind]
+
     rest_of_data_ind <- which(!inverse_which(training_data_for_scregclust_ind, n_cells))
+
+    #save this function and return it for use in the predict function
+
     res <- standardize_like_scregclust(xvals = regulator_genes, yvals = target_genes,
-                                       training_data_ind = training_data_for_scregclust_ind, test_data_ind = rest_of_data_ind)
+                                       training_data_ind = training_data_for_scregclust_ind,
+                                       test_data_ind = rest_of_data_ind)
+
+    parameters[[i_cell_cluster]] <- res$params
+
     regulator_genes_normalized <- res[['xvals']]
+
     target_genes_normalized <- res[['yvals']]
+
     #--------------------
 
     print(paste("  Calculating loglikelihood for cell cluster", i_cell_cluster), quote = FALSE)
@@ -90,7 +103,11 @@ loglikelihood_calc_matrix <- function(all_genes,
 
     loglikelihood[, i_cell_cluster] <- temp_loglikelihood
   }
-  return(loglikelihood)
+  return(list(
+    'loglikelihood' = loglikelihood,
+    'parameters' = res$params
+    )
+    )
 }
 
 
@@ -103,10 +120,21 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
   yvals[training_data_ind,] <- scale(yvals[training_data_ind,], scale = FALSE)
   xvals[training_data_ind,] <- scale(xvals[training_data_ind,])
 
-  yvals[test_data_ind,] <- scale(yvals[test_data_ind,], colMeans(org_yvals[training_data_ind,]), scale = FALSE)
-  xvals[test_data_ind,] <- scale(xvals[test_data_ind,], colMeans(org_xvals[training_data_ind,]), apply(org_xvals[training_data_ind,], 2, sd))
+  yval_colmeans  <- colMeans(org_yvals[training_data_ind,])
+  xvals_colmeans <- colMeans(org_xvals[training_data_ind,])
+  xval_scale     <- apply(org_xvals[training_data_ind,], 2, sd)
 
-  return(list("xvals" = xvals, "yvals" = yvals))
+  yvals[test_data_ind,] <- scale(yvals[test_data_ind,], yval_colmeans, scale = FALSE)
+  xvals[test_data_ind,] <- scale(xvals[test_data_ind,], xvals_colmeans, xval_scale )
+
+  return(list("xvals" = xvals, "yvals" = yvals,
+              "params" = list(
+                'yval_colmeans'  = yval_colmeans,
+                'xvals_colmeans' = xvals_colmeans,
+                'xval_scale'     = xval_scale
+                )
+              )
+         )
 }
 
 
@@ -480,6 +508,12 @@ biclust_scregclust <- function(
                                                data_split_for_scregclust = data_split_for_scregclust,
                                                current_cell_cluster_allocation = current_cell_cluster_allocation)
 
+
+    # separate out normalisation parameters
+    normalisation_parameters <- loglikelihood$parameters
+    loglikelihood            <- loglikelihood$loglikelihood
+
+
     if (!always_use_flat_prior) {
       cluster_proportions <- vector(length = n_cell_clusters)
       for (i_cell_cluster in seq_len(n_cell_clusters)) {
@@ -699,9 +733,12 @@ biclust_scregclust <- function(
         "always_use_flat_prior" = always_use_flat_prior,
         "use_garbage_cluster_targets" = use_garbage_cluster_targets,
         "retain_gene_clusters" = retain_gene_clusters
-                )
+                ),
+      "metaparameters" = list(
+        "normalisation_parameters" = normalisation_parameters
       )
-  )
+      )
+      )
 }
 
 
