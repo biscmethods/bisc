@@ -679,9 +679,29 @@ biclust_scregclust <- function(
       "davies_bouldin_index" = db,
       "BIC" = BIC_all[1:i_main],
       "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main],
-      "converged" = converged
+      "converged" = converged,
+      "call" = list(
+        "cell_id" = cell_id,
+        "true_cell_cluster_allocation" = true_cell_cluster_allocation,
+        "max_iter" = max_iter,
+        "n_target_gene_clusters" = n_target_gene_clusters,
+        "initial_clustering" = initial_clustering,
+        "n_cell_clusters" = n_cell_clusters,
+        "ind_targetgenes" = ind_targetgenes,
+        "ind_reggenes" = ind_reggenes,
+        "output_path" = output_path,
+        "penalization_lambda" = penalization_lambda,
+        "use_complex_cluster_allocation" = use_complex_cluster_allocation,
+        "calculate_BIC" = calculate_BIC,
+        "calculate_silhoutte" = calculate_silhoutte,
+        "calculate_davies_bouldin_index" = calculate_davies_bouldin_index,
+        "plot_suffix" = plot_suffix,
+        "always_use_flat_prior" = always_use_flat_prior,
+        "use_garbage_cluster_targets" = use_garbage_cluster_targets,
+        "retain_gene_clusters" = retain_gene_clusters
+                )
       )
-    )
+  )
 }
 
 
