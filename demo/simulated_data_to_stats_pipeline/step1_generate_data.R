@@ -209,6 +209,10 @@ create_scenario <- function(scenario_list,
 
 
 # Create an empty list to store all scenarios ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+if (!file.exists(file.path(output_path, "sim_data.rds")) |
+    redo_flag) {
+
+
 
 scenarios <- list()
 
@@ -519,6 +523,20 @@ scenarios <- create_scenario(scenario_list = scenarios,
                              testing_penalization_data_gen = c(0.5, 0.5),
                              trivial_regulator_networks = FALSE,
                              seed = 631)
+
+saveRDS(
+  scenarios,
+  file.path(output_path, "sim_data.rds")
+)
+
+} else {
+
+
+  scenarios <- readRDS(file.path(output_path, "sim_data.rds"))
+
+}
+
+
 #
 # for(iter in 1:20){
 #   n_cell_clusters               <- sample(2:10, 1)
@@ -568,4 +586,7 @@ scenarios <- create_scenario(scenario_list = scenarios,
 #
 # }
 #
+
+
+
 
