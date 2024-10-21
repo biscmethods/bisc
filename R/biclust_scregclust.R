@@ -105,7 +105,7 @@ loglikelihood_calc_matrix <- function(all_genes,
   }
   return(list(
     'loglikelihood' = loglikelihood,
-    'parameters' = res$params
+    'parameters' = parameters
     )
     )
 }
@@ -457,6 +457,8 @@ biclust_scregclust <- function(
       # TODO: alternatively write some predict function and use extracted variance estimates
     }
 
+     # scregclust_final_result_coeffs_neat <- models
+
     #### calculate one variance for each target gene given each model ####
     ###### M.2                                                        ####
 
@@ -712,7 +714,8 @@ biclust_scregclust <- function(
       "silhouette_measure" = silhouette_measure,
       "davies_bouldin_index" = db,
       "BIC" = BIC_all[1:i_main],
-      "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main],
+      # "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main],
+      "taget_genes_residual_var" = target_genes_residual_var,
       "converged" = converged,
       "call" = list(
         "cell_id" = cell_id,
@@ -733,12 +736,13 @@ biclust_scregclust <- function(
         "always_use_flat_prior" = always_use_flat_prior,
         "use_garbage_cluster_targets" = use_garbage_cluster_targets,
         "retain_gene_clusters" = retain_gene_clusters
-                ),
+      ),
       "metaparameters" = list(
-        "normalisation_parameters" = normalisation_parameters
+        "normalisation_parameters" = normalisation_parameters,          # parameters necessary to recreate normalization function
+        "likelihood_models"        = models                             # neat coefficients because i dont want to sort them out again
       )
-      )
-      )
+    )
+  )
 }
 
 
