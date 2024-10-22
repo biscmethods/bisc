@@ -1,9 +1,12 @@
 #
-# # for dev
-# new_data <- scenarios[[1]]$biclust_input_data
+# # # for dev
+#  new_data <- scenarios[[1]]$biclust_input_data[1:10,]
+# #
+#  fitted_model <- biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
 #
-# fitted_model <- biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+#  biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$taget_genes_residual_var
 #
+# #
 #
 # prior_cluster_proportions = NULL
 # calculate_BIC             = TRUE
@@ -94,7 +97,7 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
     print(paste("  Calculating loglikelihood for cell cluster", i_cell_cluster), quote = FALSE)
 
 
-    cell_cluster_betas <- models[[i_cell_cluster]] # rxt
+    cell_cluster_betas <- models[[i_cell_cluster]]     # rxt
 
     predicted_value <- regulator_genes_normalized %*% cell_cluster_betas  # 1xt -> cxt
     cell_squared_error <- (target_genes_normalized - predicted_value)^2  # 1xt -> cxt
@@ -146,19 +149,11 @@ bist_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
   # calculate necessary loglikelihoods for new data
   loglikelihood <- loglikelihood_calc_matrix_(all_genes = new_data,
                                               models = models,
-
                                               target_genes_residual_var = target_genes_residual_var,
-                                              # biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$taget_genes_residual_var
                                               n_cell_clusters = n_cell_clusters,
-                                              #length(biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$scregclust_final_result_models)
                                               ind_reggenes = ind_reggenes,
-                                              #biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$call$ind_reggenes
                                               ind_targetgenes = ind_targetgenes,
-                                              #biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$call$ind_targetgenes
-                                              # data_split_for_scregclust = data_split_for_scregclust,
-                                              # current_cell_cluster_allocation = current_cell_cluster_allocation,
                                               normalisation_parameters = fitted_model$metaparameters$normalisation_parameters
-                                              #biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$metaparameters$normalisation_parameters
   )
 
   # separate out normalisation parameters
@@ -275,4 +270,14 @@ bist_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
     )
   )
 }
+
+
+# #dev test
+#
+# out <- bist_predict(new_data,     # as in scenarios[[1]]$biclust_input_data
+#              fitted_model, # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+#              prior_cluster_proportions = NULL,
+#              calculate_BIC             = TRUE,
+#              use_complex_cluster_allocation = FALSE,
+#              seed = 1234)
 
