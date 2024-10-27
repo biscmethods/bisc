@@ -36,17 +36,17 @@ null2NA <- function(x){
   ifelse(is.null(x), NA, x)
 }
 
-for(i in 1:length(biclust_screg_results_list)){
+for(i in 1:length(bisc_results_list)){
   print(paste0('Now running outer iteration ', i))
-  print(biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg)
+  print(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
 
-  # cells[i] <- biclust_screg_results_list[[i]]$RIs$RI_cell_clustering_biclustscreg
+  # cells[i] <- bisc_results_list[[i]]$RIs$RI_cell_clustering_bisc
 
   if(scenarios[[i]]$description=="Simple"){
     i_simple <- i_simple +1
-    cells[[scenarios[[i]]$description]][i_simple] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg
-    biclust[[scenarios[[i]]$description]][i_simple] <- biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg
-    genes[[scenarios[[i]]$description]] <- c(genes[[scenarios[[i]]$description]], biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
+    cells[[scenarios[[i]]$description]][i_simple] <- bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc
+    biclust[[scenarios[[i]]$description]][i_simple] <- bisc_results_list[[i]]$RIs[[1]]$RI_biclust_bisc
+    genes[[scenarios[[i]]$description]] <- c(genes[[scenarios[[i]]$description]], bisc_results_list[[i]]$RIs[[1]]$RI_gene_clustering_bisc)
 
     cells_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
     biclust_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
@@ -55,9 +55,9 @@ for(i in 1:length(biclust_screg_results_list)){
   }else
   {
     i_complex <- i_complex +1
-    cells[[scenarios[[i]]$description]][i_complex]   <- null2NA(biclust_screg_results_list[[i]]$RIs[[1]]$RI_cell_clustering_biclustscreg)
-    biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(biclust_screg_results_list[[i]]$RIs[[1]]$RI_biclust_biclustscreg)
-    genes[[scenarios[[i]]$description]]              <- c(genes[[scenarios[[i]]$description]], biclust_screg_results_list[[i]]$RIs[[1]]$RI_gene_clustering_biclustscreg)
+    cells[[scenarios[[i]]$description]][i_complex]   <- null2NA(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
+    biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(bisc_results_list[[i]]$RIs[[1]]$RI_biclust_bisc)
+    genes[[scenarios[[i]]$description]]              <- c(genes[[scenarios[[i]]$description]], bisc_results_list[[i]]$RIs[[1]]$RI_gene_clustering_bisc)
 
     cells_biclust[[scenarios[[i]]$description]][i_complex]   <- null2NA(biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust)
     biclust_biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust)
@@ -110,7 +110,7 @@ constructed_plot <- ggplot(cell_data, aes(x = interaction(method, type), y = val
     plot.title = element_text(size = 11)
   ) +
   ggtitle("Cell clusters rand index comparison") +
-  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  xlab("BB = biclustbiclust, BS = bisc") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)
@@ -129,7 +129,7 @@ constructed_plot <- ggplot(biclust_data, aes(x = interaction(method, type), y = 
     plot.title = element_text(size = 11)
   ) +
   ggtitle("Biclust rand index comparison") +
-  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  xlab("BB = biclustbiclust, BS = bisc") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)
@@ -148,7 +148,7 @@ constructed_plot <- ggplot(gene_data, aes(x = interaction(method, type), y = val
     plot.title = element_text(size = 11)
   ) +
   ggtitle("Gene modules rand index comparison") +
-  xlab("BB = biclustbiclust, BS = biclustscreg") +
+  xlab("BB = biclustbiclust, BS = bisc") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)

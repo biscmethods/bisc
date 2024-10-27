@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
 #############################################
@@ -28,9 +28,20 @@ set.seed(214)
 path_data <- here::here('data')
 path_Neftel2019 <- file.path(path_data, "Neftel2019")
 path_Group2 <- file.path(path_Neftel2019, "Group2")
-path_neftel_mn_group2 <- file.path(path_data, "neftel_mn_group2.rds")
+path_neftel_mn_group2 <- file.path(path_data, "neftel_seurat_group2.rds")
 
+#---------------------------------------------------------
 neftel_smartseq2 <- readRDS(path_neftel_mn_group2)
+neftel_smartseq2 <- neftel_smartseq2@assays$SCT@scale.data
+
+# remove all genes/rows that don't correlate with other rows more than 0.1
+cor_matrix <- abs(cor(t(d)))
+diag(cor_matrix) <- 0
+threshold <- 0.1
+keep_rows <- apply(cor_matrix, 1, max) > threshold
+neftel_smartseq2 <- neftel_smartseq2[keep_rows, ]
+
+
 cells <- read.table(file = file.path(path_Group2, 'cells.csv'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
 cells_malignant <- cells[cells[, 'malignant'] == 'yes',]
 neftel_smartseq2_malignant <- neftel_smartseq2[, colnames(neftel_smartseq2) %in% cells_malignant[, 'cell_name']]

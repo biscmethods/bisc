@@ -13,7 +13,7 @@ R_path <- here::here("R")
 output_path <- demo_path
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
 #############################################

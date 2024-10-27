@@ -19,7 +19,7 @@ path_data <- here::here('data')
 redo_flag <- TRUE
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 
 
 #############################################
@@ -138,7 +138,7 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
       penalization_lambdas[i_penalization_lambda]
     ),
     quote = FALSE)
-    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS[[i_penalization_lambda]] <- bisc(
       dat = biclust_input_data,
       cell_id = cell_id,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
@@ -408,7 +408,7 @@ for(i_res in 1:length(penalization_lambdas)){
                                                          labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                          xlab = 'Cells',
                                          ylab = 'Target genes',
-                                         main=paste0('biclust_scregclust, lambda:', penalization_lambdas[i_res], ", RI:", RI))
+                                         main=paste0('bisc, lambda:', penalization_lambdas[i_res], ", RI:", RI))
 }
 
 cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')

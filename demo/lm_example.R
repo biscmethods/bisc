@@ -41,7 +41,7 @@ dat_train <- dat[train_indices,]
 dat_test <- dat[test_indices,]
 
 disturbed_initial_cell_clust <- randomise_cluster_labels(cluster_labels = dat$true_cell_cluster_allocation,
-                                                         fraction_randomised = 0.2)
+                                                         fraction_randomised = 0.45)
 
 disturbed_initial_cell_clust_train <- disturbed_initial_cell_clust[train_indices]
 
@@ -57,11 +57,11 @@ n_cell_clusters <- length(unique(disturbed_initial_cell_clust))
 n_target_genes_train <- length(ind_targetgenes_train)
 n_regulator_genes_train <- length(ind_reggenes_train)
 
-penalization_lambdas <- sort(c(0, 10^(linspace(-6, 0, 10)), c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0)))
+penalization_lambdas <- sort(c(0, 10^(linspace(-8, 0, 10)), c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0)))
 rand_indexes_all <- vector(length = length(penalization_lambdas))
 n_iterations_all <- vector(length = length(penalization_lambdas))
 cluster_complexity_all <- vector(length = length(penalization_lambdas))
-max_iter <- 15
+max_iter <- 100
 BIC_all <- matrix(ncol = max_iter, nrow = length(penalization_lambdas))
 target_genes_residual_var_all <- vector(mode = "list", length = length(penalization_lambdas))
 for (i in seq_along(penalization_lambdas)) {
@@ -148,7 +148,32 @@ p6 <- ggplot(data = df, aes(x = penalization_lambdas, y = BIC, group = 1)) +
   geom_point() +
   scale_x_log10(trans = scales::pseudo_log_trans(sigma = 0.01)) +
   labs(x = "Penalization Lambda", y = "Last iteration BIC")
-p1 + p2 + p3 + p4 + p5 + p6
+p7 <- ggplot(data = df, aes(x = number_of_iterations, y = BIC, group = 1)) +
+  geom_line(color = "red") +
+  geom_point() +
+  labs(x = "Number of iterations", y = "Last iteration BIC")
+p1 + p2 + p3 + p4 + p5 + p6 + p7
 dev.off()
 
+
+library("scatterplot3d") # load
+library('rgl')
+
+myColorRamp <- function(colors, values) {
+  values[is.na(values)] <- min(values, na.rm=TRUE)
+
+  v <- (values - min(values)) / diff(range(values))
+
+  x <- colorRamp(colors)(v)
+  rgb(x[, 1], x[, 2], x[, 3], maxColorValue = 255)
+}
+
+BIC <- log10(as.numeric(unlist(df['BIC'])))
+lambda <- as.numeric(unlist(df['penalization_lambdas']))
+rand_index <- as.numeric(unlist(df['rand_index_result_vs_true']))
+cols <- myColorRamp(c("red", "black"), rand_index)
+scatterplot3d(x = BIC,
+              y = lambda,
+              z = rand_index,
+              pch = 16, type = "h", color = cols)
 

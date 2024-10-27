@@ -17,7 +17,7 @@ path_cluster1 <- file.path(path_data, "env_data_cluster1.RData")
 path_cluster2 <- file.path(path_data, "env_data_cluster2.RData")
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
 # Set seed for example
@@ -98,22 +98,22 @@ for (c_seed in seq(300)){
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
     print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(dat = t(biclust_input_data),
-                                                                   cell_id = colnames(biclust_input_data),
-                                                                   true_cell_cluster_allocation = true_cluster_allocation,
-                                                                   max_iter = 100,
-                                                                   n_target_gene_clusters = n_target_gene_modules,
-                                                                   initial_clustering = initial_clustering,
-                                                                   n_cell_clusters = n_cell_clusters,
-                                                                   ind_targetgenes = ind_targetgenes,
-                                                                   ind_reggenes = ind_reggenes,
-                                                                   output_path = output_path,
-                                                                   penalization_lambda = penalization_lambdas[i_penalization_lambda],
-                                                                   use_complex_cluster_allocation = TRUE,
-                                                                   calculate_BIC = FALSE,
-                                                                   calculate_silhoutte = FALSE,
-                                                                   calculate_davies_bouldin_index = FALSE,
-                                                                   use_garbage_cluster_targets = FALSE)
+    BICLUST_RESULTS[[i_penalization_lambda]] <- bisc(dat = t(biclust_input_data),
+                                                     cell_id = colnames(biclust_input_data),
+                                                     true_cell_cluster_allocation = true_cluster_allocation,
+                                                     max_iter = 100,
+                                                     n_target_gene_clusters = n_target_gene_modules,
+                                                     initial_clustering = initial_clustering,
+                                                     n_cell_clusters = n_cell_clusters,
+                                                     ind_targetgenes = ind_targetgenes,
+                                                     ind_reggenes = ind_reggenes,
+                                                     output_path = output_path,
+                                                     penalization_lambda = penalization_lambdas[i_penalization_lambda],
+                                                     use_complex_cluster_allocation = TRUE,
+                                                     calculate_BIC = FALSE,
+                                                     calculate_silhoutte = FALSE,
+                                                     calculate_davies_bouldin_index = FALSE,
+                                                     use_garbage_cluster_targets = FALSE)
 
   }
   all_res[[c_seed]] <- BICLUST_RESULTS

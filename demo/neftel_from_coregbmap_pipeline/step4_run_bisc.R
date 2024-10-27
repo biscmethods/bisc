@@ -21,7 +21,7 @@ path_NPC_neftel2019 <- file.path(path_data, "env_data_NPC_sctransform_neftel2019
 path_OPC_neftel2019 <- file.path(path_data, "env_data_OPC_sctransform_neftel2019.RData")
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 source(file.path(R_path, "randomise_cluster_labels.R"))
 
 # Set seed for example

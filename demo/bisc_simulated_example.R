@@ -14,7 +14,7 @@ output_path <- demo_path
 path_data <- here::here('data')
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 
 
 #############################################
@@ -216,7 +216,7 @@ if (
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
     print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS[[i_penalization_lambda]] <- bisc(
       dat = biclust_input_data,
       cell_id = cell_id,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust),

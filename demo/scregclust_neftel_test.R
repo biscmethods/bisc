@@ -12,6 +12,10 @@ demo_path <- here::here("demo")
 R_path <- here::here("R")
 output_path <- demo_path
 
+source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
+source(file.path(R_path, "bisc.R"))
+source(file.path(R_path, "randomise_cluster_labels.R"))
+
 #############################################
 ############ data for dev ###################
 #############################################
@@ -24,32 +28,21 @@ set.seed(214)
 path_data <- here::here('data')
 path_Neftel2019 <- file.path(path_data, "Neftel2019")
 path_Group2 <- file.path(path_Neftel2019, "Group2")
-path_neftel_seurat_group2_1500 <- file.path(path_data, "neftel_seurat_group2_1500.rds")
+path_neftel_seurat_group2 <- file.path(path_data, "neftel_seurat_group2.rds")
 
 # Load Neftel 2019 data prepped in download_and_prep_data.R "group 2"
-neftel_smartseq2 <- readRDS(path_neftel_seurat_group2_1500)
+neftel_smartseq2 <- readRDS(path_neftel_seurat_group2)
 neftel_smartseq2 <- neftel_smartseq2@assays$SCT@scale.data
 
-# Figure out which genes are regulator using the names
-out <- scregclust::scregclust_format(neftel_smartseq2)
-is_regulator <- out[['is_regulator']]
-
-# Remove all target genes/rows that don't correlate with other rows more than 0.1
-is_target_gene  <- !is_regulator
-
-
-cor_matrix <- abs(cor(t(neftel_smartseq2[is_target_gene,])))
+# Remove all genes/rows that don't correlate with other rows more than 0.1
+cor_matrix <- abs(cor(t(neftel_smartseq2)))
 diag(cor_matrix) <- 0
 threshold <- 0.1
 keep_rows <- apply(cor_matrix, 1, max) > threshold
-keep_rows <- sort(c(which(is_target_gene)[keep_rows], which(!is_target_gene)))
-
-is_regulator <- !is_target_gene[keep_rows]  #
-
 neftel_smartseq2 <- neftel_smartseq2[keep_rows,]
 
 # Remove all cells that aren't malignant
-cells <- read.table(file = file.path(path_Group2, 'Cells.txt'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
+cells <- read.table(file = file.path(path_Group2, 'cells.csv'), sep = ' ', header = TRUE, stringsAsFactors = FALSE)
 cells_malignant <- cells[cells[, 'malignant'] == 'yes',]
 neftel_smartseq2_malignant <- neftel_smartseq2[, colnames(neftel_smartseq2) %in% cells_malignant[, 'cell_name']]
 
@@ -133,34 +126,55 @@ ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
 cell_id <- 1:n_total_cells
 
 
-min_number_of_clusters <- 10
-max_number_of_clusters <- 10
+
+min_number_of_clusters <- 7
+max_number_of_clusters <- 7
 target_gene_cluster_vector <- seq(min_number_of_clusters, max_number_of_clusters)
 gc()
 
-
-# Run screg with a bunch of different cluster setings
-results <- vector(mode = "list", length = length(target_gene_cluster_vector))
+n_cell_clusters <- 4
+RES <- vector(mode = "list", length = n_cell_clusters)
 
 # Manual cluster allocation (we only check cell cluster 1, AC, now)
-i_cell_cluster <- 1
-current_cell_cluster <- neftel_smartseq2_malignant_sorted[, df$cell_cluster == 'AC']
+for (i_cell_cluster in seq(n_cell_clusters)) {
+  # Run screg with a bunch of different cluster setings
 
-for (i_n_target_genes_clusters in seq(length(target_gene_cluster_vector))) {
-  n_target_genes_clusters <- target_gene_cluster_vector[i_n_target_genes_clusters]
-  print(paste("Cell cluster", i_cell_cluster, "Number of target gene clusters", n_target_genes_clusters), quote = FALSE)
+  results <- vector(mode = "list", length = length(target_gene_cluster_vector))
 
-  results[[i_n_target_genes_clusters]] <- scregclust::scregclust(
-    expression = current_cell_cluster,  # p rows of genes, n columns of cells
-    split_indices = NULL,
-    genesymbols = 1:(n_target_genes + n_regulator_genes),
-    is_regulator = is_regulator,
-    n_cl = n_target_genes_clusters,
-    penalization = 0.16,
-    noise_threshold = 0.000001,
-    verbose = TRUE,
-    n_cycles = 40,
-    compute_silhouette = FALSE,
-    center = FALSE
-  )
+  if(i_cell_cluster==1){
+    load(path_AC_neftel2019)
+    current_cell_cluster <- cell_cluster_AC
+    rm(cell_cluster_AC)
+  }else if(i_cell_cluster==2){
+    load(path_MES_neftel2019)
+    current_cell_cluster <- cell_cluster_MES
+    rm(cell_cluster_MES)
+  }else if(i_cell_cluster==3){
+    load(path_NPC_neftel2019)
+    current_cell_cluster <- cell_cluster_NPC
+    rm(cell_cluster_NPC)
+  }else if(i_cell_cluster==4){
+    load(path_OPC_neftel2019)
+    current_cell_cluster <- cell_cluster_OPC
+    rm(cell_cluster_OPC)
+  }
+  for (i_n_target_genes_clusters in seq(length(target_gene_cluster_vector))) {
+    n_target_genes_clusters <- target_gene_cluster_vector[i_n_target_genes_clusters]
+    print(paste("Cell cluster", i_cell_cluster, "Number of target gene clusters", n_target_genes_clusters), quote = FALSE)
+
+    results[[i_n_target_genes_clusters]] <- scregclust::scregclust(
+      expression = current_cell_cluster,  # p rows of genes, n columns of cells
+      split_indices = NULL,
+      genesymbols = 1:(n_target_genes + n_regulator_genes),
+      is_regulator = is_regulator,
+      n_cl = n_target_genes_clusters,
+      penalization = 0.2,
+      noise_threshold = 0.000001,
+      verbose = TRUE,
+      n_cycles = 40,
+      compute_silhouette = TRUE,
+      center = FALSE
+    )
+  }
+  RES[[i_cell_cluster]] <- results
 }

@@ -3,7 +3,7 @@ if (!require(clue)) install.packages("clue")
 library(clue)
 
 
-# Find the correct mapping of what guesses from biclustbiclust and biclustscreg should match true generated data. For gene modules --------------------------------------------------------------------------------------------------------
+# Find the correct mapping of what guesses from biclustbiclust and bisc should match true generated data. For gene modules --------------------------------------------------------------------------------------------------------
 # Correct = "The most advantageous labeling that produces the least amount of error"
 get_mapping <- function(true_labels,
                         guessed_labels,
@@ -93,12 +93,12 @@ get_mapping <- function(true_labels,
 
 # Returns a df with ratio of correct guesses of regulator genes affecting a gene module ---------------------------------------------------------------------------------------------------------------------------------------------------
 for(scenario_number in 1:length(scenarios)){
-  guessed_S <- lapply(biclust_screg_results_list[[scenario_number]]$biclustscreg_results[[1]]$scregclust_final_result_models, t)
+  guessed_S <- lapply(bisc_results_list[[scenario_number]]$bisc_results[[1]]$scregclust_final_result_models, t)
   guessed_S <- lapply(guessed_S, function(x) x * 1)
   true_S <- lapply(scenarios[[scenario_number]]$generated_data$true_S, abs)
   for(i_cluster in 1:scenarios[[scenario_number]]$n_cell_clusters){
     mapping <- get_mapping(true_labels = scenarios[[scenario_number]]$generated_data$true_target_gene_allocation[[i_cluster]],
-                           guessed_labels = biclust_screg_results_list[[scenario_number]]$biclustscreg_results[[1]]$scregclust_final_result_module[[i_cluster]][scenarios[[scenario_number]]$ind_targetgenes]
+                           guessed_labels = bisc_results_list[[scenario_number]]$bisc_results[[1]]$scregclust_final_result_module[[i_cluster]][scenarios[[scenario_number]]$ind_targetgenes]
     )
     guessed_S[[i_cluster]] <- guessed_S[[i_cluster]][mapping$guessed_cluster,]
 
@@ -159,7 +159,7 @@ print(ratios_df)
 #   ylim(0, 1) +
 #   xlab("False Positive Rate (FPR)") +
 #   ylab("True Positive Rate (TPR)") +
-#   ggtitle("ROC Curve for biclust_screg, how good was the estimation of which\nregulator genes control expression in which target gene modules.")
+#   ggtitle("ROC Curve for bisc, how good was the estimation of which\nregulator genes control expression in which target gene modules.")
 #
 # print(roc_plot)
 

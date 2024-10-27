@@ -2,9 +2,9 @@
 # # # for dev
 #  new_data <- scenarios[[1]]$biclust_input_data[1:10,]
 # #
-#  fitted_model <- biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+#  fitted_model <- bisc_results_list[[1]]$bisc_results[[1]]
 #
-#  biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$taget_genes_residual_var
+#  bisc_results_list[[1]]$bisc_results[[1]]$taget_genes_residual_var
 #
 # #
 #
@@ -14,9 +14,9 @@
 # seed = 1234
 #
 # #
-# str(biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$scregclust_final_result_coeffs)
-# biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$call$ind_reggenes
-# biclust_screg_results_list[[1]]$biclustscreg_results[[1]]$metaparameters$normalisation_parameters
+# str(bisc_results_list[[1]]$bisc_results[[1]]$scregclust_final_result_coeffs)
+# bisc_results_list[[1]]$bisc_results[[1]]$call$ind_reggenes
+# bisc_results_list[[1]]$bisc_results[[1]]$metaparameters$normalisation_parameters
 
 
 # function to predict cell cluster allocations of new data given a previously fitted model
@@ -24,7 +24,7 @@
 
 library(here)
 R_path <- here::here("R")
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 
 
 #local standardisation
@@ -126,8 +126,8 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
 
 
 
-bist_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
-                         fitted_model, # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+bisc_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
+                         fitted_model, # as in bisc_results_list[[1]]$bisc_results[[1]]
                          prior_cluster_proportions = NULL,
                          calculate_BIC             = TRUE,
                          use_complex_cluster_allocation = FALSE,
@@ -274,8 +274,8 @@ bist_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
 
 # #dev test
 #
-# out <- bist_predict(new_data,     # as in scenarios[[1]]$biclust_input_data
-#              fitted_model, # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+# out <- bisc_predict(new_data,     # as in scenarios[[1]]$biclust_input_data
+#              fitted_model, # as in bisc_results_list[[1]]$bisc_results[[1]]
 #              prior_cluster_proportions = NULL,
 #              calculate_BIC             = TRUE,
 #              use_complex_cluster_allocation = FALSE,

@@ -138,7 +138,7 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 }
 
 
-#' Biclust
+#' Bisc
 #'
 #' Cluster cells based with Classification EM based on lm with penality
 #' @param dat Main data
@@ -155,7 +155,7 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
-biclust_scregclust <- function(
+bisc <- function(
   dat = dat,
   cell_id,
   true_cell_cluster_allocation,
@@ -714,7 +714,6 @@ biclust_scregclust <- function(
       "silhouette_measure" = silhouette_measure,
       "davies_bouldin_index" = db,
       "BIC" = BIC_all[1:i_main],
-      # "taget_genes_residual_var" = target_genes_residual_var_all[1:i_main],
       "taget_genes_residual_var" = target_genes_residual_var,
       "converged" = converged,
       "call" = list(

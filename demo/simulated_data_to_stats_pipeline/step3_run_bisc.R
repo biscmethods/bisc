@@ -1,16 +1,16 @@
 # !/usr/bin/Rscript
 
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 source(file.path(R_path, "bisc_predict.R"))
 
 
-biclustscreg_iteration <- function(plot_heatmap=FALSE,
-                                   plot_title = "biclustscreg_heatmap",
+bisc_iteration <- function(plot_heatmap=FALSE,
+                                   plot_title = "bisc_heatmap",
                                    penalization_lambdas, # c( 0.00001, 0.1, 0.2, 0.5)
-                                   biclustscreg_results = NULL,  # You can feed old results or calculate new ones
+                                   bisc_results = NULL,  # You can feed old results or calculate new ones
                                    cell_id,
                                    biclust_input_data,
-                                   output_path,  # Output path for biclust_screg for alluvial plots etc
+                                   output_path,  # Output path for bisc for alluvial plots etc
                                    n_target_genes,
                                    n_total_cells,
                                    n_target_gene_clusters,
@@ -27,15 +27,15 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
 ){
 
 
-  # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  if(is.null(biclustscreg_results)){
-    biclustscreg_results <- vector(mode = "list", length = length(penalization_lambdas))
+  # Run bisc -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  if(is.null(bisc_results)){
+    bisc_results <- vector(mode = "list", length = length(penalization_lambdas))
 
     for (i_penalization_lambda in seq_along(penalization_lambdas)) {
       print("", quote = FALSE)
       print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
 
-      biclustscreg_results[[i_penalization_lambda]] <- biclust_scregclust(
+      bisc_results[[i_penalization_lambda]] <- bisc(
         dat = biclust_input_data,
         cell_id = cell_id,
         true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
@@ -62,12 +62,12 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
   print("", quote = FALSE)
   print("Biclust results:", quote = FALSE)
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
-    if (is.na(biclustscreg_results[i_penalization_lambda])) {
+    if (is.na(bisc_results[i_penalization_lambda])) {
       print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NA"), quote = FALSE)
-    } else if (is.null(biclustscreg_results[i_penalization_lambda])) {
+    } else if (is.null(bisc_results[i_penalization_lambda])) {
       print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is NULL"), quote = FALSE)
     } else {
-      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", biclustscreg_results[[i_penalization_lambda]]$rand_index), quote = FALSE)
+      print(paste("penalization_lambda", penalization_lambdas[i_penalization_lambda], "is ok with rand index", bisc_results[[i_penalization_lambda]]$rand_index), quote = FALSE)
     }
   }
 
@@ -78,12 +78,12 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
   RIs <- vector(mode = "list", length = length(penalization_lambdas))
 
   for(i_res in 1:length(penalization_lambdas)){
-    current_biclust_result <- biclustscreg_results[[i_res]]
+    current_biclust_result <- bisc_results[[i_res]]
     if(is.list(current_biclust_result)){ # For no result current_biclust_result is just NA and then we can't calculate RI
 
       cell_cluster_allocation_train <- current_biclust_result$cell_cluster_allocation
-      cell_cluster_allocation <- bist_predict(new_data = biclust_input_data_test,     # as in scenarios[[1]]$biclust_input_data
-                                              fitted_model = biclustscreg_results[[i_res]], # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+      cell_cluster_allocation <- bisc_predict(new_data = biclust_input_data_test,     # as in scenarios[[1]]$biclust_input_data
+                                              fitted_model = bisc_results[[i_res]], # as in bisc_results_list[[1]]$bisc_results[[1]]
                                               prior_cluster_proportions = NULL,
                                               calculate_BIC = TRUE,
                                               use_complex_cluster_allocation = FALSE,
@@ -139,28 +139,28 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
       true_target_gene_allocation <- generated_data$true_target_gene_allocation #same for test and train data, no change
 
 
-      RI_cell_clustering_biclustscreg <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
+      RI_cell_clustering_bisc <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
       print(paste("Lambda", penalization_lambdas[i_res]), quote=FALSE)
-      print(" Cell clustering RI for biclust_screg", quote=FALSE)
-      print(paste("  ", RI_cell_clustering_biclustscreg), quote=FALSE)
-      print(" Gene module clustering RI for biclust_screg", quote=FALSE)
-      RI_gene_clustering_biclustscreg_all_string <- ""
-      RI_gene_clustering_biclustscreg_all <- vector(length = n_cell_clusters)
+      print(" Cell clustering RI for bisc", quote=FALSE)
+      print(paste("  ", RI_cell_clustering_bisc), quote=FALSE)
+      print(" Gene module clustering RI for bisc", quote=FALSE)
+      RI_gene_clustering_bisc_all_string <- ""
+      RI_gene_clustering_bisc_all <- vector(length = n_cell_clusters)
       for(i_cell_cluster in 1:length(target_gene_allocation)){
-        RI_gene_clustering_biclustscreg <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
-        print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustscreg), quote=FALSE)
-        RI_gene_clustering_biclustscreg_all_string <- paste(RI_gene_clustering_biclustscreg_all_string, RI_gene_clustering_biclustscreg, sep=" ")
-        RI_gene_clustering_biclustscreg_all[i_cell_cluster] <- RI_gene_clustering_biclustscreg
+        RI_gene_clustering_bisc <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
+        print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_bisc), quote=FALSE)
+        RI_gene_clustering_bisc_all_string <- paste(RI_gene_clustering_bisc_all_string, RI_gene_clustering_bisc, sep=" ")
+        RI_gene_clustering_bisc_all[i_cell_cluster] <- RI_gene_clustering_bisc
       }
-      print(" Bicluster RI för biclust_screg",quote=FALSE)
-      RI_biclust_biclustscreg <- round(aricode::RI(as.vector(biclust_result_matrix), correct_bicluster_test), 2)
-      print(paste("  ", RI_biclust_biclustscreg), quote=FALSE)
+      print(" Bicluster RI för bisc",quote=FALSE)
+      RI_biclust_bisc <- round(aricode::RI(as.vector(biclust_result_matrix), correct_bicluster_test), 2)
+      print(paste("  ", RI_biclust_bisc), quote=FALSE)
 
       # Save RIs
       RIs[[i_res]] <- list("penalization_lambda" = penalization_lambdas[i_res],
-                           "RI_cell_clustering_biclustscreg" = RI_cell_clustering_biclustscreg,
-                           "RI_gene_clustering_biclustscreg" = RI_gene_clustering_biclustscreg_all,
-                           "RI_biclust_biclustscreg" = RI_biclust_biclustscreg)
+                           "RI_cell_clustering_bisc" = RI_cell_clustering_bisc,
+                           "RI_gene_clustering_bisc" = RI_gene_clustering_bisc_all,
+                           "RI_biclust_bisc" = RI_biclust_bisc)
 
 
       # Potentially construct plots -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -182,19 +182,19 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                                                labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                                xlab = 'Cells',
                                                ylab = 'Target genes',
-                                               main=paste0('biclust_screg, lambda: ', penalization_lambdas[i_res],
-                                                           "\nCell cluster RI:", RI_cell_clustering_biclustscreg,
-                                                           "\nGene modules RI: ", RI_gene_clustering_biclustscreg_all_string,
-                                                           "\nBiclust RI:", RI_biclust_biclustscreg,
-                                                           "\nConverged:", biclustscreg_results[[i_res]]$converged))
+                                               main=paste0('bisc, lambda: ', penalization_lambdas[i_res],
+                                                           "\nCell cluster RI:", RI_cell_clustering_bisc,
+                                                           "\nGene modules RI: ", RI_gene_clustering_bisc_all_string,
+                                                           "\nBiclust RI:", RI_biclust_bisc,
+                                                           "\nConverged:", bisc_results[[i_res]]$converged))
       }
 
     }else{
       # Save RIs
       RIs[[i_res]] <- list("penalization_lambda" = penalization_lambdas[i_res],
-                           "RI_cell_clustering_biclustscreg" = NA,
-                           "RI_gene_clustering_biclustscreg" = NA,
-                           "RI_biclust_biclustscreg" = NA)
+                           "RI_cell_clustering_bisc" = NA,
+                           "RI_gene_clustering_bisc" = NA,
+                           "RI_biclust_bisc" = NA)
     }
   }
 
@@ -209,7 +209,7 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
   }
 
   return(list("RIs"=RIs,
-              "biclustscreg_results"=biclustscreg_results)
+              "bisc_results"=bisc_results)
   )
 }
 
@@ -221,13 +221,13 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
 if (sys.nframe() == 0) {
   # Set seed for example
   set.seed(1234)
-  res <- biclustscreg_iteration(plot_heatmap = TRUE,
-                                plot_title = "heatmap_biclustscreg_lambda_0.2",
+  res <- bisc_iteration(plot_heatmap = TRUE,
+                                plot_title = "heatmap_bisc_lambda_0.2",
                                 penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
-                                biclustscreg_results = NULL, # You can feed old results or calculate new ones
+                                bisc_results = NULL, # You can feed old results or calculate new ones
                                 cell_id = scenarios[[1]]$cell_id,
                                 biclust_input_data = scenarios[[1]]$biclust_input_data,
-                                output_path,  # Output path for biclust_screg for alluvial plots etc
+                                output_path,  # Output path for bisc for alluvial plots etc
                                 n_target_genes = scenarios[[1]]$n_target_genes,
                                 n_total_cells = scenarios[[1]]$n_total_cells,
                                 n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
@@ -242,13 +242,13 @@ if (sys.nframe() == 0) {
                                 n_total_cells_test = scenarios[[1]]$n_total_cells_test,
                                 correct_clustering_test = scenarios[[1]]$correct_clustering_test)
 
-  res <- biclustscreg_iteration(plot_heatmap = TRUE,
-                                plot_title = "heatmap_biclustscreg_lambda_1.0",
+  res <- bisc_iteration(plot_heatmap = TRUE,
+                                plot_title = "heatmap_bisc_lambda_1.0",
                                 penalization_lambdas = c(1.0), # c( 0.00001, 0.1, 0.2, 0.5)
-                                biclustscreg_results = NULL, # You can feed old results or calculate new ones
+                                bisc_results = NULL, # You can feed old results or calculate new ones
                                 cell_id = scenarios[[1]]$cell_id,
                                 biclust_input_data = scenarios[[1]]$biclust_input_data,
-                                output_path,  # Output path for biclust_screg for alluvial plots etc
+                                output_path,  # Output path for bisc for alluvial plots etc
                                 n_target_genes = scenarios[[1]]$n_target_genes,
                                 n_total_cells = scenarios[[1]]$n_total_cells,
                                 n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
@@ -268,13 +268,13 @@ if (sys.nframe() == 0) {
   # res <- vector(mode = "list", length = length(scenarios))
   # for(i in 1:length(scenarios)){
   #   set.seed(12)
-  #   res[[i]] <- biclustscreg_iteration(plot_heatmap = FALSE,
-  #                                      plot_title = "biclustscreg_heatmap",
+  #   res[[i]] <- bisc_iteration(plot_heatmap = FALSE,
+  #                                      plot_title = "bisc_heatmap",
   #                                      penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
-  #                                      biclustscreg_results = NULL, # You can feed old results or calculate new ones
+  #                                      bisc_results = NULL, # You can feed old results or calculate new ones
   #                                      cell_id = scenarios[[i]]$cell_id,
   #                                      biclust_input_data = scenarios[[i]]$biclust_input_data,
-  #                                      output_path,  # Output path for biclust_screg for alluvial plots etc
+  #                                      output_path,  # Output path for bisc for alluvial plots etc
   #                                      n_target_genes = scenarios[[i]]$n_target_genes,
   #                                      n_total_cells = scenarios[[i]]$n_total_cells,
   #                                      n_target_gene_clusters = scenarios[[i]]$n_target_gene_clusters,

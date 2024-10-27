@@ -19,7 +19,7 @@ path_data <- here::here('data')
 redo_flag <- TRUE
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 
 
 #############################################
@@ -127,7 +127,7 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
       penalization_lambdas[i_penalization_lambda]
     ),
     quote = FALSE)
-    BICLUST_RESULTS[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS[[i_penalization_lambda]] <- bisc(
       dat = biclust_input_data,
       cell_id = cell_id,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust),
@@ -462,7 +462,7 @@ plot_biclust_heatmap(biclust_results_matrix)
 
 
 
-# Construct heatmap for our biclust_screg -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Construct heatmap for our bisc -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 plots <- vector(mode = "list", length = length(penalization_lambdas))
@@ -490,20 +490,20 @@ for(i_res in 1:length(penalization_lambdas)){
     # CALC RIs
     true_cell_cluster_allocation <- generated_data$true_cell_clust
     true_target_gene_allocation <- generated_data$true_target_gene_allocation
-    RI_cell_clustering_biclustscreg <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
+    RI_cell_clustering_bisc <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
     print(paste("Lambda", penalization_lambdas[i_res]), quote=FALSE)
-    print(" Cell clustering RI for biclust_screg", quote=FALSE)
-    print(paste("  ", RI_cell_clustering_biclustscreg), quote=FALSE)
-    print(" Gene module clustering RI for biclust_screg", quote=FALSE)
-    RI_gene_clustering_biclustscreg_all <- ""
+    print(" Cell clustering RI for bisc", quote=FALSE)
+    print(paste("  ", RI_cell_clustering_bisc), quote=FALSE)
+    print(" Gene module clustering RI for bisc", quote=FALSE)
+    RI_gene_clustering_bisc_all <- ""
     for(i_cell_cluster in 1:length(res_gene_cluster)){
-      RI_gene_clustering_biclustscreg <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
-      print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustscreg), quote=FALSE)
-      RI_gene_clustering_biclustscreg_all <- paste(RI_gene_clustering_biclustscreg_all, RI_gene_clustering_biclustscreg, sep=" ")
+      RI_gene_clustering_bisc <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
+      print(paste("  For cell cluster", i_cell_cluster,":", RI_gene_clustering_bisc), quote=FALSE)
+      RI_gene_clustering_bisc_all <- paste(RI_gene_clustering_bisc_all, RI_gene_clustering_bisc, sep=" ")
     }
-    print(" Bicluster RI för biclust_screg",quote=FALSE)
-    RI_biclust_biclustscreg <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
-    print(paste("  ", RI_biclust_biclustscreg), quote=FALSE)
+    print(" Bicluster RI för bisc",quote=FALSE)
+    RI_biclust_bisc <- round(aricode::RI(as.vector(result_matrix), correct_clustering), 2)
+    print(paste("  ", RI_biclust_bisc), quote=FALSE)
 
 
 
@@ -524,10 +524,10 @@ for(i_res in 1:length(penalization_lambdas)){
                                                            labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                            xlab = 'Cells',
                                            ylab = 'Target genes',
-                                           main=paste0('biclust_screg, lambda: ', penalization_lambdas[i_res],
-                                                       "\nCell cluster RI:", RI_cell_clustering_biclustscreg,
-                                                       "\nGene modules RI: ", RI_gene_clustering_biclustscreg_all,
-                                                       "\nBiclust RI:", RI_biclust_biclustscreg))
+                                           main=paste0('bisc, lambda: ', penalization_lambdas[i_res],
+                                                       "\nCell cluster RI:", RI_cell_clustering_bisc,
+                                                       "\nGene modules RI: ", RI_gene_clustering_bisc_all,
+                                                       "\nBiclust RI:", RI_biclust_bisc))
   }
 }
 

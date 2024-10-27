@@ -16,7 +16,7 @@ path_data <- here::here('data')
 redo_flag = T
 
 source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc.R"))
 
 
 #############################################
@@ -182,7 +182,7 @@ if (
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     print("", quote = FALSE)
     print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
-    BICLUST_RESULTS_train[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS_train[[i_penalization_lambda]] <- bisc(
       dat = biclust_input_data_train,
       cell_id = cell_id_train,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[train_indices]),
@@ -239,7 +239,7 @@ RIs <- sapply(BICLUST_RESULTS_train, function(x) as.numeric(x$rand_index))
 
 
 
-png(file.path(output_path, paste0("biclust_screg_lambda_RI_simple_ex",".png")),
+png(file.path(output_path, paste0("bisc_lambda_RI_simple_ex",".png")),
     width = 1024, height = 480, units = "px")
 plot(
   penalization_lambdas,
@@ -268,7 +268,7 @@ if (
 
   for (i_penalization_lambda in best_lambda) {
     print("", quote = FALSE)
-    BICLUST_RESULTS_test<- biclust_scregclust(
+    BICLUST_RESULTS_test<- bisc(
       dat = biclust_input_data_test,
       cell_id = cell_id_test,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[test_indices]),
@@ -320,7 +320,7 @@ if (
 
   for (i_penalization_lambda in 1:iterations) {
     print(i_penalization_lambda, quote = FALSE)
-    BICLUST_RESULTS_iterated[[i_penalization_lambda]] <- biclust_scregclust(
+    BICLUST_RESULTS_iterated[[i_penalization_lambda]] <- bisc(
       dat = biclust_input_data_test,
       cell_id = cell_id_test,
       true_cell_cluster_allocation = factor(generated_data$true_cell_clust[test_indices]),
@@ -371,7 +371,7 @@ RIs <-  sapply(seq_along(BICLUST_RESULTS_iterated),
                )
 
 
-png(file.path(output_path, paste0("biclust_screg_iterated_RI_histogram_simple_ex",".png")),
+png(file.path(output_path, paste0("bisc_iterated_RI_histogram_simple_ex",".png")),
     width = 1024, height = 480, units = "px")
 hist( RIs,
       breaks = 10,

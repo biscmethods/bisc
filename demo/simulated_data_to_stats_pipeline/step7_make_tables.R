@@ -17,9 +17,9 @@
     # Convert to data frame for xtable
     summary_df <- as.data.frame(summary_stats)
 
-    # Replace "BB" with "biclust::biclust()" and "BS" with "biclust_screg"
+    # Replace "BB" with "biclust::biclust()" and "BS" with "bisc"
     summary_df$method <- gsub("BB", "biclust::biclust()", summary_df$method)
-    summary_df$method <- gsub("BS", "biclust_screg", summary_df$method)
+    summary_df$method <- gsub("BS", "bisc", summary_df$method)
 
     # Create LaTeX table
     latex_table <- xtable(summary_df)
