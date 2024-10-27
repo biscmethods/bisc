@@ -7,7 +7,9 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
 
   biclust_screg_results_list <- vector(mode = "list", length = length(scenarios))
 
-  for(iter in 1:length(biclust_screg_results_list )){
+  for(iter in 1:length(biclust_screg_results_list ))
+    # for(iter in 10 )
+      {
 
     cat("\n")
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 5.'))

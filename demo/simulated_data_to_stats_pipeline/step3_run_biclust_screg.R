@@ -23,6 +23,9 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                    itercap                     = 20,
                                    test_data = scenarios_test[[1]]
                                    ){
+  #get test parameters
+  n_total_cells_test <- nrow(test_data$biclust_input_data)
+
   # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   if(is.null(biclustscreg_results)){
     biclustscreg_results <- vector(mode = "list", length = length(penalization_lambdas))
@@ -87,15 +90,31 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
         seed = 1234
       )$cell_cluster_allocation
 
+      # logic check
+      if(length(cell_cluster_allocation) != nrow(test_data$biclust_input_data)) {
+        cat("\n")
+        cat('cluster allocation on test set of wrong length')
+        cat("\n")
+
+      }
+
+
       target_gene_allocation <- current_biclust_result$scregclust_final_result_module
 
 
       # Assign one unique number to each gene module --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-      biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+      biclust_result_matrix <- matrix(0, nrow = n_total_cells_test, ncol = n_target_genes)
 
-      # Check each entry in the matrix (each cell and gene pair), and assign a string-number to each unique "cell-cluster-gene-module".
-      for (i in 1:n_total_cells) {
+      # Check each entry in the matrix (each cell and gene pair),
+      # and assign a string-number to each unique "cell-cluster-gene-module".
+      for (i in 1:n_total_cells_test) {
         cluster <- cell_cluster_allocation[i]
+        if(is.na(cell_cluster_allocation[i])){
+          cat("\n")
+          cat('and now')
+          cat("\n")
+          print(cell_cluster_allocation[i])
+        }
         gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
         gene_allocation[gene_allocation==-1] <- 0
         # Create unique numbers for each pair
@@ -103,13 +122,24 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
       }
 
       # Convert the string-numbers to numeric matrix (starting from 1 this time)
-      biclust_result_matrix <- matrix(as.numeric(biclust_result_matrix), nrow = n_total_cells, ncol = n_target_genes)
-      biclust_result_matrix <- matrix(as.integer(as.factor(biclust_result_matrix)), nrow=nrow(biclust_result_matrix), ncol=ncol(biclust_result_matrix))
+      biclust_result_matrix <- matrix(as.numeric(biclust_result_matrix),
+                                      nrow = n_total_cells_test,
+                                      ncol = n_target_genes)
+
+      biclust_result_matrix <- matrix(as.integer(as.factor(biclust_result_matrix)),
+                                      nrow=nrow(biclust_result_matrix),
+                                      ncol=ncol(biclust_result_matrix))
 
 
       # Calculate RIs ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-      true_cell_cluster_allocation <- generated_data$true_cell_clust
-      true_target_gene_allocation <- generated_data$true_target_gene_allocation
+      true_cell_cluster_allocation_train <- generated_data$true_cell_clust
+      true_cell_cluster_allocation <- test_data$generated_data$true_cell_clust
+
+      correct_bicluster_test <- test_data$correct_clustering
+
+      true_target_gene_allocation <- generated_data$true_target_gene_allocation #same for test and train data, no change
+
+
       RI_cell_clustering_biclustscreg <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
       print(paste("Lambda", penalization_lambdas[i_res]), quote=FALSE)
       print(" Cell clustering RI for biclust_screg", quote=FALSE)
@@ -124,7 +154,7 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
         RI_gene_clustering_biclustscreg_all[i_cell_cluster] <- RI_gene_clustering_biclustscreg
       }
       print(" Bicluster RI för biclust_screg",quote=FALSE)
-      RI_biclust_biclustscreg <- round(aricode::RI(as.vector(biclust_result_matrix), correct_clustering), 2)
+      RI_biclust_biclustscreg <- round(aricode::RI(as.vector(biclust_result_matrix), correct_bicluster_test), 2)
       print(paste("  ", RI_biclust_biclustscreg), quote=FALSE)
 
       # Save RIs
