@@ -29,7 +29,9 @@ if (!file.exists(file.path(output_path, "biclust_screg_results_list.rds")) |
                                                                  generated_data = scenarios[[iter]]$generated_data,
                                                                  correct_clustering = scenarios[[iter]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
                                                                  disturbed_initial_cell_clust = scenarios[[iter]]$disturbed_initial_cell_clust,
-                                                                 itercap = 20)
+                                                                 itercap = 20,
+                                                                 test_data = scenarios_test[[iter]] #assumes we have a list of test data with the same length and this name
+                                                                 )
 
   }
 

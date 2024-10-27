@@ -1,6 +1,7 @@
 # !/usr/bin/Rscript
 
 source(file.path(R_path, "biclust_scregclust.R"))
+source(file.path(R_path, "bisc_predict.R"))
 
 
 biclustscreg_iteration <- function(plot_heatmap=FALSE,
@@ -19,7 +20,9 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                    generated_data,
                                    correct_clustering,  # The correct biclustering (one unique number for each gene module)
                                    disturbed_initial_cell_clust,
-                                   itercap                     = 20){
+                                   itercap                     = 20,
+                                   test_data = scenarios_test[[1]]
+                                   ){
   # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   if(is.null(biclustscreg_results)){
     biclustscreg_results <- vector(mode = "list", length = length(penalization_lambdas))
@@ -73,7 +76,17 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
   for(i_res in 1:length(penalization_lambdas)){
     current_biclust_result <- biclustscreg_results[[i_res]]
     if(is.list(current_biclust_result)){ # For no result current_biclust_result is just NA and then we can't calculate RI
-      cell_cluster_allocation <- current_biclust_result$cell_cluster_allocation
+
+      cell_cluster_allocation_train <- current_biclust_result$cell_cluster_allocation
+      cell_cluster_allocation <- bist_predict(
+        new_data 				    = test_data$biclust_input_data,     # as in scenarios[[1]]$biclust_input_data
+        fitted_model			  = biclustscreg_results[[i_res]], # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+        prior_cluster_proportions = NULL,
+        calculate_BIC             = TRUE,
+        use_complex_cluster_allocation = FALSE,
+        seed = 1234
+      )$cell_cluster_allocation
+
       target_gene_allocation <- current_biclust_result$scregclust_final_result_module
 
 
