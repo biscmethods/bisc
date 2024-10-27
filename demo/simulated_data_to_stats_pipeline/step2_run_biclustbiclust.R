@@ -4,18 +4,11 @@ library(biclust)
 
 # Run biclust::biclust --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-bicluctbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
   biclust::biclust(
     data,
     method=BCPlaid(),
     background=FALSE,
-    iter.startup=100,
-    iter.layer=100,
-    back.fit=100,
-    row.release=0.7,
-    col.release=0.7,
-    shuffle=100,
-    max.layers=5,
     verbose=FALSE)
 }
 
@@ -63,6 +56,45 @@ calc_hamming <- function(matrix_data, between_rows=TRUE){
 }
 
 
+# Since biclustbiclust output row cluster assingments and col cluster assignment
+# this predict function does the same.
+# It simply correlates the train and test data per row/col and takes
+# the cluster assignment from the best correlating row/col.
+# Fo us, rows are cells, and cols are genes.
+# > str(biclust_result@RowxNumber)
+# logi [1:400, 1:5] FALSE FALSE TRUE FALSE FALSE FALSE ...
+# > str(biclust_result@NumberxCol)
+# logi [1:5, 1:106] TRUE FALSE FALSE FALSE FALSE TRUE ...
+# predict_biclustbiclust <- function(biclust_result, train_data, test_data){
+#   if (!identical(dim(train_data), dim(test_data))) {
+#     print("train_data and test_data needs to have exactly the same dimensions.")
+#   }
+#
+#   row_correlations <- apply(train_data, 1, function(row1) {
+#     apply(test_data, 1, function(row2) {
+#       cor(row1, row2)
+#     })
+#   })
+#
+#   col_correlations <- apply(train_data, 2, function(col1) {
+#     apply(test_data, 2, function(col2) {
+#       cor(col1, col2)
+#     })
+#   })
+#
+#   # Get the index of the highest correlation for each row/col
+#   highest_corr_row_indices <- apply(row_correlations, 1, which.max)
+#   highest_corr_col_indices <- apply(col_correlations, 2, which.max)
+#
+#   return(list("row_cluster_assignments" = biclust_result@RowxNumber[highest_corr_row_indices,],
+#               "col_cluster_assignments" = biclust_result@NumberxCol[,highest_corr_col_indices]))
+# }
+#
+#
+# predict_biclustbiclust(biclust_result = stats_biclustbiclust$biclust_results_matrix,
+#                        train_data = biclust_input_data,
+#                        test_data = biclust_input_data)
+
 get_stats_biclustbiclust <- function(biclust_input_data,
                                      n_target_genes,
                                      ind_targetgenes,
@@ -71,12 +103,20 @@ get_stats_biclustbiclust <- function(biclust_input_data,
                                      n_cell_clusters,
                                      generated_data,
                                      correct_clustering,
-                                     do_biclust_with_regulators = TRUE) {
+                                     do_biclust_with_regulators = TRUE,
+                                     include_regulators_in_results = FALSE) {
+  org_ind_targetgenes <- ind_targetgenes
+  if(include_regulators_in_results && do_biclust_with_regulators){
+    org_n_target_genes <- n_target_genes
+    ind_targetgenes <- 1:ncol(biclust_input_data)
+    n_target_genes <- ncol(biclust_input_data)
+  }
+
 
   if(do_biclust_with_regulators){
-    biclust_result <- bicluctbiclust(data = as.matrix(biclust_input_data))
+    biclust_result <- biclustbiclust(data = as.matrix(biclust_input_data))
   }else{
-    biclust_result <- bicluctbiclust(data = as.matrix(biclust_input_data[ind_targetgenes]))
+    biclust_result <- biclustbiclust(data = as.matrix(biclust_input_data[ind_targetgenes]))
   }
 
 
@@ -89,6 +129,7 @@ get_stats_biclustbiclust <- function(biclust_input_data,
     a <- as.matrix((biclust_result@RowxNumber[, i_n, drop = FALSE] %*% biclust_result@NumberxCol[i_n, ind_targetgenes, drop = FALSE]) == 1)
     biclust_results_matrix[a] <- i_n
   }
+
 
   # Cell clustering  -------------------
   # E.g. 400 cells x 100 genes
@@ -113,7 +154,7 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   }
 
   # Print the cluster assignments
-  print("Cell clusters found in biclust", quote=FALSE)
+  print("Cell clusters found in biclust::biclust", quote=FALSE)
   print(res_cell_cluster, quote=FALSE)
 
   res_gene_cluster_per_cell_cluster <- vector("list", length = max(unique_cell_clusters))
@@ -140,10 +181,9 @@ get_stats_biclustbiclust <- function(biclust_input_data,
 
     res_gene_cluster_per_cell_cluster[[i_cell_cluster]] <- res_gene_cluster
     # Print the cluster assignments
-    print(paste("Gene modules found in biclust for cell cluster", i_cell_cluster), quote=FALSE)
+    print(paste("Gene modules found in biclust::biclust for cell cluster", i_cell_cluster), quote=FALSE)
     print(res_gene_cluster, quote=FALSE)
   }
-
 
   # Get RI for cell and gene clustering -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   true_cell_cluster_allocation <- generated_data$true_cell_clust
@@ -155,16 +195,18 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   RI_gene_clustering_biclustbiclust_all <- ""
 
   for(i_cell_cluster in 1:length(res_gene_cluster_per_cell_cluster)){
-    RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]], true_target_gene_allocation[[i_cell_cluster]][ind_targetgenes]), 2)
+    RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]][org_ind_targetgenes], true_target_gene_allocation[[i_cell_cluster]][org_ind_targetgenes]), 2)
     print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
     RI_gene_clustering_biclustbiclust_all <- paste(RI_gene_clustering_biclustbiclust_all, RI_gene_clustering_biclustbiclust, sep=" ")
   }
 
   print("Bicluster RI för biclust::biclust",quote=FALSE)
-  RI_biclust_biclustbiclust <- round(aricode::RI(as.vector(biclust_results_matrix), correct_clustering), 2)
+  RI_biclust_biclustbiclust <- round(aricode::RI(as.vector(biclust_results_matrix[,org_ind_targetgenes]), correct_clustering), 2)
   print(paste(" ", RI_biclust_biclustbiclust), quote=FALSE)
 
   return(list ("biclust_results_matrix" = biclust_results_matrix,
+               "res_gene_cluster_per_cell_cluster" = res_gene_cluster_per_cell_cluster,
+               "res_cell_cluster" = res_cell_cluster,
                "RI_cell_clustering_biclustbiclust" = RI_cell_clustering_biclustbiclust,
                "RI_gene_clustering_biclustbiclust_all" = RI_gene_clustering_biclustbiclust_all,
                "RI_biclust_biclustbiclust"  = RI_biclust_biclustbiclust)
@@ -213,15 +255,16 @@ if (sys.nframe() == 0) {
   # Set seed for example
   set.seed(1234)
 
-  stats_biclustbiclust <- get_stats_biclustbiclust(biclust_input_data     = scenarios[[1]]$biclust_input_data,
-                                                   n_target_genes         = scenarios[[1]]$n_target_genes,
-                                                   ind_targetgenes        = scenarios[[1]]$ind_targetgenes,
-                                                   n_total_cells          = scenarios[[1]]$n_total_cells,
-                                                   n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
-                                                   n_cell_clusters        = scenarios[[1]]$n_cell_clusters,
-                                                   generated_data         = scenarios[[1]]$generated_data,
-                                                   correct_clustering     = scenarios[[1]]$correct_clustering,
-                                                   do_biclust_with_regulators = TRUE)
+  stats_biclustbiclust <- get_stats_biclustbiclust(biclust_input_data     = scenarios[[10]]$biclust_input_data,
+                                                   n_target_genes         = scenarios[[10]]$n_target_genes,
+                                                   ind_targetgenes        = scenarios[[10]]$ind_targetgenes,
+                                                   n_total_cells          = scenarios[[10]]$n_total_cells,
+                                                   n_target_gene_clusters = scenarios[[10]]$n_target_gene_clusters,
+                                                   n_cell_clusters        = scenarios[[10]]$n_cell_clusters,
+                                                   generated_data         = scenarios[[10]]$generated_data,
+                                                   correct_clustering     = scenarios[[10]]$correct_clustering,
+                                                   do_biclust_with_regulators = TRUE,
+                                                   include_regulators_in_results = FALSE)
 
   constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
                                             RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,

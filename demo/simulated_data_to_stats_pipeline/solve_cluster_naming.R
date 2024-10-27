@@ -110,14 +110,15 @@ for(scenario_number in 1:length(scenarios)){
   # Function to count correct and incorrect guesses for each pair of matrices
   compare_matrices <- function(true_matrix, guess_matrix) {
     total_elements <- length(true_matrix)  # Total number of elements
+    P <- sum(true_matrix == 1)
+    N <- sum(true_matrix == 0)
+    TP_rate <- sum(true_matrix == 1 & guess_matrix == 1) / P # True Positives rate
+    FP_rate <- sum(true_matrix == 0 & guess_matrix == 1) / N # False Positives rate
+    TN_rate <- sum(true_matrix == 0 & guess_matrix == 0) / N # True Negatives rate
+    FN_rate <- sum(true_matrix == 1 & guess_matrix == 0) / P # False Negatives rate
+    correct_rate <- sum(true_matrix == guess_matrix)/total_elements
 
-    TP_ratio <- sum(true_matrix == 1 & guess_matrix == 1) / total_elements # True Positives
-    FP_ratio <- sum(true_matrix == 0 & guess_matrix == 1) / total_elements # False Positives
-    TN_ratio <- sum(true_matrix == 0 & guess_matrix == 0) / total_elements # True Negatives
-    FN_ratio <- sum(true_matrix == 1 & guess_matrix == 0) / total_elements # False Negatives
-    correct_ratio <- sum(true_matrix == guess_matrix)/total_elements
-
-    return(list(correct_ratio=correct_ratio, TP_ratio = TP_ratio, FP_ratio = FP_ratio, TN_ratio = TN_ratio, FN_ratio = FN_ratio))
+    return(list(correct_rate=correct_rate, TP_rate = TP_rate, FP_rate = FP_rate, TN_rate = TN_rate, FN_rate = FN_rate))
   }
 
   # Apply the function to each pair of matrices using mapply
@@ -135,7 +136,32 @@ for(scenario_number in 1:length(scenarios)){
     ratios_df <- rbind(ratios_df, ratios_df_tmp)
   }
 }
-# Print the results
+
+# library(dplyr)
+# # Calculate the mean of the ratios for each scenario
+# ratios_df <- ratios_df %>%
+#   group_by(scenario) %>%
+#   summarize(TP_rate = mean(TP_rate),
+#             FP_rate = mean(FP_rate)) %>%
+#   arrange(desc(TP_rate), FP_rate)
+
 print(ratios_df)
 
+# # Create the ROC curve
+# library(ggplot2)
+# roc_data <- data.frame(FPR = ratios_df$FP_rate, TPR = ratios_df$TP_rate)
+# roc_plot <- ggplot(roc_data, aes(x = FPR, y = TPR)) +
+#   #geom_line() +
+#   geom_point(alpha = 0.2, size=3) +
+#   geom_smooth(method = "auto", se = FALSE) +  # Add the smooth curve
+#   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+#   xlim(0, 1) +
+#   ylim(0, 1) +
+#   xlab("False Positive Rate (FPR)") +
+#   ylab("True Positive Rate (TPR)") +
+#   ggtitle("ROC Curve for biclust_screg, how good was the estimation of which\nregulator genes control expression in which target gene modules.")
+#
+# print(roc_plot)
 
+
+str(biclustbiclust_results_list[[1]])

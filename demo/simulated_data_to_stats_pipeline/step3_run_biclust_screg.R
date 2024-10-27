@@ -6,7 +6,7 @@ source(file.path(R_path, "bisc_predict.R"))
 
 biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                    plot_title = "biclustscreg_heatmap",
-                                   penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
+                                   penalization_lambdas, # c( 0.00001, 0.1, 0.2, 0.5)
                                    biclustscreg_results = NULL,  # You can feed old results or calculate new ones
                                    cell_id,
                                    biclust_input_data,
@@ -20,11 +20,12 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
                                    generated_data,
                                    correct_clustering,  # The correct biclustering (one unique number for each gene module)
                                    disturbed_initial_cell_clust,
-                                   itercap                     = 20,
-                                   test_data = scenarios_test[[1]]
-                                   ){
-  #get test parameters
-  n_total_cells_test <- nrow(test_data$biclust_input_data)
+                                   itercap,
+                                   biclust_input_data_test,
+                                   n_total_cells_test,
+                                   correct_clustering_test
+){
+
 
   # Run biclust_screg -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   if(is.null(biclustscreg_results)){
@@ -81,21 +82,19 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
     if(is.list(current_biclust_result)){ # For no result current_biclust_result is just NA and then we can't calculate RI
 
       cell_cluster_allocation_train <- current_biclust_result$cell_cluster_allocation
-      cell_cluster_allocation <- bist_predict(
-        new_data 				    = test_data$biclust_input_data,     # as in scenarios[[1]]$biclust_input_data
-        fitted_model			  = biclustscreg_results[[i_res]], # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
-        prior_cluster_proportions = NULL,
-        calculate_BIC             = TRUE,
-        use_complex_cluster_allocation = FALSE,
-        seed = 1234
+      cell_cluster_allocation <- bist_predict(new_data = biclust_input_data_test,     # as in scenarios[[1]]$biclust_input_data
+                                              fitted_model = biclustscreg_results[[i_res]], # as in biclust_screg_results_list[[1]]$biclustscreg_results[[1]]
+                                              prior_cluster_proportions = NULL,
+                                              calculate_BIC = TRUE,
+                                              use_complex_cluster_allocation = FALSE,
+                                              seed = 1234
       )$cell_cluster_allocation
 
       # logic check
-      if(length(cell_cluster_allocation) != nrow(test_data$biclust_input_data)) {
+      if(length(cell_cluster_allocation) != n_total_cells_test) {
         cat("\n")
-        cat('cluster allocation on test set of wrong length')
+        cat('Cluster allocation on test set of wrong length.')
         cat("\n")
-
       }
 
 
@@ -108,13 +107,13 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
       # Check each entry in the matrix (each cell and gene pair),
       # and assign a string-number to each unique "cell-cluster-gene-module".
       for (i in 1:n_total_cells_test) {
-        cluster <- cell_cluster_allocation[i]
+
         if(is.na(cell_cluster_allocation[i])){
-          cat("\n")
-          cat('and now')
-          cat("\n")
-          print(cell_cluster_allocation[i])
+          cat("Cell cluster allocation is NA. Random cluster will be assigned.\n")
+          cell_cluster_allocation[i] <- sample.int(length(target_gene_allocation),1)
         }
+
+        cluster <- cell_cluster_allocation[i]
         gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
         gene_allocation[gene_allocation==-1] <- 0
         # Create unique numbers for each pair
@@ -133,9 +132,9 @@ biclustscreg_iteration <- function(plot_heatmap=FALSE,
 
       # Calculate RIs ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
       true_cell_cluster_allocation_train <- generated_data$true_cell_clust
-      true_cell_cluster_allocation <- test_data$generated_data$true_cell_clust
+      true_cell_cluster_allocation <- generated_data$true_cell_clust_test
 
-      correct_bicluster_test <- test_data$correct_clustering
+      correct_bicluster_test <- correct_clustering_test
 
       true_target_gene_allocation <- generated_data$true_target_gene_allocation #same for test and train data, no change
 
@@ -237,7 +236,11 @@ if (sys.nframe() == 0) {
                                 ind_reggenes = scenarios[[1]]$ind_reggenes,
                                 generated_data = scenarios[[1]]$generated_data,
                                 correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
+                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust,
+                                itercap=20,
+                                biclust_input_data_test = scenarios[[1]]$biclust_input_data_test,
+                                n_total_cells_test = scenarios[[1]]$n_total_cells_test,
+                                correct_clustering_test = scenarios[[1]]$correct_clustering_test)
 
   res <- biclustscreg_iteration(plot_heatmap = TRUE,
                                 plot_title = "heatmap_biclustscreg_lambda_1.0",
@@ -254,7 +257,11 @@ if (sys.nframe() == 0) {
                                 ind_reggenes = scenarios[[1]]$ind_reggenes,
                                 generated_data = scenarios[[1]]$generated_data,
                                 correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust)
+                                disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust,
+                                itercap=20,
+                                biclust_input_data_test = scenarios[[1]]$biclust_input_data_test,
+                                n_total_cells_test = scenarios[[1]]$n_total_cells_test,
+                                correct_clustering_test = scenarios[[1]]$correct_clustering_test)
 
 
   # Run for all scenarios

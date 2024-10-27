@@ -15,9 +15,10 @@ output_path <- here::here("demo/simulated_data_to_stats_pipeline")
 path_data <- here::here('data')
 
 set.seed(123)
-redo_flag <- F
+redo_flag <- T
 
 source(file.path(output_path, "step1_generate_data.R"))
+redo_flag <- F
 source(file.path(output_path, "step2_run_biclustbiclust.R"))
 source(file.path(output_path, "step3_run_biclust_screg.R"))
 source(file.path(output_path, "step4_run_biclustbiclust_many_times.R"))
