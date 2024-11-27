@@ -282,7 +282,7 @@ bisc <- function(
         if(retain_gene_clusters){
           if(i_main == 1){
 
-            sink(tempfile()) # Shut scregclust up
+            # sink(tempfile()) # Shut scregclust up
             screg_out <- scregclust::scregclust(
               expression = indata_for_scregclust,  # p rows of genes, n columns of cells
               split_indices = data_split_for_scregclust[[i_cell_cluster]],
@@ -291,10 +291,15 @@ bisc <- function(
               n_modules = n_target_gene_clusters[[i_cell_cluster]],
               penalization = penalization_lambda,
               verbose = FALSE,
-              n_cycles = 200,
+              max_optim_iter = 100000L,
+              # tol_coop_rel = 1e-06,
+              # tol_coop_abs = 1e-06,
+              # tol_nnls = 1e-02,
+              min_module_size = 1L,
+              n_cycles = 25,
               center = FALSE,
             )
-            sink()
+            # sink()
 
             if(use_garbage_cluster_targets){
               previous_gene_modules[[i_cell_cluster]] <- screg_out$results[[1]]$output[[1]]$module
@@ -306,7 +311,7 @@ bisc <- function(
 
             is_regulator <- inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes)
 
-            sink(tempfile()) # Shut scregclust up
+            # sink(tempfile()) # Shut scregclust up
             screg_out <- scregclust::scregclust(
               expression = indata_for_scregclust,  # p rows of genes, n columns of cells
               split_indices = data_split_for_scregclust[[i_cell_cluster]],
@@ -316,10 +321,15 @@ bisc <- function(
               penalization = penalization_lambda,
               initial_target_modules = previous_gene_modules[[i_cell_cluster]][!is_regulator],
               verbose = FALSE,
-              n_cycles = 200,
+              n_cycles = 25,
               center = FALSE,
+              max_optim_iter = 100000L,
+              # tol_coop_rel = 1e-06,
+              # tol_coop_abs = 1e-06,
+              # tol_nnls = 1e-02,
+              min_module_size = 1L
             )
-            sink()
+            # sink()
 
           }
 
@@ -332,8 +342,13 @@ bisc <- function(
             n_modules = n_target_gene_clusters[[i_cell_cluster]],
             penalization = penalization_lambda,
             verbose = FALSE,
-            n_cycles = 200,
+            n_cycles = 25,
             center = FALSE,
+            max_optim_iter = 100000L,
+            # tol_coop_rel = 1e-06,
+            # tol_coop_abs = 1e-06,
+            # tol_nnls = 1e-02,
+            min_module_size = 1L
           )
         }
 
@@ -553,8 +568,8 @@ bisc <- function(
     if (calculate_BIC) {
       big_logLhat_in_BIC <- sum(log(rowSums(weights)))
       k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
-      n_in_BIC <- n_total_cells
-      BIC <- k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC
+      n_in_BIC <- length(current_cell_cluster_allocation)
+      BIC <- Rmpfr::asNumeric(k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC)
     }else {
       BIC <- 0
     }
@@ -694,7 +709,7 @@ bisc <- function(
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
                                          'True cell cluster allocation' = true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
-  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", plot_suffix, "_", round(penalization_lambda, 6), ".png")),
+  png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 6),"_", plot_suffix, ".png")),
       width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
