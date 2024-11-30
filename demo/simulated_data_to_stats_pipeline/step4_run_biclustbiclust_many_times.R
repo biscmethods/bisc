@@ -1,25 +1,26 @@
 
 # Run model fits
-if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
+if (!file.exists(file.path(output_path_rds, "biclustbiclust_results_list.rds")) |
     redo_flag) {
 
   biclustbiclust_results_list <- vector(mode = "list", length = length(scenarios))
 
-  for(iter in 1:length(biclustbiclust_results_list)){
+  for(iter in seq_along(biclustbiclust_results_list)){
 
     cat("\n")
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 4.'))
     cat("\n")
 
-    biclustbiclust_results_list[[iter]] <- get_stats_biclustbiclust(biclust_input_data     = scenarios[[iter]]$biclust_input_data,
-                                                                    n_target_genes         = scenarios[[iter]]$n_target_genes,
-                                                                    ind_targetgenes        = scenarios[[iter]]$ind_targetgenes,
-                                                                    n_total_cells          = scenarios[[iter]]$n_total_cells,
-                                                                    n_target_gene_clusters = scenarios[[iter]]$n_target_gene_clusters,
-                                                                    n_cell_clusters        = scenarios[[iter]]$n_cell_clusters,
-                                                                    generated_data         = scenarios[[iter]]$generated_data,
-                                                                    correct_clustering     = scenarios[[iter]]$correct_clustering,
-                                                                    do_biclust_with_regulators = TRUE)
+    biclustbiclust_results_list[[iter]] <- get_stats_biclustbiclust_seeds(biclust_input_data     = scenarios[[iter]]$biclust_input_data,
+                                                                          n_target_genes         = scenarios[[iter]]$n_target_genes,
+                                                                          ind_targetgenes        = scenarios[[iter]]$ind_targetgenes,
+                                                                          n_total_cells          = scenarios[[iter]]$n_total_cells,
+                                                                          n_target_gene_clusters = scenarios[[iter]]$n_target_gene_clusters,
+                                                                          n_cell_clusters        = scenarios[[iter]]$n_cell_clusters,
+                                                                          generated_data         = scenarios[[iter]]$generated_data,
+                                                                          correct_clustering     = scenarios[[iter]]$correct_clustering,
+                                                                          seeds=1234,
+                                                                          do_biclust_with_regulators = TRUE)
 
     # constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
     #                                           RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
@@ -34,14 +35,11 @@ if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
 
   }
 
-  saveRDS(
-    biclustbiclust_results_list,
-    file.path(output_path, "biclustbiclust_results_list.rds")
-  )
+  saveRDS(biclustbiclust_results_list, file.path(output_path_rds, "biclustbiclust_results_list.rds"))
 
 } else {
 
-  biclustbiclust_results_list    <- readRDS(file.path(output_path, "biclustbiclust_results_list.rds"))
+  biclustbiclust_results_list    <- readRDS(file.path(output_path_rds, "biclustbiclust_results_list.rds"))
 
 }
 

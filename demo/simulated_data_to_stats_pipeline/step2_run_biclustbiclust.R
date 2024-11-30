@@ -103,8 +103,10 @@ get_stats_biclustbiclust <- function(biclust_input_data,
                                      n_cell_clusters,
                                      generated_data,
                                      correct_clustering,
+                                     seed,
                                      do_biclust_with_regulators = TRUE,
                                      include_regulators_in_results = FALSE) {
+  set.seed(seed)
   org_ind_targetgenes <- ind_targetgenes
   if(include_regulators_in_results && do_biclust_with_regulators){
     org_n_target_genes <- n_target_genes
@@ -194,7 +196,7 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   print("Gene module clustering RI for biclust::biclust", quote=FALSE)
   RI_gene_clustering_biclustbiclust_all <- ""
 
-  for(i_cell_cluster in 1:length(res_gene_cluster_per_cell_cluster)){
+  for(i_cell_cluster in seq_along(res_gene_cluster_per_cell_cluster)){
     RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]][org_ind_targetgenes], true_target_gene_allocation[[i_cell_cluster]][org_ind_targetgenes]), 2)
     print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
     RI_gene_clustering_biclustbiclust_all <- paste(RI_gene_clustering_biclustbiclust_all, RI_gene_clustering_biclustbiclust, sep=" ")
@@ -209,11 +211,40 @@ get_stats_biclustbiclust <- function(biclust_input_data,
                "res_cell_cluster" = res_cell_cluster,
                "RI_cell_clustering_biclustbiclust" = RI_cell_clustering_biclustbiclust,
                "RI_gene_clustering_biclustbiclust_all" = RI_gene_clustering_biclustbiclust_all,
-               "RI_biclust_biclustbiclust"  = RI_biclust_biclustbiclust)
+               "RI_biclust_biclustbiclust"  = RI_biclust_biclustbiclust,
+               "seed" = seed)
   )
 
 }
 
+get_stats_biclustbiclust_seeds <- function(biclust_input_data,
+                                           n_target_genes,
+                                           ind_targetgenes,
+                                           n_total_cells,
+                                           n_target_gene_clusters,
+                                           n_cell_clusters,
+                                           generated_data,
+                                           correct_clustering,
+                                           seeds,
+                                           do_biclust_with_regulators = TRUE,
+                                           include_regulators_in_results = FALSE) {
+  res <- vector(mode = "list", length = length(seeds))
+  for(i_seed in seq_along(seeds)){
+    res[[i_seed]] <- get_stats_biclustbiclust(biclust_input_data=biclust_input_data,
+                                              n_target_genes=n_target_genes,
+                                              ind_targetgenes=ind_targetgenes,
+                                              n_total_cells=n_total_cells,
+                                              n_target_gene_clusters=n_target_gene_clusters,
+                                              n_cell_clusters=n_cell_clusters,
+                                              generated_data=generated_data,
+                                              correct_clustering=correct_clustering,
+                                              seed=seeds[i_seed],
+                                              do_biclust_with_regulators = do_biclust_with_regulators,
+                                              include_regulators_in_results = include_regulators_in_results)
+  }
+  return(res)
+
+}
 
 # Plot the biclustering results
 # b <- raster::ratify(raster::raster(b))
@@ -252,9 +283,6 @@ plot_biclust_heatmap <- function(biclust_results_matrix,
 # Runs only when script is run by itself
 # || interactive()
 if (sys.nframe() == 0) {
-  # Set seed for example
-  set.seed(1234)
-
   stats_biclustbiclust <- get_stats_biclustbiclust(biclust_input_data     = scenarios[[10]]$biclust_input_data,
                                                    n_target_genes         = scenarios[[10]]$n_target_genes,
                                                    ind_targetgenes        = scenarios[[10]]$ind_targetgenes,
@@ -263,6 +291,7 @@ if (sys.nframe() == 0) {
                                                    n_cell_clusters        = scenarios[[10]]$n_cell_clusters,
                                                    generated_data         = scenarios[[10]]$generated_data,
                                                    correct_clustering     = scenarios[[10]]$correct_clustering,
+                                                   seed                   = 1234,
                                                    do_biclust_with_regulators = TRUE,
                                                    include_regulators_in_results = FALSE)
 
@@ -272,8 +301,6 @@ if (sys.nframe() == 0) {
                                             RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust)
 
   print(constructed_plots)
-  png(file.path(output_path, paste0("heatmap_biclustbiclust.png")), width = 1024, height = 480, units = "px")
-  print(constructed_plots)
-  dev.off()
+  ggplot2::ggsave(file.path(output_path, paste0("heatmap_biclustbiclust.pdf")), constructed_plot, width = 12, height = 6)
 
 }

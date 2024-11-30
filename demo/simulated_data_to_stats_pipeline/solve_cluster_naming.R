@@ -92,7 +92,7 @@ get_mapping <- function(true_labels,
 
 
 # Returns a df with ratio of correct guesses of regulator genes affecting a gene module ---------------------------------------------------------------------------------------------------------------------------------------------------
-for(scenario_number in 1:length(scenarios)){
+for(scenario_number in seq_along(scenarios)){
   guessed_S <- lapply(bisc_results_list[[scenario_number]]$bisc_results[[1]]$scregclust_final_result_models, t)
   guessed_S <- lapply(guessed_S, function(x) x * 1)
   true_S <- lapply(scenarios[[scenario_number]]$generated_data$true_S, abs)

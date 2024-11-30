@@ -1,4 +1,7 @@
 # !/usr/bin/Rscript
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
 
 string_counts <- table(unlist(lapply(scenarios, function(x) x$description)))
 types <-  rownames(string_counts)
@@ -36,122 +39,106 @@ null2NA <- function(x){
   ifelse(is.null(x), NA, x)
 }
 
-for(i in 1:length(bisc_results_list)){
+for(i in seq_along(bisc_results_list)){
   print(paste0('Now running outer iteration ', i))
   print(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
 
-  # cells[i] <- bisc_results_list[[i]]$RIs$RI_cell_clustering_bisc
-
-  if(scenarios[[i]]$description=="Simple"){
-    i_simple <- i_simple +1
-    cells[[scenarios[[i]]$description]][i_simple] <- bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc
-    biclust[[scenarios[[i]]$description]][i_simple] <- bisc_results_list[[i]]$RIs[[1]]$RI_biclust_bisc
-    genes[[scenarios[[i]]$description]] <- c(genes[[scenarios[[i]]$description]], bisc_results_list[[i]]$RIs[[1]]$RI_gene_clustering_bisc)
-
-    cells_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust
-    biclust_biclust[[scenarios[[i]]$description]][i_simple] <- biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust
-    genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]],
-                                                     as.numeric(strsplit(trimws(null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
-  }else
-  {
-    i_complex <- i_complex +1
-    cells[[scenarios[[i]]$description]][i_complex]   <- null2NA(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
-    biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(bisc_results_list[[i]]$RIs[[1]]$RI_biclust_bisc)
-    genes[[scenarios[[i]]$description]]              <- c(genes[[scenarios[[i]]$description]], bisc_results_list[[i]]$RIs[[1]]$RI_gene_clustering_bisc)
-
-    cells_biclust[[scenarios[[i]]$description]][i_complex]   <- null2NA(biclustbiclust_results_list[[i]]$RI_cell_clustering_biclustbiclust)
-    biclust_biclust[[scenarios[[i]]$description]][i_complex] <- null2NA(biclustbiclust_results_list[[i]]$RI_biclust_biclustbiclust)
-    genes_biclust[[scenarios[[i]]$description]]              <- c(genes_biclust[[scenarios[[i]]$description]],
-                                                                  as.numeric(strsplit(trimws( null2NA(biclustbiclust_results_list[[i]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]]))
+  for(i_seed in seq_along(bisc_results_list[[i]]$RIs)){
+    if(length(bisc_results_list[[i]]$bisc_results[[i_seed]])>1 || !is.na(bisc_results_list[[i]]$bisc_results[[i_seed]])){
+      if(bisc_results_list[[i]]$bisc_results[[i_seed]]$converged){
+        new_cell_val <- null2NA(bisc_results_list[[i]]$RIs[[i_seed]]$RI_cell_clustering_bisc)
+        new_biclust_val <- null2NA(bisc_results_list[[i]]$RIs[[i_seed]]$RI_biclust_bisc)
+        new_genes_val <- bisc_results_list[[i]]$RIs[[i_seed]]$RI_gene_clustering_bisc
+        cells[[scenarios[[i]]$description]] <- c(cells[[scenarios[[i]]$description]], new_cell_val)
+        biclust[[scenarios[[i]]$description]] <- c(biclust[[scenarios[[i]]$description]], new_biclust_val)
+        genes[[scenarios[[i]]$description]] <- c(genes[[scenarios[[i]]$description]], new_genes_val)
+      }
+      new_cell_biclust_val <- null2NA(biclustbiclust_results_list[[i]][[i_seed]]$RI_cell_clustering_biclustbiclust)
+      new_biclust_biclust_val <- null2NA(biclustbiclust_results_list[[i]][[i_seed]]$RI_biclust_biclustbiclust)
+      new_genes_biclust_val <- as.numeric(strsplit(trimws( null2NA(biclustbiclust_results_list[[i]][[i_seed]]$RI_gene_clustering_biclustbiclust_all)), " ")[[1]])
+      cells_biclust[[scenarios[[i]]$description]] <- c(cells_biclust[[scenarios[[i]]$description]], new_cell_biclust_val)
+      biclust_biclust[[scenarios[[i]]$description]] <- c(biclust_biclust[[scenarios[[i]]$description]], new_biclust_biclust_val)
+      genes_biclust[[scenarios[[i]]$description]] <- c(genes_biclust[[scenarios[[i]]$description]], new_genes_biclust_val)
+    }
   }
-
 }
-
-
-
-library(tidyverse)
-library(hrbrthemes)
-library(viridis)
 
 # Create the data frame
 cell_data <- bind_rows(
-  tibble(method="BS", type = "Simple", value = unlist(cells$Simple)),
-  tibble(method="BS", type = "Complex", value = unlist(cells$Complex)),
-  tibble(method="BB", type = "Simple", value = unlist(cells_biclust$Simple)),
-  tibble(method="BB", type = "Complex", value = unlist(cells_biclust$Complex))
+  tibble(method="bisc", type = "Simple", value = unlist(cells$Simple)),
+  tibble(method="bisc", type = "Complex", value = unlist(cells$Complex)),
+  tibble(method="BCPlaid", type = "Simple", value = unlist(cells_biclust$Simple)),
+  tibble(method="BCPlaid", type = "Complex", value = unlist(cells_biclust$Complex))
 )
 
 biclust_data <- bind_rows(
-  tibble(method="BS", type = "Simple", value = unlist(biclust$Simple)),
-  tibble(method="BS", type = "Complex", value = unlist(biclust$Complex)),
-  tibble(method="BB", type = "Simple", value = unlist(biclust_biclust$Simple)),
-  tibble(method="BB", type = "Complex", value = unlist(biclust_biclust$Complex))
+  tibble(method="bisc", type = "Simple", value = unlist(biclust$Simple)),
+  tibble(method="bisc", type = "Complex", value = unlist(biclust$Complex)),
+  tibble(method="BCPlaid", type = "Simple", value = unlist(biclust_biclust$Simple)),
+  tibble(method="BCPlaid", type = "Complex", value = unlist(biclust_biclust$Complex))
 )
 
 gene_data <- bind_rows(
-  tibble(method="BS", type = "Simple", value = unlist(genes$Simple)),
-  tibble(method="BS", type = "Complex", value = unlist(genes$Complex)),
-  tibble(method="BB", type = "Simple", value = unlist(genes_biclust$Simple)),
-  tibble(method="BB", type = "Complex", value = unlist(genes_biclust$Complex))
+  tibble(method="bisc", type = "Simple", value = unlist(genes$Simple)),
+  tibble(method="bisc", type = "Complex", value = unlist(genes$Complex)),
+  tibble(method="BCPlaid", type = "Simple", value = unlist(genes_biclust$Simple)),
+  tibble(method="BCPlaid", type = "Complex", value = unlist(genes_biclust$Complex))
 )
-
-
-plot_height <- 400
-plot_width <- 750
 
 constructed_plot <- ggplot(cell_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
   geom_jitter(color = "black",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
-  theme_ipsum() +
+  theme_minimal() +
   theme(
     legend.position = "none",
-    plot.title = element_text(size = 11)
+    plot.title = element_text(size = 15),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
   ) +
   ggtitle("Cell clusters rand index comparison") +
-  xlab("BB = biclustbiclust, BS = bisc") +
+  xlab("Method.ScenarioType") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)
-png(file.path(output_path, paste0("boxplot_cell_cluster_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
-print(constructed_plot)
-dev.off()
+ggplot2::ggsave(file.path(output_path,  paste0("boxplot_cell_cluster_RI_comparison.pdf")), constructed_plot, width = 8, height = 4)
+
 
 constructed_plot <- ggplot(biclust_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
   geom_jitter(color = "black",  size=0.6, width = 0.3, alpha = 0.5, height = 0) +
-  theme_ipsum() +
+  theme_minimal() +
   theme(
     legend.position = "none",
-    plot.title = element_text(size = 11)
+    plot.title = element_text(size = 15),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
   ) +
   ggtitle("Biclust rand index comparison") +
-  xlab("BB = biclustbiclust, BS = bisc") +
+  xlab("Method.ScenarioType") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)
-png(file.path(output_path, paste0("boxplot_biclust_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
-print(constructed_plot)
-dev.off()
+ggplot2::ggsave(file.path(output_path,  paste0("boxplot_biclust_RI_comparison.pdf")), constructed_plot, width = 8, height = 4)
 
 constructed_plot <- ggplot(gene_data, aes(x = interaction(method, type), y = value, fill = type)) +
   geom_violin(position = "dodge") +
   stat_summary(fun = median, geom = "crossbar", width = 0.6, color = "cyan") +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
   geom_jitter(color = "black", size=0.6, width = 0.3, alpha = 0.5, height = 0) +
-  theme_ipsum() +
+  theme_minimal() +
   theme(
     legend.position = "none",
-    plot.title = element_text(size = 11)
+    plot.title = element_text(size = 15),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
   ) +
   ggtitle("Gene modules rand index comparison") +
-  xlab("BB = biclustbiclust, BS = bisc") +
+  xlab("Method.ScenarioType") +
   ylab("RI") +
   ylim(0, 1)
 print(constructed_plot)
-png(file.path(output_path, paste0("boxplot_gene_modules_RI_comparison.png")), width = plot_width, height = plot_height, units = "px")
-print(constructed_plot)
-dev.off()
+ggplot2::ggsave(file.path(output_path,  paste0("boxplot_gene_modules_RI_comparison.pdf")), constructed_plot, width = 8, height = 4)

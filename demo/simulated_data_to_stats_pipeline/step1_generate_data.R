@@ -3,6 +3,7 @@
 library(patchwork)
 library(rasterVis)
 library(cowplot)
+library(grid)
 sink()
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
@@ -302,10 +303,11 @@ create_scenario <- function(scenario_list,
                                              xlab = 'Cells',
                                              ylab = 'Target genes',
                                              main='Generated data')
-    print(constructed_plot)
-    png(file.path(output_path, paste0("heatmap_generateddata_",plot_suffix,".png")), width = 1024, height = 480, units = "px")
+
+    pdf(file.path(output_path, paste0("heatmap_generateddata_",plot_suffix,".pdf")), width = 12, height = 6)
     print(constructed_plot)
     dev.off()
+
   }
 
   st <- split_traintest( generated_data,
@@ -393,8 +395,7 @@ create_scenario <- function(scenario_list,
 
 
 # Create an empty list to store all scenarios ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-if (!file.exists(file.path(output_path, "sim_data.rds")) |
-    redo_flag) {
+if (!file.exists(file.path(output_path_rds, "sim_data.rds")) | redo_flag) {
 
 
 
@@ -708,15 +709,12 @@ if (!file.exists(file.path(output_path, "sim_data.rds")) |
                                trivial_regulator_networks = FALSE,
                                seed = 631)
 
-  saveRDS(
-    scenarios,
-    file.path(output_path, "sim_data.rds")
-  )
+  saveRDS(scenarios, file.path(output_path_rds, "sim_data.rds"))
 
 } else {
 
 
-  scenarios <- readRDS(file.path(output_path, "sim_data.rds"))
+  scenarios <- readRDS(file.path(output_path_rds, "sim_data.rds"))
 
 }
 
