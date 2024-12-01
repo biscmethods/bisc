@@ -393,16 +393,13 @@ create_scenario <- function(scenario_list,
 
 
 # Create an empty list to store all scenarios ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-if (!file.exists(file.path(output_path, "sim_data.rds")) |
-    redo_flag) {
+if (!file.exists(file.path(output_path_rds, "sim_data.rds")) | redo_flag) {
 
 
 
   scenarios <- list()
 
   # Generate one simple scenario ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 
   scenarios <- create_scenario(scenario_list = scenarios,
                                description = "Simple",
@@ -710,16 +707,12 @@ if (!file.exists(file.path(output_path, "sim_data.rds")) |
                                trivial_regulator_networks = FALSE,
                                seed = 631)
 
-
-  saveRDS(
-    scenarios,
-    file.path(output_path, "sim_data.rds")
-  )
+  saveRDS(scenarios, file.path(output_path_rds, "sim_data.rds"))
 
 } else {
 
 
-  scenarios <- readRDS(file.path(output_path, "sim_data.rds"))
+  scenarios <- readRDS(file.path(output_path_rds, "sim_data.rds"))
 
 }
 

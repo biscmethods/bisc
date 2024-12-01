@@ -1,10 +1,10 @@
 # !/usr/bin/Rscript
 
-if (!file.exists(file.path(output_path, "bisc_results_list.rds")) | redo_flag) {
+if (!file.exists(file.path(output_path_rds, "bisc_results_list.rds")) | redo_flag) {
 
   bisc_results_list <- vector(mode = "list", length = length(scenarios))
 
-  for(iter in 1:length(bisc_results_list)){
+  for(iter in seq_along(bisc_results_list)){
     cat("\n")
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 5.'))
     cat("\n")
@@ -31,12 +31,9 @@ if (!file.exists(file.path(output_path, "bisc_results_list.rds")) | redo_flag) {
                                                 seeds = seq(10))
 
   }
-  saveRDS(
-    bisc_results_list,
-    file.path(output_path, "bisc_results_list.rds")
-  )
+  saveRDS(bisc_results_list, file.path(output_path_rds, "bisc_results_list.rds"))
 } else {
-  bisc_results_list    <- readRDS(file.path(output_path, "bisc_results_list.rds"))
+  bisc_results_list    <- readRDS(file.path(output_path_rds, "bisc_results_list.rds"))
 }
 
 

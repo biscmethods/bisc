@@ -1,11 +1,10 @@
 
 # Run model fits
-if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
-    redo_flag) {
+if (!file.exists(file.path(output_path_rds, "biclustbiclust_results_list.rds")) | redo_flag) {
 
   biclustbiclust_results_list <- vector(mode = "list", length = length(scenarios))
 
-  for(iter in 1:length(biclustbiclust_results_list)){
+  for(iter in seq_along(biclustbiclust_results_list)){
 
     cat("\n")
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 4.'))
@@ -35,14 +34,11 @@ if (!file.exists(file.path(output_path, "biclustbiclust_results_list.rds")) |
 
   }
 
-  saveRDS(
-    biclustbiclust_results_list,
-    file.path(output_path, "biclustbiclust_results_list.rds")
-  )
+  saveRDS(biclustbiclust_results_list, file.path(output_path_rds, "biclustbiclust_results_list.rds"))
 
 } else {
 
-  biclustbiclust_results_list    <- readRDS(file.path(output_path, "biclustbiclust_results_list.rds"))
+  biclustbiclust_results_list    <- readRDS(file.path(output_path_rds, "biclustbiclust_results_list.rds"))
 
 }
 

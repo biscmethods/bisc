@@ -22,7 +22,6 @@ calc_hamming <- function(matrix_data, between_rows=TRUE){
   hamming_dist <- function(vec1, vec2) {
     sum(vec1 != vec2)
   }
-  print("CALC HAMMING")
 
   # Number of rows (vectors)
   if(between_rows){
@@ -32,7 +31,6 @@ calc_hamming <- function(matrix_data, between_rows=TRUE){
   }
 
   # Initialize a distance matrix
-  print(n)
   dist_matrix <- matrix(0, n, n)
 
   if(between_rows){
@@ -198,7 +196,7 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   print("Gene module clustering RI for biclust::biclust", quote=FALSE)
   RI_gene_clustering_biclustbiclust_all <- ""
 
-  for(i_cell_cluster in 1:length(res_gene_cluster_per_cell_cluster)){
+  for(i_cell_cluster in seq_along(res_gene_cluster_per_cell_cluster)){
     RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]][org_ind_targetgenes], true_target_gene_allocation[[i_cell_cluster]][org_ind_targetgenes]), 2)
     print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
     RI_gene_clustering_biclustbiclust_all <- paste(RI_gene_clustering_biclustbiclust_all, RI_gene_clustering_biclustbiclust, sep=" ")

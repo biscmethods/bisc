@@ -18,7 +18,7 @@ library(ggraph)
 # Create a function to process the data and create an edge list
 create_edge_list <- function(data) {
   edge_list <- data.frame()
-  for (cluster in 1:length(data)) {
+  for (cluster in seq_along(data)) {
     for (module in 1:nrow(data[[cluster]])) {
       for (gene in 1:ncol(data[[cluster]])) {
         if (data[[cluster]][module, gene] != 0) {
