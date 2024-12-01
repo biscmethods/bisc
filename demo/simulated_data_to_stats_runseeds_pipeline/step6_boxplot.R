@@ -50,9 +50,18 @@ p <- ggplot(df_mp, aes(x = BIC, y = rand_index, color = converged)) +
     x = "Normalised BIC (within each scenario)",
     y = "Rand Index"
   ) +
+  guides(color = guide_legend(title = "Converged")) +
   theme_minimal() +
-  scale_color_manual(values = c("TRUE" = "#0072B2", "FALSE" = "#D55E00"),
-                     name = "Bisc converge")
+  theme(axis.title.x = element_text(size = 16),  # X-axis label size
+        axis.title.y = element_text(size = 16),  # Y-axis label size
+        axis.text.x = element_text(size = 12),   # X-axis tick labels
+        axis.text.y = element_text(size = 12),   # Y-axis tick labels
+        legend.text = element_text(size = 12),   # Legend text size
+        legend.title = element_text(size = 16)   # Legend title size
+  )
+
+  # scale_color_manual(values = c("TRUE" = "#0072B2", "FALSE" = "#D55E00"),
+  #                    name = "Bisc converge")
 # print(p)
 ggsave(file.path(output_path, paste0("RI_vs_BIC_per_scenario.pdf")), p, width = 12, height = 8)
 
@@ -248,14 +257,20 @@ plot_width <- 750
 constructed_plot <- ggplot(var_data, aes(x = interaction(scenario, type), y = value, fill = method)) +
   geom_boxplot() +
   geom_point(aes(color = method), position=position_jitterdodge(), alpha=0.3, show.legend = FALSE) +
-  theme_bw(base_size = 16) +
+  theme_minimal(base_size = 16) +
   labs(fill = "Method") +
   # ggtitle("Rand index variance over different run seeds") +
   xlab("ScenarioType.Type") +
   ylab("Variance") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.title.x = element_text(size = 16),  # X-axis label size
+        axis.title.y = element_text(size = 16),  # Y-axis label size
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),   # X-axis tick labels
+        axis.text.y = element_text(size = 12),   # Y-axis tick labels
+        legend.text = element_text(size = 12),   # Legend text size
+        legend.title = element_text(size = 16)   # Legend title size
+  )
 # print(constructed_plot)
-ggsave(file.path(output_path, paste0("var_runseed.pdf")), constructed_plot, width = 10, height = 10)
+ggsave(file.path(output_path, paste0("var_runseed.pdf")), constructed_plot, width = 8, height = 8)
 
 
 # Cell clustering RI results per scenario
@@ -267,11 +282,19 @@ p <- ggplot(cell_data, aes(x = method, y = value, color = method)) +
            paste("Complex scenario", as.numeric(x) - 10))
   })) +
   labs(
-    # title = "", # "Rand Index vs Normalised BIC by Scenario",
     x = "Method",
     y = "Rand Index"
-  ) + guides(color = guide_legend(title = "Method")) +
-  theme_minimal()
+  ) +
+  guides(color = guide_legend(title = "Method")) +
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # X-axis label size
+        axis.title.y = element_text(size = 16),  # Y-axis label size
+        axis.text.x = element_blank(),           # Remove X-axis tick labels
+        axis.ticks.x = element_blank(),          # Remove X-axis ticks
+        axis.text.y = element_text(size = 12),   # Y-axis tick labels
+        legend.text = element_text(size = 12),   # Legend text size
+        legend.title = element_text(size = 16)   # Legend title size
+  )
 
 # print(p)
 ggsave(file.path(output_path, paste0("boxplot_cell_cluster_RI_comparison_runseeds.pdf")), p, width = 10, height = 7)
@@ -290,7 +313,15 @@ p <- ggplot(biclust_data, aes(x = method, y = value, color = method)) +
     x = "Method",
     y = "Rand Index"
   ) + guides(color = guide_legend(title = "Method")) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # X-axis label size
+        axis.title.y = element_text(size = 16),  # Y-axis label size
+        axis.text.x = element_blank(),           # Remove X-axis tick labels
+        axis.ticks.x = element_blank(),          # Remove X-axis ticks
+        axis.text.y = element_text(size = 12),   # Y-axis tick labels
+        legend.text = element_text(size = 12),   # Legend text size
+        legend.title = element_text(size = 16)   # Legend title size
+  )
 
 # print(p)
 ggsave(file.path(output_path, paste0("boxplot_biclust_RI_comparison_runseeds.pdf")), p, width = 10, height = 7)
@@ -304,11 +335,18 @@ p <- ggplot(gene_data, aes(x = method, y = value, color = method)) +
            paste("Complex scenario", as.numeric(x) - 10))
   })) +
   labs(
-    # title = "", # "Rand Index vs Normalised BIC by Scenario",
     x = "Method",
     y = "Rand Index"
   ) + guides(color = guide_legend(title = "Method")) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # X-axis label size
+        axis.title.y = element_text(size = 16),  # Y-axis label size
+        axis.text.x = element_blank(),           # Remove X-axis tick labels
+        axis.ticks.x = element_blank(),          # Remove X-axis ticks
+        axis.text.y = element_text(size = 12),   # Y-axis tick labels
+        legend.text = element_text(size = 12),   # Legend text size
+        legend.title = element_text(size = 16)   # Legend title size
+  )
 
 # print(p)
 ggsave(file.path(output_path, paste0("boxplot_gene_modules_RI_comparison_runseeds.pdf")), p, width = 10, height = 7)
