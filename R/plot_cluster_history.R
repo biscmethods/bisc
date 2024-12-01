@@ -68,7 +68,7 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
       ggplot2::xlab("Iteration") +
       ggplot2::labs(fill = "Cluster") +
       ggplot2::theme(legend.position = "bottom") +
-      ggplot2::ggtitle(paste0("Log of cluster allocation\nRand index of true vs final: ", round(rand_ind, 4)))
+      ggplot2::ggtitle(paste0("Log of cluster allocation\nRand index of true vs final: ", round(rand_ind[length(rand_ind)], 4)))
     print(p)
   }
 

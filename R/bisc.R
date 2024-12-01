@@ -707,12 +707,12 @@ bisc <- function(
   start_time_alluvial_plot <- Sys.time()
 
   cell_cluster_history_plotting <- cbind('Cell ID' = cell_cluster_history[, 1],
-                                         'True cell cluster allocation' = true_cell_cluster_allocation,
+                                         'True cell\ncluster allocation' = true_cell_cluster_allocation,
                                          cell_cluster_history[, 2:ncol(cell_cluster_history)])
   # png(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 6),"_", plot_suffix, ".png")),
   #     width = 1024 + ncol(cell_cluster_history_plotting) * 40, height = 1024, units = "px", res = 150)
   pdf(file.path(output_path, paste0("Alluvial_diagram_lambda_", round(penalization_lambda, 6),"_", plot_suffix, ".pdf")),
-      width = 12  + ncol(cell_cluster_history_plotting) * 0.5, height = 12)
+      width = 6  + ncol(cell_cluster_history_plotting) * 0.5, height = 6)
   plot_cluster_history(cell_cluster_history = cell_cluster_history_plotting, correct_plot = FALSE)
   dev.off()
   time_taken <- round(Sys.time() - start_time_alluvial_plot, 2)
