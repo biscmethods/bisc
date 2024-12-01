@@ -4,7 +4,7 @@
   stats2table <- function(tibble, outfile = '/out_temp.tex', caption = 'Your caption here'){
     # Group by method and calculate summary statistics
     summary_stats <- tibble %>%
-      group_by(method, type) %>%
+      group_by(scenario, method) %>%
       summarise(
         Min = min(value, na.rm = TRUE),
         Q1 = quantile(value, 0.25, na.rm = TRUE),
