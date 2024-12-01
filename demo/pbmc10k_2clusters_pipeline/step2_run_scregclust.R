@@ -8,7 +8,11 @@ library(scregclust)
 # BiocManager::install("SparseArray")
 # BiocManager::install("EnsDb.Hsapiens.v79")
 library("EnsDb.Hsapiens.v79")
-sink()  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
+
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+} # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
 gc()  # Force clean memory
 Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
 

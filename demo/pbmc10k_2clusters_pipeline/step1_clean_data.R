@@ -15,7 +15,11 @@ library("EnsDb.Hsapiens.v79")
 # BiocManager::install('GenomicRanges', force=TRUE)
 # BiocManager::install('glmGamPoi', force=TRUE)
 library("glmGamPoi")
-sink()  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
+
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
 gc()  # Force clean memory
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.

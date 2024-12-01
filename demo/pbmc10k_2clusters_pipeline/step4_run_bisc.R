@@ -2,7 +2,12 @@
 
 library(here)  # To work with paths
 library(patchwork)
-sink()
+
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}
+gc()
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
@@ -16,32 +21,23 @@ source(file.path(R_path, "randomise_cluster_labels.R"))
 # Set seed for example
 set.seed(250)
 
-keep_cluster <- c(1, 2)
 n_target_gene_modules <- c(5, 4)  # Number of target gene clusters in each cell cluster
-n_cell_clusters <- length(keep_cluster)
-
-logical_keep_cell_cluster <- true_cluster_allocation == 100   # All false
-for(i_cell_cluster in keep_cluster){
-  logical_keep_cell_cluster <- logical_keep_cell_cluster | (true_cluster_allocation==i_cell_cluster)
-}
-
-biclust_input_data <- d[,which(logical_keep_cell_cluster)]
-true_cluster_allocation <- true_cluster_allocation[which(logical_keep_cell_cluster)]
-true_cluster_allocation <- match(true_cluster_allocation, sort(unique(true_cluster_allocation)))
-
+n_cell_clusters <- length(unique(true_cluster_allocation))
 
 penalization_lambdas <- c(0.2)
 # initial_clustering <- factor(sample(true_cluster_allocation))
 initial_clustering <- factor(sample(unique(true_cluster_allocation), size=length(true_cluster_allocation), replace=TRUE))
 
+seeds <- seq(300)
+
 if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag){
   sink(raw_printoutput_path, split=TRUE)
 
-  all_res <- vector(mode = "list", length = 1)
-  for (c_seed in seq(1)){
-    set.seed(c_seed)
+  all_res <- vector(mode = "list", length = length(seeds))
+  for (i_seed in seq_along(seeds)){
+    current_seed <- seeds[i_seed]
+    set.seed(current_seed)
     BICLUST_RESULTS <- vector(mode = "list", length = length(penalization_lambdas))
-
 
     for (i_penalization_lambda in seq_along(penalization_lambdas)) {
       print("", quote = FALSE)
@@ -59,12 +55,12 @@ if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag
                     output_path = output_path,
                     penalization_lambda = penalization_lambdas[i_penalization_lambda],
                     use_complex_cluster_allocation = FALSE,
-                    calculate_BIC = FALSE,
-                    calculate_silhoutte = FALSE,
-                    calculate_davies_bouldin_index = FALSE,
+                    calculate_BIC = TRUE,
+                    calculate_silhoutte = TRUE,
+                    calculate_davies_bouldin_index = TRUE,
                     use_garbage_cluster_targets = FALSE),
         error = function(e) {
-          warning(paste0("Error in bisc() for c_seed=", c_seed," lambda=", i_penalization_lambda, ": ", e$message))
+          warning(paste0("Error in bisc() for c_seed=", current_seed," lambda=", i_penalization_lambda, ": ", e$message))
           return(NULL)
         }
       )
@@ -72,7 +68,7 @@ if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag
 
 
     }
-    all_res[[c_seed]] <- BICLUST_RESULTS
+    all_res[[i_seed]] <- BICLUST_RESULTS
 
   }
   saveRDS(all_res, all_res_path)
@@ -82,21 +78,22 @@ if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag
 }
 
 
-print("", quote = FALSE)
-print("", quote = FALSE)
+# Extract data from all_res ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cat("\n\nExtract data\n")
 RIs <- rep(NA, length(all_res))
 iterations <- rep(NA, length(all_res))
 converged <- rep(FALSE, length(all_res))
 isna <- rep(FALSE, length(all_res))
 for(i_res in seq(length(all_res))){
+  current_seed <- seeds[i_res]
   BICLUST_RESULTS <- all_res[[i_res]]
   for (i_penalization_lambda in seq_along(penalization_lambdas)) {
     if (is.na(BICLUST_RESULTS[i_penalization_lambda])) {
-      cat(paste("NA\n"))
+      cat(paste0(" Seed:", current_seed, " is NA\n"))
       RIs[i_res] <- NA
       isna[i_res] <- TRUE
     } else if (is.null(BICLUST_RESULTS[i_penalization_lambda])) {
-      cat(paste("NULL\n"))
+      cat(paste0(" Seed:", current_seed, " is NULL\n"))
       RIs[i_res] <- NULL
       isna[i_res] <- TRUE
     }else {
@@ -105,7 +102,7 @@ for(i_res in seq(length(all_res))){
       iterations[i_res] <- BICLUST_RESULTS[[i_penalization_lambda]]$n_iterations
       converged[i_res] <- BICLUST_RESULTS[[i_penalization_lambda]]$converged
 
-      cat(paste0(BICLUST_RESULTS[[i_penalization_lambda]]$rand_index, ",", iterations[i_res], ",", converged[i_res]))
+      cat(paste0(" Seed:", current_seed, " is RI:", BICLUST_RESULTS[[i_penalization_lambda]]$rand_index, ", n_iter:", iterations[i_res], ", converged:", converged[i_res]))
       cat("\n")
 
     }
@@ -114,10 +111,12 @@ for(i_res in seq(length(all_res))){
 
 
 nonconverged_RIs <- RIs[!converged & !isna]
-mean(nonconverged_RIs)
+# mean(nonconverged_RIs)
 converged_RIs <- RIs[converged]
-mean(converged_RIs)
+# mean(converged_RIs)
 
+
+# Plot info -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 svg(file.path(output_path, paste0("pbmc10k_RI.svg")), width=8, height=6)
 boxplot(RIs ~ converged,
         ylab = "RIs",

@@ -11,7 +11,11 @@ library(scregclust)
 # BiocManager::install("SparseArray")
 # BiocManager::install("EnsDb.Hsapiens.v79")
 library("EnsDb.Hsapiens.v79")
-sink()  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
+
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}  # Because some of our scripts redirects output from scregclust to force it to be quite. This restores output.
 gc()  # Force clean memory
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
@@ -44,7 +48,7 @@ plot_things <- function() {
             NULL
         },
         finally = {
-            print("done")
+            cat(" plot_module_count_helper done\n")
         }
     )
 }
@@ -62,7 +66,7 @@ plot_things2 <- function() {
             NULL
         },
         finally = {
-            print("done")
+            cat(" plot.scregclust done\n")
         }
     )
 }

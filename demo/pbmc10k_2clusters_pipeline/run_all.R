@@ -2,7 +2,10 @@
 rm(list = ls())
 
 library(here)  # To work with paths
-sink()
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
