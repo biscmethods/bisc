@@ -1,7 +1,4 @@
 #!/usr/bin/Rscript
-rm(list = ls())
-
-redo <- TRUE
 
 library(here)  # To work with paths
 # library(patchwork)
@@ -24,26 +21,15 @@ gc()  # Force clean memory
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
 # Get absolute path where script is located, by using relative paths.
-demo_path <- here::here("demo")
-R_path <- here::here("R")
-output_path <- demo_path
-
-path_data <- here::here('data')
-
 # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
-path_dataset <- file.path(path_data, "pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5")
-path_env_data <- file.path(path_data, "env_data_pbmc10k_sctransform.RData")
-path_general_env_data <- file.path(path_data, "env_data_general_pbmc10k_sctransform.RData")
-path_gex <- file.path(path_data, "GEX Graph-Based10k.csv")
+path_dataset <- file.path(local_data, "pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5")
+path_env_data <- file.path(local_data, "env_data_pbmc10k_sctransform.RData")
+path_gex <- file.path(local_data, "GEX Graph-Based10k.csv")  # This you need to export from Loupe browser
 
-if(redo){
+if(redo_flag){
   if (file.exists(path_env_data)) {
     #Delete file if it exists
     file.remove(path_env_data)
-  }
-  if (file.exists(path_general_env_data)) {
-    #Delete file if it exists
-    file.remove(path_general_env_data)
   }
 }
 
@@ -56,7 +42,7 @@ if (!file.exists(path_dataset)) {
   download.file(url, path_data, cacheOK = FALSE, mode = "wb")
 }
 
-if (file.exists(path_env_data) && file.exists(path_general_env_data)) {
+if (file.exists(path_env_data)) {
   load(path_env_data)
 }else {
 
@@ -191,7 +177,6 @@ if (file.exists(path_env_data) && file.exists(path_general_env_data)) {
 
   gc()  # Force clean memory
 
-
   save(d,
        is_regulator,
        n_cell_clusters,
@@ -202,15 +187,5 @@ if (file.exists(path_env_data) && file.exists(path_general_env_data)) {
        ind_targetgenes,
        true_cluster_allocation,
        file = path_env_data)
-
-   save(is_regulator,
-       n_cell_clusters,
-       n_regulator_genes,
-       n_target_genes,
-       n_total_cells,
-       ind_reggenes,
-       ind_targetgenes,
-       true_cluster_allocation,
-       file = path_general_env_data)
 }
 

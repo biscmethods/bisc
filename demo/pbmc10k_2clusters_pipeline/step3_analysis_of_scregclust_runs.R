@@ -1,7 +1,6 @@
 #!/usr/bin/Rscript
 # This script is for producing plots and informaiton for multiple runs of scregclust
 # Multiple runs are: n_modules varies and lambda varies
-rm(list = ls())
 Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
 
 library(here)  # To work with paths
@@ -17,32 +16,12 @@ gc()  # Force clean memory
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
-# Get absolute path where script is located, by using relative paths.
-demo_path <- here::here("demo")
-R_path <- here::here("R")
-output_path <- demo_path
-path_data <- here::here('data')
-
 # Set seed for example
 set.seed(214)
 
-# ------------------ LOAD
-# scregclust::plot_silhouettes(list_of_fits = results,
-#                              penalization = penalization_lambda)
-#
-# scregclust::plot_module_count_helper(list_of_fits = results, penalization = penalization_lambda)
-min_number_of_modules <- 2
-max_number_of_modules <- 10
-target_gene_module_vector <- seq(min_number_of_modules, max_number_of_modules)
-penalization_lambda <- c(0.2, 0.3, 0.5)
-path_data <- here::here('data')
-# results1 <- readRDS(file.path(path_data, "scregResults_pbmc_lambda_0.2-0.3-0.5_cellCluster_1_nRegulatorGenes_42_nTargetGenes_458_nCells_501_minNModules_2_maxNModules_10.rds"))
-# results2 <- readRDS(file.path(path_data, "scregResults_pbmc_lambda_0.2-0.3-0.5_cellCluster_2_nRegulatorGenes_42_nTargetGenes_458_nCells_417_minNModules_2_maxNModules_10.rds"))
-# results3 <- readRDS(file.path(path_data, "scregResults_pbmc_lambda_0.2-0.3-0.5_cellCluster_3_nRegulatorGenes_42_nTargetGenes_458_nCells_406_minNModules_2_maxNModules_10.rds"))
-# names <- list("cluster 1", "cluster 2", "cluster 3")
-# all_results <- list(results1, results2, results3)
+# Load data
 files <- list.files(
-  path = path_data, # Current directory, change if needed
+  path = local_data, # Current directory, change if needed
   pattern = "^scregResults_pbmc10k_lambda_0",
   full.names = TRUE
 )
@@ -259,12 +238,12 @@ for (i_nModules in seq(length(current_results))) {
 
 names_of_regulator_genes <- regnames[(length(regnames)-n_regulator_genes+1):length(regnames)]
 barplot(table(regulator_index)/non_empty_target_gene_modules, ylim=c(0, 1))
-d <- table(regulator_index)/non_empty_target_gene_modules
-d <- d[d>0]
-temp_names <- names_of_regulator_genes[which(d>0)]
-d <- as.data.frame(d)
-d['regulator_name'] <- temp_names
-write.table(d, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
+temp_data <- table(regulator_index)/non_empty_target_gene_modules
+temp_data <- temp_data[temp_data>0]
+temp_names <- names_of_regulator_genes[which(temp_data>0)]
+temp_data <- as.data.frame(temp_data)
+temp_data['regulator_name'] <- temp_names
+write.table(temp_data, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 #
 # for (i_cell_module in seq(n_cell_modules)) {

@@ -5,8 +5,16 @@ library(here)  # To work with paths
 library(Seurat)
 library(scregclust)
 library(data.table)
+library(Rtsne)
+library(ggplot2)
+library(umap)
 # BiocManager::install('GenomicRanges', force=TRUE)
 library("glmGamPoi")
+
+
+plot_height <- 400
+plot_width <- 750
+
 
 # Get absolute path where script is located, by using relative paths.
 demo_path <- here::here("demo")
@@ -16,27 +24,25 @@ path_data <- here::here('data')
 
 path_pbmc10k_sctransform <- file.path(path_data, "env_data_pbmc10k_sctransform.RData")
 path_labels <- file.path(path_data, "GEX Graph-Based10k.csv")
+gex_umap_path <- file.path(path_data, "GEX UMAP-Projection.csv")
+gex_labels_path <- file.path(path_data, "GEX Graph-Based.csv")
+
 
 # create output folder
 if (!dir.exists(output_path)) {
   # If the folder doesn't exist, create it
   dir.create(output_path, recursive = TRUE)
-  cat("Folder created:", output_path, "\n")
-} else {
-  cat("Folder already exists:", output_path, "\n")
 }
 
-
-plot_height <- 400
-plot_width <- 750
-
+# Load data
 load(path_pbmc10k_sctransform)
-str(d)
-d <- t(d)
-
+gex_umap <- read.csv(gex_umap_path)
+gex_labels <- read.csv(gex_labels_path)
 labels <- read.csv(path_labels)
 
 
+
+d <- t(d)
 cells <- cbind(Barcode  = rownames(d), cellnum = 1:nrow(d))
 
 
@@ -44,21 +50,21 @@ key <- merge(labels, cells, by = 'Barcode')
 key <- key[order(as.numeric(key$cellnum)),]
 head(key)
 
-library(Rtsne)
+
 
 # Assume you have a data matrix 'data'
 # Perform t-SNE
-tsne_result <- Rtsne(d, verbose = T, partial_pca = F)
+tsne_result <- Rtsne::Rtsne(d, verbose = T, partial_pca = F)
 
 # Extract the t-SNE coordinates
 tsne_x <- tsne_result$Y[, 1]
 tsne_y <- tsne_result$Y[, 2]
 
-tsne <- cbind(Barcode = key$Barcode, cluster =key$GEX.Graph.based, tsne_x, tsne_y)
+tsne <- cbind(Barcode = key$Barcode, cluster = key$GEX.Graph.based, tsne_x, tsne_y)
 
 # Create a scatterplot of the t-SNE embedding
-library(ggplot2)
-ggplot(tsne, aes(x = tsne_x, y = tsne_y, color = cluster)) +
+
+ggplot2::ggplot(tsne, aes(x = tsne_x, y = tsne_y, color = cluster)) +
   geom_point(size = 2, alpha = 0.8) +
   scale_color_discrete(name = "Cluster") +
   labs(x = "tSNE Dimension 1", y = "tSNE Dimension 2") +
@@ -70,16 +76,15 @@ ggplot(tsne, aes(x = tsne_x, y = tsne_y, color = cluster)) +
     axis.text.y = element_blank(),
     axis.ticks = element_blank()
   ) -> p
-p
 
+print(p)
 png(file.path(output_path, paste0("tsne_pbmc_2cluster.png")), width = plot_width, height = plot_height, units = "px")
 print(p)
 dev.off()
 
-library(umap)
 
 # Perform UMAP
-umap_result <- umap(d)
+umap_result <- umap::umap(d)
 
 # Extract the UMAP coordinates
 umap_x <- umap_result$layout[, 1]
@@ -89,7 +94,7 @@ umap_y <- umap_result$layout[, 2]
 umap_data <- cbind(Barcode = key$Barcode, cluster = key$GEX.Graph.based, umap_x, umap_y)
 
 # Create the scatterplot using ggplot2 without axis labels
-ggplot(umap_data, aes(x = umap_x, y = umap_y, color = cluster)) +
+ggplot2::ggplot(umap_data, aes(x = umap_x, y = umap_y, color = cluster)) +
   geom_point(size = 2, alpha = 0.8) +
   scale_color_discrete(name = "Cluster") +
   labs(x = "UMAP Dimension 1", y = "UMAP Dimension 2") +
@@ -101,24 +106,19 @@ ggplot(umap_data, aes(x = umap_x, y = umap_y, color = cluster)) +
     axis.text.y = element_blank(),
     axis.ticks = element_blank()
   ) -> p
-p
 
+print(p)
 png(file.path(output_path, paste0("umap_pbmc_2cluster.png")), width = plot_width, height = plot_height, units = "px")
 print(p)
 dev.off()
 
 
 
-gex_umap_path <- file.path(path_data, "GEX UMAP-Projection.csv")
-gex_labels_path <- file.path(path_data, "GEX Graph-Based.csv")
 
-
-gex_umap <- read.csv(gex_umap_path)
-gex_labels <- read.csv(gex_labels_path)
 gex_data <- merge(gex_umap, gex_labels[, c("Barcode", "GEX.Graph.based")], by = "Barcode", all.x = TRUE)
 
 # Create the scatterplot using ggplot2 without axis labels
-ggplot(gex_data, aes(x = X.Coordinate, y = Y.Coordinate, color = GEX.Graph.based)) +
+ggplot2::ggplot(gex_data, aes(x = X.Coordinate, y = Y.Coordinate, color = GEX.Graph.based)) +
   geom_point(size = 2, alpha = 0.8) +
   scale_color_discrete(name = "Cluster") +
   labs(x = "UMAP Dimension 1", y = "UMAP Dimension 2") +
@@ -130,8 +130,8 @@ ggplot(gex_data, aes(x = X.Coordinate, y = Y.Coordinate, color = GEX.Graph.based
     axis.text.y = element_blank(),
     axis.ticks = element_blank()
   ) -> p
-p
 
+print(p)
 png(file.path(output_path, paste0("umap_pbmc_complete.png")), width = plot_width, height = plot_height, units = "px")
 print(p)
 dev.off()
