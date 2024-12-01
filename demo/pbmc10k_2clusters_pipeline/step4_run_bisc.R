@@ -132,3 +132,74 @@ boxplot(iterations,
         main = "Iterations in bisc needed to converge.",
         col = c("lightblue", "lightpink"))
 dev.off()
+
+
+
+# plot_heatmap ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cell_clustering_RIs <- RIs[converged]
+min(RIs[converged])
+max(RIs[converged])
+current_biclust <- (all_res[[which(RIs==max(RIs, na.rm=TRUE))]][[1]])
+target_gene_allocation <- current_biclust$scregclust_final_result_module
+cell_cluster_allocation <- current_biclust$cell_cluster_allocation
+# Assign one unique number to each gene module --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+
+# Check each entry in the matrix (each cell and gene pair),
+# and assign a string-number to each unique "cell-cluster-gene-module".
+for (i in 1:n_total_cells) {
+
+  if(is.na(cell_cluster_allocation[i])){
+    cat("Cell cluster allocation is NA. Random cluster will be assigned.\n")
+    cell_cluster_allocation[i] <- sample.int(length(target_gene_allocation),1)
+  }
+
+  cluster <- cell_cluster_allocation[i]
+  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+  gene_allocation[gene_allocation==-1] <- 0
+  # Create unique numbers for each pair
+  biclust_result_matrix[i, ] <- paste0(cluster, gene_allocation)
+}
+
+# Convert the string-numbers to numeric matrix (starting from 1 this time)
+biclust_result_matrix <- matrix(as.numeric(biclust_result_matrix),
+                                nrow = n_total_cells,
+                                ncol = n_target_genes)
+
+biclust_result_matrix <- matrix(as.integer(as.factor(biclust_result_matrix)),
+                                nrow=nrow(biclust_result_matrix),
+                                ncol=ncol(biclust_result_matrix))
+
+
+# Make the plots --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+n <- length(unique(as.vector(biclust_result_matrix)))
+regions <- seq(1, n, length.out = n + 1)
+middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+if(n %% 2 == 1){
+  keep_these_colors = 1:n
+}else{
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+}
+constructed_plot <- rasterVis::levelplot(biclust_result_matrix,
+                                       att = n,
+                                       # col.regions = rainbow(odd_number_larger),
+                                       colorkey = list(at = regions,
+                                                       # col=rainbow(odd_number_larger)[keep_these_colors],
+                                                       labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                                       xlab = 'Cells',
+                                       ylab = 'Target genes')
+
+
+# Plot in IDE
+print(constructed_plot)
+aspect_ratio <- nrow(biclust_result_matrix) / ncol(biclust_result_matrix)
+print(aspect_ratio)
+# Plot to file
+png(file.path(output_path, paste0("pbmc_bisc_heatmap.png")), width = 100*aspect_ratio, height = 200, units = "px")
+print(constructed_plot)
+dev.off()
+pdf(file.path(output_path, paste0("pbmc_bisc_heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
+print(constructed_plot)
+dev.off()
