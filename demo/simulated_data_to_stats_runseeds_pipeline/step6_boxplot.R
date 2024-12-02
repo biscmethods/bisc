@@ -382,7 +382,8 @@ p <- ggplot(gene_data[gene_data$method=="bisc",], aes(x = bic, y = value, color=
     x = "Normalised BIC (within each scenario)",
     y = "Rand Index"
   ) +
-  guides(color = guide_legend(title = "Module ID")) +
+  guides(shape = guide_legend(title = "Module ID"),
+         color = guide_legend(title = "Converged")) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
@@ -429,7 +430,8 @@ p <- ggplot(gene_data[gene_data$method=="bisc",], aes(x = cells_ri, y = gene_mod
     x = "Cell clustering rand index",
     y = "Gene module rand index"
   ) +
-  guides(color = guide_legend(title = "Module ID")) +
+  guides(shape = guide_legend(title = "Module ID"),
+         color = guide_legend(title = "Converged")) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
@@ -454,7 +456,8 @@ p <- ggplot(gene_data[gene_data$method=="bisc",], aes(x = biclust_ri, y = gene_m
     x = "Biclust clustering rand index",
     y = "Gene module rand index"
   ) +
-  guides(color = guide_legend(title = "Module ID")) +
+  guides(shape = guide_legend(title = "Module ID"),
+         color = guide_legend(title = "Converged")) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
@@ -481,7 +484,7 @@ p <- ggplot(gene_data[gene_data$method=="bisc",], aes(x = cells_ri, y = biclust_
     x = "Cell clustering rand index",
     y = "Biclustering rand index"
   ) +
-  guides(color = guide_legend(title = "Module ID")) +
+  guides(color = guide_legend(title = "Converged")) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
