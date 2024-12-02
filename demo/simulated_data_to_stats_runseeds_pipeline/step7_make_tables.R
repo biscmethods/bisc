@@ -41,7 +41,10 @@
     # Write to filey
     sink(paste0(output_path, "/", outfile))
     cat(latex_code_)
-    sink()
+    while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}
   }
 
   # Example usage
