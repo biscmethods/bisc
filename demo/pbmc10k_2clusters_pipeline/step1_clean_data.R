@@ -41,9 +41,9 @@ if(redo_flag){
 # Set seed for example
 set.seed(214)
 
-if (!file.exists(path_dataset)) {
+if (!file.exists(path_dataset) & redo_flag) { #if redo and file missing then download
   url <- "https://cf.10xgenomics.com/samples/cell-arc/1.0.0/pbmc_granulocyte_sorted_10k/pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5"
-  download.file(url, path_data, cacheOK = FALSE, mode = "wb")
+  download.file(url, local_data, cacheOK = FALSE, mode = "wb")
 }
 
 if (file.exists(path_env_data)) {
