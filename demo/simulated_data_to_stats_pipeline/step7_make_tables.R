@@ -38,7 +38,7 @@
     latex_code_ <- gsub("type", '\\\\makecell{Regulator \\\\\\\\ Structure}', latex_code_)
 
 
-    # Write to filey
+    # Write to file
     sink(paste0(output_path, "/", outfile))
     cat(latex_code_)
     sink()

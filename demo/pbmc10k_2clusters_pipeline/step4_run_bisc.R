@@ -22,15 +22,24 @@ source(file.path(R_path, "randomise_cluster_labels.R"))
 set.seed(250)
 
 n_target_gene_modules <- c(5, 4)  # Number of target gene clusters in each cell cluster
-n_cell_clusters <- length(unique(true_cluster_allocation))
 
-penalization_lambdas <- c(0.2)
-# initial_clustering <- factor(sample(true_cluster_allocation))
-initial_clustering <- factor(sample(unique(true_cluster_allocation), size=length(true_cluster_allocation), replace=TRUE))
+if(exists('true_cluster_allocation')){
+  n_cell_clusters <- length(unique(true_cluster_allocation))
+}else{
+  n_cell_clusters <- length(n_target_gene_modules)
+}
 
 seeds <- seq(300)
 
+penalization_lambdas <- c(0.2)
+
 if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag){
+
+  # initial_clustering <- factor(sample(true_cluster_allocation))
+  initial_clustering <- factor(sample(unique(true_cluster_allocation), size=length(true_cluster_allocation), replace=TRUE))
+
+
+
   sink(raw_printoutput_path, split=TRUE)
 
   all_res <- vector(mode = "list", length = length(seeds))
@@ -143,7 +152,16 @@ current_biclust <- (all_res[[which(RIs==max(RIs, na.rm=TRUE))]][[1]])
 target_gene_allocation <- current_biclust$scregclust_final_result_module
 cell_cluster_allocation <- current_biclust$cell_cluster_allocation
 # Assign one unique number to each gene module --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+if(exists('n_total_cells') & exists('n_target_genes') ){
+  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+}else{
+  n_total_cells <- length(all_res[[2]][[1]]$call$initial_clustering)
+
+  n_target_genes <- length(all_res[[2]][[1]]$call$ind_targetgenes)
+
+  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+}
+
 
 # Check each entry in the matrix (each cell and gene pair),
 # and assign a string-number to each unique "cell-cluster-gene-module".
