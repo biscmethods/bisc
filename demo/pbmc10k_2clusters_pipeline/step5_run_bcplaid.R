@@ -231,6 +231,8 @@ get_stats_biclustbiclust_seeds <- function(biclust_input_data,
 
   for(i_seed in seq_along(seeds)){
 
+    print(paste0("RUNNING BCPLAID ITERATION ", i_seed, " OF ", length(seeds), "."))
+
     res[[i_seed]] <- get_stats_biclustbiclust(biclust_input_data=biclust_input_data,
                                               n_target_genes=n_target_genes,
                                               ind_targetgenes=ind_targetgenes,
@@ -301,7 +303,7 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
     # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
     # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
     # correct_clustering     = scenarios[[10]]$correct_clustering,
-    seed                   = 1234,
+    seeds                   = seeds,
     do_biclust_with_regulators = TRUE,
     include_regulators_in_results = FALSE
   )
@@ -314,7 +316,7 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 }
 
 
-
+str(all_res_bcplaid)
 
 # constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
 #                                           RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
