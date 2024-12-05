@@ -26,9 +26,9 @@ RI_summary <- RI_data %>%
   )
 
 # Create the LaTeX table
-latex_code <- kable(RI_summary, format = "latex", digits = 5, booktabs = TRUE) %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(1, bold = TRUE)
+# latex_code <- kable(RI_summary, format = "latex", digits = 5, booktabs = TRUE) %>%
+#   kable_styling(latex_options = c("striped", "hold_position")) %>%
+#   column_spec(1, bold = TRUE)
 
 
 latex_table <- xtable(RI_summary,  digits = 4)
@@ -38,7 +38,7 @@ latex_code <- print(latex_table,
                     booktabs = TRUE)
 
 latex_code_ <- gsub("\\\\begin\\{table\\}\\[ht\\]",
-                    paste0("\\\\begin{table}[ht]\n\\\\caption{",
+                    paste0("\\\\begin{table}[ht]\n\\\\caption{", # wtf
                            caption,
                            "}"#, "\n\\\\vspace{1.5cm}"
                            ),
