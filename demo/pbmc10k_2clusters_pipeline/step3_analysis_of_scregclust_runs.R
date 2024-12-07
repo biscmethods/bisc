@@ -212,6 +212,36 @@ get_info <- function(res) {
 }
 
 
+get_regulator_info <- function(results_in){
+  regnames <- NA
+  for (i_nModules in seq(length(results_in))) {
+
+    for (i_nLambda in seq(length(results_in[[i_nModules]]))) {
+      if (any(is.na(results_in[[i_nModules]][[i_nLambda]]))) {
+        next
+      }else {
+        regnames <- results_in[[i_nModules]][[i_nLambda]]$results[[1]]$genesymbols
+        n_regulator_genes <- length(results_in[[i_nModules]][[i_nLambda]]$results[[1]]$output[[1]]$reg_table[[1]])
+        break
+      }
+    }
+    if(length(regnames)>1){
+      break
+    }
+  }
+
+  names_of_regulator_genes <- regnames[(length(regnames)-n_regulator_genes+1):length(regnames)]
+  barplot(table(regulator_index)/non_empty_target_gene_modules, ylim=c(0, 1))
+  temp_data <- table(regulator_index)/non_empty_target_gene_modules
+  temp_data <- temp_data[temp_data>0]
+  temp_names <- names_of_regulator_genes[which(temp_data>0)]
+  temp_data <- as.data.frame(temp_data)
+  temp_data['regulator_name'] <- temp_names
+  write.table(temp_data, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+}
+
+
 for(cf in files){
   current_results <- readRDS(cf)
   RES <- get_info(res = current_results)
@@ -219,35 +249,14 @@ for(cf in files){
   regulator_index <- RES['regulator_index']$regulator_index
   non_empty_target_gene_modules <- RES$non_empty_target_gene_modules
   write.table(df, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+  cat(paste0("\n\nREGULATOR INFO:\n"))
+  get_regulator_info(current_results)
+  cat("\n\n------------------\n")
 }
 
 
 
-regnames <- NA
-for (i_nModules in seq(length(current_results))) {
-
-  for (i_nLambda in seq(length(current_results[[i_nModules]]))) {
-    if (any(is.na(current_results[[i_nModules]][[i_nLambda]]))) {
-      next
-    }else {
-      regnames <- current_results[[i_nModules]][[i_nLambda]]$results[[1]]$genesymbols
-      n_regulator_genes <- length(current_results[[i_nModules]][[i_nLambda]]$results[[1]]$output[[1]]$reg_table[[1]])
-      break
-    }
-  }
-  if(length(regnames)>1){
-    break
-  }
-}
-
-names_of_regulator_genes <- regnames[(length(regnames)-n_regulator_genes+1):length(regnames)]
-barplot(table(regulator_index)/non_empty_target_gene_modules, ylim=c(0, 1))
-temp_data <- table(regulator_index)/non_empty_target_gene_modules
-temp_data <- temp_data[temp_data>0]
-temp_names <- names_of_regulator_genes[which(temp_data>0)]
-temp_data <- as.data.frame(temp_data)
-temp_data['regulator_name'] <- temp_names
-write.table(temp_data, file = "", sep = ";", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 #
 # for (i_cell_module in seq(n_cell_modules)) {
