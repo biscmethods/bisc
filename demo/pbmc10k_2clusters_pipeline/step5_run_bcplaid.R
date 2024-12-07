@@ -23,7 +23,7 @@ biclustbiclust <- function(data){ #centralise this function call so that we only
     max.layers       = 50,
     iter.startup     = 5,
     iter.layer       = 100,
-    verbose          = TRUE
+    verbose          = FALSE
     )
 }
 #
@@ -233,21 +233,26 @@ get_stats_biclustbiclust_seeds <- function(biclust_input_data,
 
     print(paste0("RUNNING BCPLAID ITERATION ", i_seed, " OF ", length(seeds), "."))
 
-    res[[i_seed]] <- get_stats_biclustbiclust(biclust_input_data=biclust_input_data,
-                                              n_target_genes=n_target_genes,
-                                              ind_targetgenes=ind_targetgenes,
-                                              n_total_cells=n_total_cells,
-                                              n_target_gene_clusters=n_target_gene_clusters,
-                                              n_cell_clusters=n_cell_clusters,
-                                              true_cell_cluster_allocation, #<- generated_data$true_cell_clust
-                                              # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
-                                              # correct_clustering=correct_clustering,
-                                              seed=seeds[i_seed],
-                                              do_biclust_with_regulators = do_biclust_with_regulators,
-                                              include_regulators_in_results = include_regulators_in_results)
+    res[[i_seed]] <-tryCatch(
+      expr =  get_stats_biclustbiclust(biclust_input_data=biclust_input_data,
+                                       n_target_genes=n_target_genes,
+                                       ind_targetgenes=ind_targetgenes,
+                                       n_total_cells=n_total_cells,
+                                       n_target_gene_clusters=n_target_gene_clusters,
+                                       n_cell_clusters=n_cell_clusters,
+                                       true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+                                       # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+                                       # correct_clustering=correct_clustering,
+                                       seed=seeds[i_seed],
+                                       do_biclust_with_regulators = do_biclust_with_regulators,
+                                       include_regulators_in_results = include_regulators_in_results),
+      error = function(e) {
+        warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
+        return(NULL)
+      }
+    )
   }
   return(res)
-
 }
 
 
@@ -292,21 +297,52 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 
   first_converged <- which(converged)[1]
 
-  all_res_bcplaid <- get_stats_biclustbiclust_seeds(
-    biclust_input_data     = d,
-    n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
-    ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
-    n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
-    n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
-    n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
-    true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
-    # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
-    # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
-    # correct_clustering     = scenarios[[10]]$correct_clustering,
-    seeds                   = seeds,
-    do_biclust_with_regulators = TRUE,
-    include_regulators_in_results = FALSE
-  )
+  # # all_res_bcplaid <- get_stats_biclustbiclust_seeds(
+  #   biclust_input_data     = d,
+  #   n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
+  #   ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
+  #   n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
+  #   n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
+  #   n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
+  #   true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
+  #   # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+  #   # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+  #   # correct_clustering     = scenarios[[10]]$correct_clustering,
+  #   seeds                   =  seeds,
+  #   do_biclust_with_regulators = TRUE,
+  #   include_regulators_in_results = FALSE
+  # # )
+  #
+
+  all_res_bcplaid <- vector(mode = "list", length = length(seeds))
+
+  for(i_seed in seq_along(seeds)){
+
+    print(paste0("RUNNING BCPLAID ITERATION ", i_seed, " OF ", length(seeds), "."))
+
+    all_res_bcplaid[[i_seed]] <-tryCatch(
+      expr =  get_stats_biclustbiclust(
+        biclust_input_data     = d,
+        n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
+        ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
+        n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
+        n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
+        n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
+        true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
+        # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+        # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+        # correct_clustering     = scenarios[[10]]$correct_clustering,
+        seed=seeds[i_seed],
+        do_biclust_with_regulators = TRUE,
+        include_regulators_in_results = FALSE
+      ),
+      error = function(e) {
+        warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
+        return(NULL)
+      }
+    )
+  }
+
 
   saveRDS(all_res_bcplaid, all_res_path_bcplaid)
   sink()
@@ -316,7 +352,10 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 }
 
 
-str(all_res_bcplaid)
+RI_values_plaid <- data.frame(unlist(sapply(all_res_bcplaid, function(x) x$RI_cell_clustering_biclustbiclust)))
+
+
+
 
 # constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
 #                                           RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
