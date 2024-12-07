@@ -16,8 +16,10 @@ biclustbiclust <- function(data){ #centralise this function call so that we only
     background       = TRUE,
     background.layer = NA,
     background.df    = 1,
-    row.release      = 0.1,
-    col.release      = 0.2,
+    # row.release      = 0.1,
+    # col.release      = 0.2,
+    row.release      = 0.3,
+    col.release      = 0.3,
     shuffle          = 2,
     back.fit         = 2,
     max.layers       = 50,
@@ -26,6 +28,7 @@ biclustbiclust <- function(data){ #centralise this function call so that we only
     verbose          = FALSE
     )
 }
+
 #
 #
 
@@ -287,6 +290,96 @@ plot_biclust_heatmap <- function(biclust_results_matrix,
 
 
 
+# find acceptable hyperparams
+
+row.release_vals      = seq(from  = 0, to = 1, length.out = 10)
+col.release_vals      = seq(from  = 0, to = 1, length.out = 10)
+
+tuning_ris <- matrix(0,length(row.release_vals), length(col.release_vals))
+
+iter = 0
+
+for(rowparam in seq_along(row.release_vals)){
+  for(colparam in seq_along(col.release_vals)){
+
+    iter = iter + 1
+
+    print(paste0("RUNNING BCPLAID ITERATION ", iter, " OF ", length(row.release_vals) * length(col.release_vals), "."))
+
+    biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+      biclust::biclust(
+        data,
+        method           = BCPlaid(),
+        cluster          ="b",
+        fit.model        = y ~ m + a + b,
+        background       = TRUE,
+        background.layer = NA,
+        background.df    = 1,
+        # row.release      = 0.1,
+        # col.release      = 0.2,
+        row.release      = row.release_vals[rowparam],
+        col.release      = col.release_vals[colparam],
+        shuffle          = 2,
+        back.fit         = 2,
+        max.layers       = 50,
+        iter.startup     = 5,
+        iter.layer       = 100,
+        verbose          = FALSE
+      )
+    }
+
+
+    tuning_ris  <-tryCatch(
+      expr =  get_stats_biclustbiclust(
+        biclust_input_data     = d,
+        n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
+        ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
+        n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
+        n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
+        n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
+        true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
+        # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+        # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+        # correct_clustering     = scenarios[[10]]$correct_clustering,
+        seed=1234,
+        do_biclust_with_regulators = TRUE,
+        include_regulators_in_results = FALSE
+      )$RI_cell_clustering_biclustbiclust,
+      error = function(e) {
+        warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
+        return(NULL)
+      }
+    )
+  }
+}
+
+#select the best parameter pair
+
+biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+  biclust::biclust(
+    data,
+    method           = BCPlaid(),
+    cluster          ="b",
+    fit.model        = y ~ m + a + b,
+    background       = TRUE,
+    background.layer = NA,
+    background.df    = 1,
+    # row.release      = 0.1,
+    # col.release      = 0.2,
+    row.release      = 0.3,
+    col.release      = 0.3,
+    shuffle          = 2,
+    back.fit         = 2,
+    max.layers       = 50,
+    iter.startup     = 5,
+    iter.layer       = 100,
+    verbose          = FALSE
+  )
+}
+
+
+
+# run
 
 raw_printoutput_path_bcplaid <- file.path(local_data, "output_bcplaid_pbmc_300.txt")
 all_res_path_bcplaid <- file.path(local_data, "run300_bcplaid.rds")
@@ -352,17 +445,98 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 }
 
 
-RI_values_plaid <- data.frame(unlist(sapply(all_res_bcplaid, function(x) x$RI_cell_clustering_biclustbiclust)))
+RI_values_plaid <- unlist(sapply(all_res_bcplaid, function(x) x$RI_cell_clustering_biclustbiclust))
+
+
+### make plots
 
 
 
 
-# constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = stats_biclustbiclust$biclust_results_matrix,
-#                                           RI_cell_clustering_biclustbiclust     = stats_biclustbiclust$RI_cell_clustering_biclustbiclust,
-#                                           RI_gene_clustering_biclustbiclust_all = stats_biclustbiclust$RI_gene_clustering_biclustbiclust_all,
-#                                           RI_biclust_biclustbiclust             = stats_biclustbiclust$RI_biclust_biclustbiclust)
-#
-# print(constructed_plots)
-# ggplot2::ggsave(file.path(output_path, paste0("heatmap_biclustbiclust.pdf")), constructed_plot, width = 12, height = 6)
-#
+# Plot info -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+svg(file.path(output_path, paste0("pbmc10k_RI_bcplaid.svg")), width=8, height=6)
+boxplot(RI_values_plaid ,
+        ylab = "RIs",
+        xlab = "BCPlaid",
+        # main = "Distribution of rand indexes (RIs)",
+        col = c("lightblue"))
+dev.off()
 
+
+# plot_heatmap ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cell_clustering_RIs <- RI_values_plaid
+min(RI_values_plaid)
+which.max(RI_values_plaid)
+current_biclust <- (all_res_bcplaid[[which(RI_values_plaid==max(RI_values_plaid, na.rm=TRUE))]][[1]])
+target_gene_allocation <- current_biclust$scregclust_final_result_module
+cell_cluster_allocation <- current_biclust$cell_cluster_allocation
+# Assign one unique number to each gene module --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+if(exists('n_total_cells') & exists('n_target_genes') ){
+  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+}else{
+  n_total_cells <- length(all_res[[2]][[1]]$call$initial_clustering)
+
+  n_target_genes <- length(all_res[[2]][[1]]$call$ind_targetgenes)
+
+  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+}
+
+
+# Check each entry in the matrix (each cell and gene pair),
+# and assign a string-number to each unique "cell-cluster-gene-module".
+for (i in 1:n_total_cells) {
+
+  if(is.na(cell_cluster_allocation[i])){
+    cat("Cell cluster allocation is NA. Random cluster will be assigned.\n")
+    cell_cluster_allocation[i] <- sample.int(length(target_gene_allocation),1)
+  }
+
+  cluster <- cell_cluster_allocation[i]
+  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
+  gene_allocation[gene_allocation==-1] <- 0
+  # Create unique numbers for each pair
+  biclust_result_matrix[i, ] <- paste0(cluster, gene_allocation)
+}
+
+# Convert the string-numbers to numeric matrix (starting from 1 this time)
+biclust_result_matrix <- matrix(as.numeric(biclust_result_matrix),
+                                nrow = n_total_cells,
+                                ncol = n_target_genes)
+
+biclust_result_matrix <- matrix(as.integer(as.factor(biclust_result_matrix)),
+                                nrow=nrow(biclust_result_matrix),
+                                ncol=ncol(biclust_result_matrix))
+
+
+# Make the plots --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+n <- length(unique(as.vector(biclust_result_matrix)))
+regions <- seq(1, n, length.out = n + 1)
+middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
+if(n %% 2 == 1){
+  keep_these_colors = 1:n
+}else{
+  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
+}
+constructed_plot <- rasterVis::levelplot(biclust_result_matrix,
+                                         att = n,
+                                         # col.regions = rainbow(odd_number_larger),
+                                         colorkey = list(at = regions,
+                                                         # col=rainbow(odd_number_larger)[keep_these_colors],
+                                                         labels = list(at = middle_of_regions, labels = as.character(1:n))),
+                                         xlab = 'Cells',
+                                         ylab = 'Target genes')
+
+
+# Plot in IDE
+print(constructed_plot)
+aspect_ratio <- nrow(biclust_result_matrix) / ncol(biclust_result_matrix)
+print(aspect_ratio)
+# Plot to file
+png(file.path(output_path, paste0("pbmc_bisc_heatmap.png")), width = 100*aspect_ratio, height = 200, units = "px")
+print(constructed_plot)
+dev.off()
+pdf(file.path(output_path, paste0("pbmc_bisc_heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
+print(constructed_plot)
+dev.off()
