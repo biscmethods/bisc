@@ -205,9 +205,7 @@ for(i in seq_along(bisc_results_list)){
       cells_genes[[scenarios[[i]]$description]] <- c(cells_genes[[scenarios[[i]]$description]], rep(new_cell_val, length(new_genes_val)))
       biclust_genes[[scenarios[[i]]$description]] <- c(biclust_genes[[scenarios[[i]]$description]], rep(new_biclust_val, length(new_genes_val)))
 
-      temp_genes_var <- rbind(temp_genes_var,  as.data.frame(t(new_genes_val)))
-      temp_cells_var <- c(temp_cells_var, new_cell_val)
-      temp_biclust_var <- c(temp_biclust_var, new_biclust_val)
+
       scenario_id_bisc_converged[[scenarios[[i]]$description]] <- c(scenario_id_bisc_converged[[scenarios[[i]]$description]], i)
       scenario_id_bisc_converged_genes[[scenarios[[i]]$description]] <- c(scenario_id_bisc_converged_genes[[scenarios[[i]]$description]], rep(i, length(new_genes_val)))
       bics_cells[[scenarios[[i]]$description]] <- c(bics_cells[[scenarios[[i]]$description]], bics[i_counter])
@@ -215,6 +213,13 @@ for(i in seq_along(bisc_results_list)){
       genes_module_id[[scenarios[[i]]$description]] <- c(genes_module_id[[scenarios[[i]]$description]], seq(length(new_genes_val)))
       converged[[scenarios[[i]]$description]] <- c(converged[[scenarios[[i]]$description]], bisc_results_list[[i]]$bisc_results[[i_seed]]$converged)
       converged_genes[[scenarios[[i]]$description]] <- c(converged_genes[[scenarios[[i]]$description]], rep(bisc_results_list[[i]]$bisc_results[[i_seed]]$converged, length(new_genes_val)))
+
+      # Only count variance for bisc if converged
+      if(bisc_results_list[[i]]$bisc_results[[i_seed]]$converged){
+        temp_genes_var <- rbind(temp_genes_var,  as.data.frame(t(new_genes_val)))
+        temp_cells_var <- c(temp_cells_var, new_cell_val)
+        temp_biclust_var <- c(temp_biclust_var, new_biclust_val)
+      }
 
       new_cell_biclust_val <- null2NA(biclustbiclust_results_list[[i]][[i_seed]]$RI_cell_clustering_biclustbiclust)
       new_biclust_biclust_val <- null2NA(biclustbiclust_results_list[[i]][[i_seed]]$RI_biclust_biclustbiclust)
@@ -500,6 +505,8 @@ ggsave(file.path(output_path, paste0("CellRI_vs_BiclustRI_per_scenario_for_bisc.
 
 
 # Cell clustering RI results per scenario
+# cell_data[is.na(cell_data$converged),'converged'] <- TRUE
+# cell_data <- cell_data[cell_data$converged,]
 p <- ggplot(cell_data, aes(x = method, y = value, color = method)) +
   geom_boxplot() +
   facet_wrap(~ scenario, scales = "free", labeller = as_labeller(function(x) {
@@ -536,6 +543,8 @@ ggsave(file.path(output_path, paste0("boxplot_cell_cluster_RI_comparison_runseed
 
 
 # Biclustering RI results per scenario
+# biclust_data[is.na(biclust_data$converged),'converged'] <- TRUE
+# biclust_data <- biclust_data[biclust_data$converged,]
 p <- ggplot(biclust_data, aes(x = method, y = value, color = method)) +
   geom_boxplot() +
   facet_wrap(~ scenario, scales = "free", labeller = as_labeller(function(x) {
@@ -572,6 +581,8 @@ p <- ggplot(biclust_data, aes(x = method, y = value, color = method)) +
 ggsave(file.path(output_path, paste0("boxplot_biclust_RI_comparison_runseeds.pdf")), p, width = 10, height = 7)
 
 # Gene module clustering RI results per scenario
+# gene_data[is.na(gene_data$converged),'converged'] <- TRUE
+# gene_data <- gene_data[gene_data$converged,]
 p <- ggplot(gene_data, aes(x = method, y = value, color = method)) +
   geom_boxplot() +
   geom_point(
