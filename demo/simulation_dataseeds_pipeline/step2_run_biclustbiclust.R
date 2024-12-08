@@ -190,20 +190,20 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   # Get RI for cell and gene clustering -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   true_cell_cluster_allocation <- generated_data$true_cell_clust
   true_target_gene_allocation <- generated_data$true_target_gene_allocation
-  RI_cell_clustering_biclustbiclust <- round(aricode::RI(res_cell_cluster, true_cell_cluster_allocation), 2)
+  RI_cell_clustering_biclustbiclust <- aricode::RI(res_cell_cluster, true_cell_cluster_allocation)
   print("Cell clustering RI for biclust::biclust", quote=FALSE)
   print(paste(" ", RI_cell_clustering_biclustbiclust), quote=FALSE)
   print("Gene module clustering RI for biclust::biclust", quote=FALSE)
   RI_gene_clustering_biclustbiclust_all <- ""
 
   for(i_cell_cluster in seq_along(res_gene_cluster_per_cell_cluster)){
-    RI_gene_clustering_biclustbiclust <- round(aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]][org_ind_targetgenes], true_target_gene_allocation[[i_cell_cluster]][org_ind_targetgenes]), 2)
+    RI_gene_clustering_biclustbiclust <- aricode::RI(res_gene_cluster_per_cell_cluster[[i_cell_cluster]][org_ind_targetgenes], true_target_gene_allocation[[i_cell_cluster]][org_ind_targetgenes])
     print(paste(" For cell cluster", i_cell_cluster,":", RI_gene_clustering_biclustbiclust), quote=FALSE)
     RI_gene_clustering_biclustbiclust_all <- paste(RI_gene_clustering_biclustbiclust_all, RI_gene_clustering_biclustbiclust, sep=" ")
   }
 
   print("Bicluster RI för biclust::biclust",quote=FALSE)
-  RI_biclust_biclustbiclust <- round(aricode::RI(as.vector(biclust_results_matrix[,org_ind_targetgenes]), correct_clustering), 2)
+  RI_biclust_biclustbiclust <- aricode::RI(as.vector(biclust_results_matrix[,org_ind_targetgenes]), correct_clustering)
   print(paste(" ", RI_biclust_biclustbiclust), quote=FALSE)
 
   return(list ("biclust_results_matrix" = biclust_results_matrix,

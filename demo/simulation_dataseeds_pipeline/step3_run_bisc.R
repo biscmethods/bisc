@@ -149,7 +149,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
       true_target_gene_allocation <- generated_data$true_target_gene_allocation #same for test and train data, no change
 
 
-      RI_cell_clustering_bisc <- round(aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation), 2)
+      RI_cell_clustering_bisc <- aricode::RI(cell_cluster_allocation, true_cell_cluster_allocation)
       print(paste(" Lambda", info[[i_res]]$penalization_lambda), quote=FALSE)
       print("  Cell clustering RI for bisc", quote=FALSE)
       print(paste("  ", RI_cell_clustering_bisc), quote=FALSE)
@@ -157,13 +157,13 @@ bisc_iteration <- function(plot_heatmap=FALSE,
       RI_gene_clustering_bisc_all_string <- ""
       RI_gene_clustering_bisc_all <- vector(length = n_cell_clusters)
       for(i_cell_cluster in seq_along(target_gene_allocation)){
-        RI_gene_clustering_bisc <- round(aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes]), 2)
+        RI_gene_clustering_bisc <- aricode::RI(target_gene_allocation[[i_cell_cluster]][1:n_target_genes], true_target_gene_allocation[[i_cell_cluster]][1:n_target_genes])
         print(paste("   For cell cluster", i_cell_cluster,":", RI_gene_clustering_bisc), quote=FALSE)
         RI_gene_clustering_bisc_all_string <- paste(RI_gene_clustering_bisc_all_string, RI_gene_clustering_bisc, sep=" ")
         RI_gene_clustering_bisc_all[i_cell_cluster] <- RI_gene_clustering_bisc
       }
       print("  Bicluster RI för bisc",quote=FALSE)
-      RI_biclust_bisc <- round(aricode::RI(as.vector(biclust_result_matrix), correct_bicluster_test), 2)
+      RI_biclust_bisc <- aricode::RI(as.vector(biclust_result_matrix), correct_bicluster_test)
       print(paste("  ", RI_biclust_bisc), quote=FALSE)
 
       # Save RIs
