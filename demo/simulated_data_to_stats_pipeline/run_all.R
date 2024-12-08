@@ -12,7 +12,7 @@ sink()
 demo_path <- here::here("demo")
 R_path <- here::here("R")
 current_path <- file.path(demo_path, "simulated_data_to_stats_pipeline")
-output_path <- file.path(current_path, format(Sys.time(), "%Y-%m-%d_%H%M%S"))
+output_path <- file.path(current_path, "output" ))# format(Sys.time(), "%Y-%m-%d_%H%M%S"))
 output_path_rds <- file.path(current_path, "rds")
 
 # Check if the folder exists, if not, create it
@@ -24,7 +24,7 @@ if (!dir.exists(output_path_rds)) {
 }
 
 set.seed(123)
-redo_flag <- T
+redo_flag <- F
 
 source(file.path(current_path, "step1_generate_data.R"))
 redo_flag <- T

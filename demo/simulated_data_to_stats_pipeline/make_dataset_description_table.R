@@ -8,12 +8,24 @@ format_dataset_description <- function(scenario_list, description, n_cell_cluste
                     n_regulator_genes,
                     # sum(n_cells),
                     paste0("(",paste0(n_cells, collapse = ", "), ")"),
-                    paste(sprintf("(%s)", paste(as.character(coefficient_means[[1]]), collapse = ", ")), sprintf("(%s)", paste(as.character(coefficient_means[[2]]), collapse = ", "))),
-                    paste(sprintf("(%s)", paste(as.character(coefficient_sds[[1]]), collapse = ", ")), sprintf("(%s)", paste(as.character(coefficient_sds[[2]]), collapse = ", "))))
+                    paste(
+                      lapply(coefficient_means, function(x) {
+                        sprintf("(%s)", paste(as.character(x), collapse = ", "))
+                      }),
+                      collapse = ", "
+                    ),
+                    paste(
+                      lapply(coefficient_sds, function(x) {
+                        sprintf("(%s)", paste(as.character(x), collapse = ", "))
+                      }),
+                      collapse = ", "
+                    )
+                    )
 
   cat(output, "\n")
 }
 
+sink(paste0(output_path, "/", "scenario_table_info"))
 
 format_dataset_description(scenario_list = scenarios,
                 description = "Simple",
@@ -341,4 +353,8 @@ format_dataset_description(scenario_list = scenarios,
                              trivial_regulator_networks = FALSE,
                              seed = 631,
                              num = 20)
+while (sink.number() > 0) {
+  sink()
+  sink(file = NULL)
+}
 
