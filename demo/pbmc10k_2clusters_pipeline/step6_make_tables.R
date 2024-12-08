@@ -59,7 +59,7 @@ sink()
 
 outfile <- 'bcplaid_pbmc_cellclust_RI.tex'
 
-caption = 'Rand Indexes on cell cluster allocations from BCPlaid'
+caption <- 'Rand Indexes on cell cluster allocations from BCPlaid.'
 
 # Assuming you have the 'converged_RIs' and 'nonconverged_RIs' vectors
 
