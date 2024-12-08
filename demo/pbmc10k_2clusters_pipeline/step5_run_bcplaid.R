@@ -199,7 +199,7 @@ get_stats_biclustbiclust <- function(biclust_input_data = d,
   # true_target_gene_allocation <- generated_data$true_target_gene_allocation
   #
 
-  RI_cell_clustering_biclustbiclust <- round(aricode::RI(res_cell_cluster, true_cell_cluster_allocation), 2)
+  RI_cell_clustering_biclustbiclust <- aricode::RI(res_cell_cluster, true_cell_cluster_allocation)
   print("Cell clustering RI for biclust::biclust", quote=FALSE)
   print(paste(" ", RI_cell_clustering_biclustbiclust), quote=FALSE)
   print("Gene module clustering RI for biclust::biclust", quote=FALSE)
@@ -299,96 +299,96 @@ plot_biclust_heatmap <- function(biclust_results_matrix,
 
 
 
-
-
-# Find acceptable hyperparams -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-find_hyperparams <- FALSE
-if(find_hyperparams){
-  row.release_vals      = seq(from  = 0, to = 1, length.out = 10)
-  col.release_vals      = seq(from  = 0, to = 1, length.out = 10)
-
-  tuning_ris <- matrix(0,length(row.release_vals), length(col.release_vals))
-
-  iter = 0
-
-  for(rowparam in seq_along(row.release_vals)){
-    for(colparam in seq_along(col.release_vals)){
-
-      iter = iter + 1
-
-      print(paste0("RUNNING BCPLAID ITERATION ", iter, " OF ", length(row.release_vals) * length(col.release_vals), "."))
-
-      biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
-        biclust::biclust(
-          data,
-          method           = BCPlaid(),
-          cluster          ="b",
-          fit.model        = y ~ m + a + b,
-          background       = TRUE,
-          background.layer = NA,
-          background.df    = 1,
-          # row.release      = 0.1,
-          # col.release      = 0.2,
-          row.release      = row.release_vals[rowparam],
-          col.release      = col.release_vals[colparam],
-          shuffle          = 2,
-          back.fit         = 2,
-          max.layers       = 50,
-          iter.startup     = 5,
-          iter.layer       = 100,
-          verbose          = FALSE
-        )
-      }
-      i_seed <- 1234
-
-      tuning_ris  <-tryCatch(
-        expr =  get_stats_biclustbiclust(
-          biclust_input_data     = t(d),
-          n_target_genes     = length(all_ares[[first_converged]][[1]]$call$ind_targetgenes),
-          ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
-          n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
-          n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
-          n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
-          true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
-          # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
-          # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
-          # correct_clustering     = scenarios[[10]]$correct_clustering,
-          seed=i_seed,
-          do_biclust_with_regulators = TRUE,
-          include_regulators_in_results = FALSE
-        )$RI_cell_clustering_biclustbiclust,
-        error = function(e) {
-          warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
-          return(NULL)
-        }
-      )
-    }
-  }
-}
+#
+#
+# # Find acceptable hyperparams -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# find_hyperparams <- FALSE
+# if(find_hyperparams){
+#   row.release_vals      = seq(from  = 0, to = 1, length.out = 10)
+#   col.release_vals      = seq(from  = 0, to = 1, length.out = 10)
+#
+#   tuning_ris <- matrix(0,length(row.release_vals), length(col.release_vals))
+#
+#   iter = 0
+#
+#   for(rowparam in seq_along(row.release_vals)){
+#     for(colparam in seq_along(col.release_vals)){
+#
+#       iter = iter + 1
+#
+#       print(paste0("RUNNING BCPLAID ITERATION ", iter, " OF ", length(row.release_vals) * length(col.release_vals), "."))
+#
+#       biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+#         biclust::biclust(
+#           data,
+#           method           = BCPlaid(),
+#           cluster          ="b",
+#           fit.model        = y ~ m + a + b,
+#           background       = TRUE,
+#           background.layer = NA,
+#           background.df    = 1,
+#           # row.release      = 0.1,
+#           # col.release      = 0.2,
+#           row.release      = row.release_vals[rowparam],
+#           col.release      = col.release_vals[colparam],
+#           shuffle          = 2,
+#           back.fit         = 2,
+#           max.layers       = 50,
+#           iter.startup     = 5,
+#           iter.layer       = 100,
+#           verbose          = FALSE
+#         )
+#       }
+#       i_seed <- 1234
+#
+#       tuning_ris  <-tryCatch(
+#         expr =  get_stats_biclustbiclust(
+#           biclust_input_data     = t(d),
+#           n_target_genes     = length(all_ares[[first_converged]][[1]]$call$ind_targetgenes),
+#           ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
+#           n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
+#           n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
+#           n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
+#           true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
+#           # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+#           # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+#           # correct_clustering     = scenarios[[10]]$correct_clustering,
+#           seed=i_seed,
+#           do_biclust_with_regulators = TRUE,
+#           include_regulators_in_results = FALSE
+#         )$RI_cell_clustering_biclustbiclust,
+#         error = function(e) {
+#           warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
+#           return(NULL)
+#         }
+#       )
+#     }
+#   }
+# }
 
 #select the best parameter pair
-
-biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
-  biclust::biclust(
-    data,
-    method           = BCPlaid(),
-    cluster          ="b",
-    fit.model        = y ~ m + a + b,
-    background       = TRUE,
-    background.layer = NA,
-    background.df    = 1,
-    # row.release      = 0.1,
-    # col.release      = 0.2,
-    row.release      = 0.3,
-    col.release      = 0.3,
-    shuffle          = 2,
-    back.fit         = 2,
-    max.layers       = 50,
-    iter.startup     = 5,
-    iter.layer       = 100,
-    verbose          = FALSE
-  )
-}
+#
+# biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+#   biclust::biclust(
+#     data,
+#     method           = BCPlaid(),
+#     cluster          ="b",
+#     fit.model        = y ~ m + a + b,
+#     background       = TRUE,
+#     background.layer = NA,
+#     background.df    = 1,
+#     # row.release      = 0.1,
+#     # col.release      = 0.2,
+#     row.release      = 0.3,
+#     col.release      = 0.3,
+#     shuffle          = 2,
+#     back.fit         = 2,
+#     max.layers       = 50,
+#     iter.startup     = 5,
+#     iter.layer       = 100,
+#     verbose          = FALSE
+#   )
+# }
 
 
 
@@ -521,6 +521,6 @@ print(constructed_plots)
 png(file.path(output_path, paste0("pbmc_BCPlaid_heatmap.png")), width = 100*aspect_ratio, height = 200, units = "px")
 print(constructed_plot)
 dev.off()
-pdf(file.path(output_path, paste0("pbmc__heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
+pdf(file.path(output_path, paste0("pbmc_BCPlaid_heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
 print(constructed_plot)
 dev.off()

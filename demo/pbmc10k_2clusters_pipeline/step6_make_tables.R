@@ -92,10 +92,10 @@ latex_code <- print(latex_table,
 latex_code_ <- gsub("\\\\begin\\{table\\}\\[ht\\]",
                     paste0("\\\\begin{table}[ht]\n\\\\caption{", # wtf
                            caption,
-                           "}"#, "\n\\\\vspace{1.5cm}"
+                           "} \\\\label{tab:pbmc_bcplaid_cellclust}"#, "\n\\\\vspace{1.5cm}"
                     ),
-                    "\label{tab:pbmc_bcplaid_cellclust}",
-                    latex_code
+
+                    x = latex_code
 )
 
 sink(paste0(output_path, "/", outfile))
