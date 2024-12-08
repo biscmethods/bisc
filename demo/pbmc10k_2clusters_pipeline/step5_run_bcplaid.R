@@ -469,7 +469,7 @@ RI_values_plaid <- unlist(sapply(all_res_bcplaid, function(x) x$RI_cell_clusteri
 
 
 # Plot info -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-svg(file.path(output_path, paste0("pbmc10k_RI_bcplaid.svg")), width=8, height=6)
+svg(file.path(output_path, paste0("pbmc10k_RI_bcplaid.svg")), width=4, height=3)
 boxplot(RI_values_plaid ,
         ylab = "RIs",
         xlab = "BCPlaid",
