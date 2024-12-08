@@ -94,6 +94,7 @@ latex_code_ <- gsub("\\\\begin\\{table\\}\\[ht\\]",
                            caption,
                            "}"#, "\n\\\\vspace{1.5cm}"
                     ),
+                    "\label{tab:pbmc_bcplaid_cellclust}",
                     latex_code
 )
 
