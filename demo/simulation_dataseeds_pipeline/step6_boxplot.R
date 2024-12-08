@@ -15,20 +15,26 @@ df_mp <- data.frame(
   stringsAsFactors = FALSE
 )
 bics <- c()
-for(i_scenario_results in seq_along(bisc_results_list)){
-  for(current_results in bisc_results_list[[i_scenario_results]]$bisc_results){
-    bics <- c(bics, NA)
-    if(length(current_results) > 1 || !is.na(current_results)){
-      new_df <- data.frame(i_scenario = i_scenario_results,
-                           rand_index = current_results$rand_index,
-                           n_iterations = current_results$n_iterations,
-                           converged = current_results$converged,
-                           silhouette_measure = current_results$silhouette_measure,
-                           davies_bouldin_index =  current_results$davies_bouldin_index,
-                           BIC = Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
-      )
-      df_mp <- rbind(df_mp, new_df)
-      bics[length(bics)] <- Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
+i_counter <- 0
+for(i_current_scenario_type in seq(20)){
+  for(i in seq(10)){
+
+    i_counter <- i_counter+1
+    for(i_seed in seq_along(bisc_results_list[[i_counter]]$RIs)){
+      current_results <- bisc_results_list[[i_counter]]$bisc_results[[i_seed]]
+      bics <- c(bics, NA)
+      if(length(current_results) > 1 || !is.na(current_results)){
+        new_df <- data.frame(i_scenario = i_current_scenario_type,
+                             rand_index = current_results$rand_index,
+                             n_iterations = current_results$n_iterations,
+                             converged = current_results$converged,
+                             silhouette_measure = current_results$silhouette_measure,
+                             davies_bouldin_index =  current_results$davies_bouldin_index,
+                             BIC = Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
+        )
+        df_mp <- rbind(df_mp, new_df)
+        bics[length(bics)] <- Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
+      }
     }
   }
 }
@@ -181,20 +187,22 @@ null2NA <- function(x){
 }
 
 i_counter <- 0
-for(i in seq(20)){
-  print(paste0('Now running outer iteration ', i))
-  # print(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
+for(i_current_scenario_type in seq(20)){
   temp_genes_var <- data.frame()
   temp_cells_var <- c()
   temp_biclust_var <- c()
   temp_biclust_genes_var <- data.frame()
   temp_biclust_cells_var <- c()
   temp_biclust_biclust_var <- c()
+  for(i in seq(10)){
+
+    print(paste0('Now running outer iteration ', i_current_scenario_type, i ))
+    # print(bisc_results_list[[i]]$RIs[[1]]$RI_cell_clustering_bisc)
 
 
-  for(i_current_scenario_type in seq(10)){
-    for(i_seed in seq_along(bisc_results_list[[i]]$RIs)){
-      i_counter <- i_counter+1
+    i_counter <- i_counter+1
+    for(i_seed in seq_along(bisc_results_list[[i_counter]]$RIs)){
+
       current_scenario_type <- scenarios[[i_counter]]$description
       if(length(bisc_results_list[[i_counter]]$bisc_results[[i_seed]])>1 || !is.na(bisc_results_list[[i_counter]]$bisc_results[[i_seed]])){
 
@@ -209,8 +217,8 @@ for(i in seq(20)){
         biclust_genes[[current_scenario_type]] <- c(biclust_genes[[current_scenario_type]], rep(new_biclust_val, length(new_genes_val)))
 
 
-        scenario_id_bisc_converged[[current_scenario_type]] <- c(scenario_id_bisc_converged[[current_scenario_type]], i)
-        scenario_id_bisc_converged_genes[[current_scenario_type]] <- c(scenario_id_bisc_converged_genes[[current_scenario_type]], rep(i, length(new_genes_val)))
+        scenario_id_bisc_converged[[current_scenario_type]] <- c(scenario_id_bisc_converged[[current_scenario_type]], i_current_scenario_type)
+        scenario_id_bisc_converged_genes[[current_scenario_type]] <- c(scenario_id_bisc_converged_genes[[current_scenario_type]], rep(i_current_scenario_type, length(new_genes_val)))
         bics_cells[[current_scenario_type]] <- c(bics_cells[[current_scenario_type]], bics[i_counter])
         bics_genes[[current_scenario_type]] <- c(bics_genes[[current_scenario_type]], rep(bics[i_counter], length(new_genes_val)))
         genes_module_id[[current_scenario_type]] <- c(genes_module_id[[current_scenario_type]], seq(length(new_genes_val)))
@@ -234,8 +242,8 @@ for(i in seq(20)){
         temp_biclust_genes_var <- rbind(temp_biclust_genes_var,  as.data.frame(t(new_genes_biclust_val)))
         temp_biclust_cells_var <- c(temp_biclust_cells_var, new_cell_biclust_val)
         temp_biclust_biclust_var <- c(temp_biclust_biclust_var, new_biclust_biclust_val)
-        scenario_id_all[[current_scenario_type]] <- c(scenario_id_all[[current_scenario_type]], i)
-        scenario_id_bcplaid_genes[[current_scenario_type]] <- c(scenario_id_bcplaid_genes[[current_scenario_type]], rep(i, length(new_genes_biclust_val)))
+        scenario_id_all[[current_scenario_type]] <- c(scenario_id_all[[current_scenario_type]], i_current_scenario_type)
+        scenario_id_bcplaid_genes[[current_scenario_type]] <- c(scenario_id_bcplaid_genes[[current_scenario_type]], rep(i_current_scenario_type, length(new_genes_biclust_val)))
         biclust_genes_module_id[[current_scenario_type]] <- c(biclust_genes_module_id[[current_scenario_type]], seq(length(new_genes_biclust_val)))
       }
     }
