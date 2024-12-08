@@ -26,7 +26,7 @@ biclustbiclust <- function(data){ #centralise this function call so that we only
     iter.startup     = 5,
     iter.layer       = 100,
     verbose          = FALSE
-    )
+  )
 }
 
 #
@@ -112,7 +112,6 @@ get_stats_biclustbiclust <- function(biclust_input_data = d,
     n_target_genes <- ncol(biclust_input_data)
   }
 
-
   if(do_biclust_with_regulators){
     biclust_result <- biclustbiclust(data = as.matrix(biclust_input_data))
   }else{
@@ -125,12 +124,22 @@ get_stats_biclustbiclust <- function(biclust_input_data = d,
 
   # Result of biclustering as a matrix
   biclust_results_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
+  biclust_results_raw_cell_clustring <- matrix(0, nrow = n_total_cells, ncol = biclust_result@Number)
   for (i_n in 1:biclust_result@Number) {
     a <- as.matrix((biclust_result@RowxNumber[, i_n, drop = FALSE] %*% biclust_result@NumberxCol[i_n, ind_targetgenes, drop = FALSE]) == 1)
     biclust_results_matrix[a] <- i_n
+    # biclust_results_raw_cell_clustring[a] <- i_n
+    # print(length(ind_targetgenes))
+    # print(dim(a))
+    # print(length(biclust_result@RowxNumber[, i_n, drop = FALSE]))
+    # print(length(biclust_result@NumberxCol[i_n, , drop = FALSE]))
+    # cat("\n\n")
   }
 
-
+  #
+  # print(biclust_result@Number)
+  # print(biclust_result@RowxNumber[, i_n, drop = FALSE])
+  # exit()
   # Cell clustering  -------------------
   # E.g. 400 cells x 100 genes
   # MARGIN=1 keeps the second/column/gene dimension intact - meaning it's cell clustering
@@ -145,7 +154,7 @@ get_stats_biclustbiclust <- function(biclust_input_data = d,
   # Plot the dendrogram to visualize the clustering
   # plot(hc, labels = rownames(unique_cells))
   unique_cell_clusters <- stats::cutree(hc, k = n_cell_clusters)
-  # unique_cell_clusters[unique_cell_clusters>2] = 2
+  # unique_cell_clusters[unique_cell_clusters>n_cell_clusters] = n_cell_clusters
 
   res_cell_cluster <- vector(length=nrow(biclust_results_matrix))
   for (i in 1:nrow(unique_cells)) {
@@ -290,66 +299,70 @@ plot_biclust_heatmap <- function(biclust_results_matrix,
 
 
 
-# find acceptable hyperparams
 
-row.release_vals      = seq(from  = 0, to = 1, length.out = 10)
-col.release_vals      = seq(from  = 0, to = 1, length.out = 10)
 
-tuning_ris <- matrix(0,length(row.release_vals), length(col.release_vals))
+# Find acceptable hyperparams -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+find_hyperparams <- FALSE
+if(find_hyperparams){
+  row.release_vals      = seq(from  = 0, to = 1, length.out = 10)
+  col.release_vals      = seq(from  = 0, to = 1, length.out = 10)
 
-iter = 0
+  tuning_ris <- matrix(0,length(row.release_vals), length(col.release_vals))
 
-for(rowparam in seq_along(row.release_vals)){
-  for(colparam in seq_along(col.release_vals)){
+  iter = 0
 
-    iter = iter + 1
+  for(rowparam in seq_along(row.release_vals)){
+    for(colparam in seq_along(col.release_vals)){
 
-    print(paste0("RUNNING BCPLAID ITERATION ", iter, " OF ", length(row.release_vals) * length(col.release_vals), "."))
+      iter = iter + 1
 
-    biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
-      biclust::biclust(
-        data,
-        method           = BCPlaid(),
-        cluster          ="b",
-        fit.model        = y ~ m + a + b,
-        background       = TRUE,
-        background.layer = NA,
-        background.df    = 1,
-        # row.release      = 0.1,
-        # col.release      = 0.2,
-        row.release      = row.release_vals[rowparam],
-        col.release      = col.release_vals[colparam],
-        shuffle          = 2,
-        back.fit         = 2,
-        max.layers       = 50,
-        iter.startup     = 5,
-        iter.layer       = 100,
-        verbose          = FALSE
+      print(paste0("RUNNING BCPLAID ITERATION ", iter, " OF ", length(row.release_vals) * length(col.release_vals), "."))
+
+      biclustbiclust <- function(data){ #centralise this function call so that we only need to set arguments once
+        biclust::biclust(
+          data,
+          method           = BCPlaid(),
+          cluster          ="b",
+          fit.model        = y ~ m + a + b,
+          background       = TRUE,
+          background.layer = NA,
+          background.df    = 1,
+          # row.release      = 0.1,
+          # col.release      = 0.2,
+          row.release      = row.release_vals[rowparam],
+          col.release      = col.release_vals[colparam],
+          shuffle          = 2,
+          back.fit         = 2,
+          max.layers       = 50,
+          iter.startup     = 5,
+          iter.layer       = 100,
+          verbose          = FALSE
+        )
+      }
+      i_seed <- 1234
+
+      tuning_ris  <-tryCatch(
+        expr =  get_stats_biclustbiclust(
+          biclust_input_data     = t(d),
+          n_target_genes     = length(all_ares[[first_converged]][[1]]$call$ind_targetgenes),
+          ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
+          n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
+          n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
+          n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
+          true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
+          # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
+          # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
+          # correct_clustering     = scenarios[[10]]$correct_clustering,
+          seed=i_seed,
+          do_biclust_with_regulators = TRUE,
+          include_regulators_in_results = FALSE
+        )$RI_cell_clustering_biclustbiclust,
+        error = function(e) {
+          warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
+          return(NULL)
+        }
       )
     }
-
-
-    tuning_ris  <-tryCatch(
-      expr =  get_stats_biclustbiclust(
-        biclust_input_data     = d,
-        n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
-        ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
-        n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
-        n_target_gene_clusters = all_res[[first_converged]][[1]]$call$n_target_gene_clusters,
-        n_cell_clusters        = all_res[[first_converged]][[1]]$call$n_cell_clusters,
-        true_cell_cluster_allocation = all_res[[first_converged]][[1]]$call$true_cell_cluster_allocation,
-        # true_cell_cluster_allocation, #<- generated_data$true_cell_clust
-        # true_target_gene_allocation, #  <- generated_data$true_target_gene_allocation
-        # correct_clustering     = scenarios[[10]]$correct_clustering,
-        seed=1234,
-        do_biclust_with_regulators = TRUE,
-        include_regulators_in_results = FALSE
-      )$RI_cell_clustering_biclustbiclust,
-      error = function(e) {
-        warning(paste0("Error in bcplaid for c_seed=", i_seed, e$message))
-        return(NULL)
-      }
-    )
   }
 }
 
@@ -415,7 +428,7 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 
     all_res_bcplaid[[i_seed]] <-tryCatch(
       expr =  get_stats_biclustbiclust(
-        biclust_input_data     = d,
+        biclust_input_data     = t(d),
         n_target_genes     = length(all_res[[first_converged]][[1]]$call$ind_targetgenes),
         ind_targetgenes    = all_res[[first_converged]][[1]]$call$ind_targetgenes,
         n_total_cells      = length(all_res[[first_converged]][[1]]$call$cell_id),
@@ -438,8 +451,10 @@ if(!file.exists(raw_printoutput_path_bcplaid) || !file.exists(all_res_path_bcpla
 
 
   saveRDS(all_res_bcplaid, all_res_path_bcplaid)
-  sink()
-
+  while (sink.number() > 0) {
+    sink()
+    sink(file = NULL)
+  }
 }else{
   all_res_bcplaid <- readRDS(all_res_path_bcplaid)
 }
@@ -464,79 +479,48 @@ dev.off()
 
 
 # plot_heatmap ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-cell_clustering_RIs <- RI_values_plaid
-min(RI_values_plaid)
-which.max(RI_values_plaid)
-current_biclust <- (all_res_bcplaid[[which(RI_values_plaid==max(RI_values_plaid, na.rm=TRUE))]][[1]])
-target_gene_allocation <- current_biclust$scregclust_final_result_module
-cell_cluster_allocation <- current_biclust$cell_cluster_allocation
-# Assign one unique number to each gene module --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-if(exists('n_total_cells') & exists('n_target_genes') ){
-  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
-}else{
-  n_total_cells <- length(all_res[[2]][[1]]$call$initial_clustering)
+best_results <- all_res_bcplaid[[which(RI_values_plaid==max(RI_values_plaid, na.rm=TRUE))[1]]]
 
-  n_target_genes <- length(all_res[[2]][[1]]$call$ind_targetgenes)
+# Plot the biclustering results
+# b <- raster::ratify(raster::raster(b))
+plot_biclust_heatmap <- function(biclust_results_matrix,
+                                 RI_cell_clustering_biclustbiclust,
+                                 RI_gene_clustering_biclustbiclust_all,
+                                 RI_biclust_biclustbiclust){
 
-  biclust_result_matrix <- matrix(0, nrow = n_total_cells, ncol = n_target_genes)
-}
-
-
-# Check each entry in the matrix (each cell and gene pair),
-# and assign a string-number to each unique "cell-cluster-gene-module".
-for (i in 1:n_total_cells) {
-
-  if(is.na(cell_cluster_allocation[i])){
-    cat("Cell cluster allocation is NA. Random cluster will be assigned.\n")
-    cell_cluster_allocation[i] <- sample.int(length(target_gene_allocation),1)
+  # This is just to fix colors with a unique legend
+  n_unique_biclusters <- length(unique(as.vector(biclust_results_matrix)))
+  regions <- seq(1, n_unique_biclusters, length.out = n_unique_biclusters + 1)
+  middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
+  odd_number_larger <- ifelse(n_unique_biclusters %% 2 == 0, n_unique_biclusters + 1, n_unique_biclusters)
+  if(n_unique_biclusters %% 2 == 1){
+    keep_these_colors = 1:n_unique_biclusters
+  }else{
+    keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
   }
-
-  cluster <- cell_cluster_allocation[i]
-  gene_allocation <- target_gene_allocation[[cluster]][1:n_target_genes]
-  gene_allocation[gene_allocation==-1] <- 0
-  # Create unique numbers for each pair
-  biclust_result_matrix[i, ] <- paste0(cluster, gene_allocation)
+  constructed_plots <- rasterVis::levelplot(biclust_results_matrix, att = n_unique_biclusters,
+                                            colorkey = list(at = regions,
+                                                            labels = list(at = middle_of_regions, labels = as.character(1:n_unique_biclusters))),
+                                            xlab = 'Cells',
+                                            ylab = 'Target genes',
+                                            main=paste0('biclust::biclust.\nCell cluster RI:',RI_cell_clustering_biclustbiclust,
+                                                        "\nGene modules RI:", RI_gene_clustering_biclustbiclust_all,
+                                                        "\nBiclust RI:", RI_biclust_biclustbiclust))
+  return(constructed_plots)
 }
 
-# Convert the string-numbers to numeric matrix (starting from 1 this time)
-biclust_result_matrix <- matrix(as.numeric(biclust_result_matrix),
-                                nrow = n_total_cells,
-                                ncol = n_target_genes)
 
-biclust_result_matrix <- matrix(as.integer(as.factor(biclust_result_matrix)),
-                                nrow=nrow(biclust_result_matrix),
-                                ncol=ncol(biclust_result_matrix))
+constructed_plots <- plot_biclust_heatmap(biclust_results_matrix                = best_results$biclust_results_matrix,
+                                          RI_cell_clustering_biclustbiclust     = best_results$RI_cell_clustering_biclustbiclust,
+                                          RI_gene_clustering_biclustbiclust_all = best_results$RI_gene_clustering_biclustbiclust_all,
+                                          RI_biclust_biclustbiclust             = best_results$RI_biclust_biclustbiclust)
 
-
-# Make the plots --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-n <- length(unique(as.vector(biclust_result_matrix)))
-regions <- seq(1, n, length.out = n + 1)
-middle_of_regions <- (regions[-1] + regions[-length(regions)]) / 2
-odd_number_larger <- ifelse(n %% 2 == 0, n + 1, n)
-if(n %% 2 == 1){
-  keep_these_colors = 1:n
-}else{
-  keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
-}
-constructed_plot <- rasterVis::levelplot(biclust_result_matrix,
-                                         att = n,
-                                         # col.regions = rainbow(odd_number_larger),
-                                         colorkey = list(at = regions,
-                                                         # col=rainbow(odd_number_larger)[keep_these_colors],
-                                                         labels = list(at = middle_of_regions, labels = as.character(1:n))),
-                                         xlab = 'Cells',
-                                         ylab = 'Target genes')
+print(constructed_plots)
 
 
-# Plot in IDE
-print(constructed_plot)
-aspect_ratio <- nrow(biclust_result_matrix) / ncol(biclust_result_matrix)
-print(aspect_ratio)
-# Plot to file
-png(file.path(output_path, paste0("pbmc_bisc_heatmap.png")), width = 100*aspect_ratio, height = 200, units = "px")
+png(file.path(output_path, paste0("pbmc_BCPlaid_heatmap.png")), width = 100*aspect_ratio, height = 200, units = "px")
 print(constructed_plot)
 dev.off()
-pdf(file.path(output_path, paste0("pbmc_bisc_heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
+pdf(file.path(output_path, paste0("pbmc__heatmap.pdf")), width =  0.95*aspect_ratio/2, height = 1.9)
 print(constructed_plot)
 dev.off()

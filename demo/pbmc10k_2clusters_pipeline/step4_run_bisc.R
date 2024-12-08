@@ -52,8 +52,8 @@ if(!file.exists(raw_printoutput_path) || !file.exists(all_res_path) || redo_flag
       print("", quote = FALSE)
       print(paste("Running biclust for penalization_lambda", penalization_lambdas[i_penalization_lambda]), quote = FALSE)
       BICLUST_RESULTS[[i_penalization_lambda]] <- tryCatch(
-        expr = bisc(dat = t(biclust_input_data),
-                    cell_id = colnames(biclust_input_data),
+        expr = bisc(dat = t(d),
+                    cell_id = colnames(d),
                     true_cell_cluster_allocation = true_cluster_allocation,
                     max_iter = 10,
                     n_target_gene_clusters = n_target_gene_modules,
