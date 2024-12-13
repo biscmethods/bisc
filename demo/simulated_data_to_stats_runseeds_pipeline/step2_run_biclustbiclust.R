@@ -30,27 +30,32 @@ calc_hamming <- function(matrix_data, between_rows=TRUE){
     n <- ncol(matrix_data)
   }
 
+
   # Initialize a distance matrix
   dist_matrix <- matrix(0, n, n)
 
-  if(between_rows){
-    # Calculate pairwise Hamming distances between ROWS
-    for (i in 1:(n-1)) {
-      for (j in (i+1):n) {
-        dist_matrix[i, j] <- hamming_dist(matrix_data[i, ], matrix_data[j, ])
-        dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
-      }
-    }
+  if(n==1){
+    dist_matrix[1,1] <- 0
   }else{
-    # Calculate pairwise Hamming distances between COLS
-    for (i in 1:(n-1)) {
-      for (j in (i+1):n) {
-        dist_matrix[i, j] <- hamming_dist(matrix_data[, i], matrix_data[, j])
-        dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+
+    if(between_rows){
+      # Calculate pairwise Hamming distances between ROWS
+      for (i in 1:(n-1)) {
+        for (j in (i+1):n) {
+          dist_matrix[i, j] <- hamming_dist(matrix_data[i, ], matrix_data[j, ])
+          dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+        }
+      }
+    }else{
+      # Calculate pairwise Hamming distances between COLS
+      for (i in 1:(n-1)) {
+        for (j in (i+1):n) {
+          dist_matrix[i, j] <- hamming_dist(matrix_data[, i], matrix_data[, j])
+          dist_matrix[j, i] <- dist_matrix[i, j]  # Symmetric matrix
+        }
       }
     }
   }
-
   # Print the distance matrix
   return(dist_matrix)
 }
@@ -163,24 +168,27 @@ get_stats_biclustbiclust <- function(biclust_input_data,
   # Gene clusters inside cell clusters  -------------------
   for(i_cell_cluster in 1:max(unique_cell_clusters)){
     ind_cell_cluster <- res_cell_cluster==i_cell_cluster
-    unique_genes <- unique(biclust_results_matrix[ind_cell_cluster,], MARGIN = 2)
-    dist_matrix <- calc_hamming(unique_genes, between_rows=FALSE)
-    distance_object <- stats::as.dist(dist_matrix)
+    unique_genes <- unique(biclust_results_matrix[ind_cell_cluster, ,drop = FALSE], MARGIN = 2, drop = FALSE)
+    if(length(unique(unique_genes))==1){
+      res_gene_cluster <- rep(1, ncol(biclust_results_matrix))
+    }else{
+      dist_matrix <- calc_hamming(unique_genes, between_rows=FALSE)
+      distance_object <- stats::as.dist(dist_matrix)
 
-    # Perform hierarchical clustering
-    hc <- stats::hclust(distance_object)
+      # Perform hierarchical clustering
+      hc <- stats::hclust(distance_object)
 
-    # Plot the dendrogram to visualize the clustering
-    # plot(hc, labels = rownames(unique_cells))
-    unique_gene_clusters <- stats::cutree(hc, k = min(n_target_gene_clusters[i_cell_cluster], length(hc$order)))
-    # unique_gene_clusters[unique_gene_clusters>2] = 4
+      # Plot the dendrogram to visualize the clustering
+      # plot(hc, labels = rownames(unique_cells))
+      unique_gene_clusters <- stats::cutree(hc, k = min(n_target_gene_clusters[i_cell_cluster], length(hc$order)))
+      # unique_gene_clusters[unique_gene_clusters>2] = 4
 
-    res_gene_cluster <- vector(length=ncol(biclust_results_matrix))
-    for (i in 1:ncol(unique_genes)) {
-      inds <- which(apply(biclust_results_matrix[ind_cell_cluster,], 2, function(x) return(all(x == unique_genes[,i]))))
-      res_gene_cluster[inds] <- unique_gene_clusters[i]
+      res_gene_cluster <- vector(length=ncol(biclust_results_matrix))
+      for (i in 1:ncol(unique_genes)) {
+        inds <- which(apply(biclust_results_matrix[ind_cell_cluster, , drop=FALSE], 2, function(x) return(all(x == unique_genes[,i]))))
+        res_gene_cluster[inds] <- unique_gene_clusters[i]
+      }
     }
-
     res_gene_cluster_per_cell_cluster[[i_cell_cluster]] <- res_gene_cluster
     # Print the cluster assignments
     print(paste("Gene modules found in biclust::biclust for cell cluster", i_cell_cluster), quote=FALSE)
@@ -230,6 +238,9 @@ get_stats_biclustbiclust_seeds <- function(biclust_input_data,
                                            include_regulators_in_results = FALSE) {
   res <- vector(mode = "list", length = length(seeds))
   for(i_seed in seq_along(seeds)){
+    cat("\n")
+    print(paste0(' Now running n cell clusters ', n_cell_clusters,' for outer seed ', i_seed, '/', length(seeds), ' in step 4.1.'))
+    cat("\n")
     res[[i_seed]] <- get_stats_biclustbiclust(biclust_input_data=biclust_input_data,
                                               n_target_genes=n_target_genes,
                                               ind_targetgenes=ind_targetgenes,

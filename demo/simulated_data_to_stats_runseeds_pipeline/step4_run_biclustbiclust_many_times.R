@@ -5,7 +5,6 @@ if (!file.exists(file.path(output_path_rds, "biclustbiclust_results_list.rds")) 
   biclustbiclust_results_list <- vector(mode = "list", length = length(scenarios))
 
   for(iter in seq_along(biclustbiclust_results_list)){
-
     cat("\n")
     print(paste0('Now running outer iteration ', iter, '/', length(scenarios), ' in step 4.'))
     cat("\n")
@@ -41,5 +40,3 @@ if (!file.exists(file.path(output_path_rds, "biclustbiclust_results_list.rds")) 
   biclustbiclust_results_list    <- readRDS(file.path(output_path_rds, "biclustbiclust_results_list.rds"))
 
 }
-
-
