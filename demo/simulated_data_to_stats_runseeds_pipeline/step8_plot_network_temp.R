@@ -127,10 +127,14 @@ for(i_scenario in scenarios_to_plot){
 
 
   for(i_cell_cluster in seq_along(scenarios[[i_scenario]]$generated_data$true_S)){
-    pdf(file.path(output_path, paste0("network_scenario_", i_scenario,"_cell_cluster",i_cell_cluster,".pdf")), width =  7, height = 7)
+    pdf(file.path(output_path, paste0("network_scenario_", i_scenario,"_cell_cluster",i_cell_cluster,".pdf")), width =  5.8, height = 5.8)
 
     # Get current true_S matrix
     true_S <- scenarios[[i_scenario]]$generated_data$true_S[[i_cell_cluster]]
+
+    # Get gene allocation for this cell cluster
+    gene_allocation <- table(scenarios[[i_scenario]]$generated_data$true_target_gene_allocation[[i_cell_cluster]])
+
 
     # Create edge list with colors
     edge_list <- create_colored_edge_list(list(true_S))
@@ -148,7 +152,32 @@ for(i_scenario in scenarios_to_plot){
 
     # Set node types (gene or module)
     V(g)$type <- ifelse(grepl("Regulator ", V(g)$name), "Regulator ", "Target Gene Module ")
-    V(g_pos)$type <- ifelse(grepl("Regulator ", V(g)$name), "Regulator ", "Target Gene Module")
+    V(g_pos)$type <- ifelse(grepl("Regulator ", V(g)$name), "Regulator ", "Target Gene Module ")
+
+    # Scale module node sizes based on number of genes
+    module_sizes <- sapply(names(gene_allocation), function(module_num) {
+      module_name <- paste0("Target Gene Module ", module_num)
+      if(module_name %in% V(g)$name) {
+        # Scale between 5 and 20 based on gene count
+        5 + (gene_allocation[module_num] / max(gene_allocation)) * 15
+      } else {
+        0
+      }
+    })
+
+    names(module_sizes) <- names(gene_allocation)
+
+    # Create vertex sizes vector
+    vertex_sizes <- ifelse(V(g)$type == "Regulator ", 10,
+                           sapply(V(g)$name, function(name) {
+                             if(grepl("Target Gene Module ", name)) {
+                               module_num <- as.numeric(sub("Target Gene Module ", "", name))
+                               print(module_num)
+                               module_sizes[as.character(module_num)]
+                             } else {
+                               10
+                             }
+                           }))
 
     # Prepare group list for geom_mark_rect
     # Convert group names to node names
@@ -166,8 +195,10 @@ for(i_scenario in scenarios_to_plot){
     }
     plot(g,
          vertex.color = ifelse(V(g)$type == "Regulator ", "lightblue", "lightgreen"),
-         vertex.size = 9,
+         vertex.size = vertex_sizes,
+         vertex.frame.color = NA,  # Remove vertex border
          edge.color = E(g)$color,
+         edge.arrow.size = 0.5,
          mark.groups = group_ids,
          mark.col = group_color_fill,
          mark.border = group_color,
