@@ -35,7 +35,7 @@ min_number_of_modules <- 2
 max_number_of_modules <- 15
 target_gene_module_vector <- seq(min_number_of_modules, max_number_of_modules)
 penalization_lambda <- c(0.2, 0.3, 0.5)
-path_data <- "C:/Users/Sebastian/repos/biclust/data"
+path_data <- here::here('data')
 results1 <- readRDS(file.path(path_data, "scregResults2clusters_lambda_0.2-0.3-0.5_cellCluster_1_nRegulatorGenes_162_nTargetGenes_1822_nCells_12481_minNModules_2_maxNModules_15.rds"))
 results2 <- readRDS(file.path(path_data, "scregResults2clusters_lambda_0.2-0.3-0.5_cellCluster_2_nRegulatorGenes_162_nTargetGenes_1822_nCells_54257_minNModules_2_maxNModules_15.rds"))
 results3 <- readRDS(file.path(path_data, "scregResults2clusters_lambda_0.2-0.3-0.5_cellCluster_3_nRegulatorGenes_162_nTargetGenes_1822_nCells_66738_minNModules_2_maxNModules_15.rds"))

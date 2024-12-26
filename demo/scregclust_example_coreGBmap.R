@@ -286,5 +286,5 @@ for (i_penalization_lambda in seq_along(penalization_lambdas)) {
 # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
 # print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
 # print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
-# print(paste("taget_genes_residual_var:"), quote = FALSE)
+# print(paste("target_genes_residual_var:"), quote = FALSE)
 # print(biclust_result$taget_genes_residual_var, quote = FALSE)

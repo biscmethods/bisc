@@ -37,50 +37,50 @@ penalization_lambdas <- c(0.5)
 
 is_regulator <- inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes)
 
-for (i in seq(1)) {
-  CELL_CLUSTER_1_RESULTS <- scregclust::scregclust(
-    expression = cell_cluster_1,  # p rows of genes, n columns of cells
-    genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
-    is_regulator = is_regulator,  # Vector indicating which genes are regulators
-    n_modules = n_target_gene_modules[1],
-    penalization = penalization_lambdas,
-    verbose = TRUE,
-    n_cycles = 200,
-    center = FALSE,
-  )
-
-  CELL_CLUSTER_2_RESULTS <- scregclust::scregclust(
-    expression = cell_cluster_2,  # p rows of genes, n columns of cells
-    genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
-    is_regulator = is_regulator,  # Vector indicating which genes are regulators
-    n_modules = n_target_gene_modules[2],
-    penalization = penalization_lambdas,
-    verbose = TRUE,
-    n_cycles = 200,
-    center = FALSE,
-  )
-
-  # Remove genes put in noise cluster by scregclust
-  non_noise_regulator_genes <- vector(length = n_regulator_genes)
-  for (i_target_gene_cluster in seq(2)) {
-    non_noise_regulator_genes <- non_noise_regulator_genes + CELL_CLUSTER_1_RESULTS$results[[1]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0
-    non_noise_regulator_genes <- non_noise_regulator_genes + CELL_CLUSTER_2_RESULTS$results[[1]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0
-  }
-  n_regulator_genes <- sum(non_noise_regulator_genes)
-
-  non_noise_genes <- CELL_CLUSTER_1_RESULTS$results[[1]]$output[[1]]$cluster  # Target genes that are in a cluster
-  non_noise_genes <- non_noise_genes + CELL_CLUSTER_2_RESULTS$results[[1]]$output[[1]]$cluster  # Target genes that are in a cluster
-  non_noise_genes <- non_noise_genes != -2  # Convert them to TRUE/FALSE
-  n_target_genes <- sum(non_noise_genes, na.rm = TRUE)
-  ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
-  ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
-  is_regulator <- inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes)
-
-  non_noise_genes[is.na(non_noise_genes)] <- non_noise_regulator_genes  # add regulator genes that aren't noise
-
-  cell_cluster_1 <- cell_cluster_1[non_noise_genes,]
-  cell_cluster_2 <- cell_cluster_2[non_noise_genes,]
-}
+# for (i in seq(1)) {
+#   CELL_CLUSTER_1_RESULTS <- scregclust::scregclust(
+#     expression = cell_cluster_1,  # p rows of genes, n columns of cells
+#     genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+#     is_regulator = is_regulator,  # Vector indicating which genes are regulators
+#     n_modules = n_target_gene_modules[1],
+#     penalization = penalization_lambdas,
+#     verbose = TRUE,
+#     n_cycles = 200,
+#     center = FALSE,
+#   )
+#
+#   CELL_CLUSTER_2_RESULTS <- scregclust::scregclust(
+#     expression = cell_cluster_2,  # p rows of genes, n columns of cells
+#     genesymbols = 1:(n_target_genes + n_regulator_genes),  # Gene row numbers
+#     is_regulator = is_regulator,  # Vector indicating which genes are regulators
+#     n_modules = n_target_gene_modules[2],
+#     penalization = penalization_lambdas,
+#     verbose = TRUE,
+#     n_cycles = 200,
+#     center = FALSE,
+#   )
+#
+#   # Remove genes put in noise cluster by scregclust
+#   non_noise_regulator_genes <- vector(length = n_regulator_genes)
+#   for (i_target_gene_cluster in seq(2)) {
+#     non_noise_regulator_genes <- non_noise_regulator_genes + CELL_CLUSTER_1_RESULTS$results[[1]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0
+#     non_noise_regulator_genes <- non_noise_regulator_genes + CELL_CLUSTER_2_RESULTS$results[[1]]$output[[1]]$reg_table[[i_target_gene_cluster]] != 0
+#   }
+#   n_regulator_genes <- sum(non_noise_regulator_genes)
+#
+#   non_noise_genes <- CELL_CLUSTER_1_RESULTS$results[[1]]$output[[1]]$cluster  # Target genes that are in a cluster
+#   non_noise_genes <- non_noise_genes + CELL_CLUSTER_2_RESULTS$results[[1]]$output[[1]]$cluster  # Target genes that are in a cluster
+#   non_noise_genes <- non_noise_genes != -2  # Convert them to TRUE/FALSE
+#   n_target_genes <- sum(non_noise_genes, na.rm = TRUE)
+#   ind_targetgenes <- which(c(rep(1, n_target_genes), rep(0, n_regulator_genes)) == 1)
+#   ind_reggenes <- which(c(rep(0, n_target_genes), rep(1, n_regulator_genes)) == 1)
+#   is_regulator <- inverse_which(indices = ind_reggenes, output_length = n_regulator_genes + n_target_genes)
+#
+#   non_noise_genes[is.na(non_noise_genes)] <- non_noise_regulator_genes  # add regulator genes that aren't noise
+#
+#   cell_cluster_1 <- cell_cluster_1[non_noise_genes,]
+#   cell_cluster_2 <- cell_cluster_2[non_noise_genes,]
+# }
 
 
 biclust_input_data <- cbind(cell_cluster_1, cell_cluster_2)
@@ -109,8 +109,7 @@ for (c_seed in seq(300)){
                                                      ind_reggenes = ind_reggenes,
                                                      output_path = output_path,
                                                      penalization_lambda = penalization_lambdas[i_penalization_lambda],
-                                                     use_complex_cluster_allocation = TRUE,
-                                                     calculate_BIC = FALSE,
+                                                     calculate_optimization_target = FALSE,
                                                      calculate_silhoutte = FALSE,
                                                      calculate_davies_bouldin_index = FALSE,
                                                      use_garbage_cluster_targets = FALSE)

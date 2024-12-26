@@ -71,7 +71,9 @@ if (file.exists(path_env_data) && file.exists(path_general_env_data)) {
   # Keep the correct type of cells
   cell_types <- d@meta.data$cell_type
   keep_cells <- cell_types == 'oligodendrocyte' | cell_types == 'mature T cell'
-  keep_cells <- keep_cells
+  keep_cells_split <- sample(c(1, 2), length(keep_cells), prob = c(0.15, 0.85), replace = T)
+  keep_ind <- keep_cells_split == 1
+  keep_cells <- keep_cells & keep_ind
 
   cell_types <- factor(cell_types[keep_cells])
   d <- d[, keep_cells]
@@ -85,7 +87,7 @@ if (file.exists(path_env_data) && file.exists(path_general_env_data)) {
   # Reduce the number of genes with sctransform. It converts gene names to ensembl gene names.
   options(future.globals.maxSize = 20000 * 1024^2)  # Standard was to only allow output of 500MiB or something. This is 3GiB
   future::plan("multicore", workers = 24)  # To set how many cores SCTransform will use?
-  d <- Seurat::SCTransform(d, variable.features.n = 2000)
+  d <- Seurat::SCTransform(d, variable.features.n = 1000)
 
   d <- d@assays$SCT$scale.data  # rows are genes, cols are cells
 

@@ -539,7 +539,7 @@ biclust_lm <- function(dat = dat,
               "n_iterations" = i_main,
               "db" = db,
               "BIC" = BIC_all,
-              "taget_genes_residual_var" = target_genes_residual_var_all))
+              "target_genes_residual_var" = target_genes_residual_var_all))
 }
 
 

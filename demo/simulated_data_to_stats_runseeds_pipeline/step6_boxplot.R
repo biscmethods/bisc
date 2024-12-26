@@ -3,7 +3,7 @@
 library(RColorBrewer)
 
 
-# Plot Rand index vs BIC ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Plot Rand index vs LL ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 df_mp <- data.frame(
   i_scenario = integer(),
   rand_index = numeric(),
@@ -25,25 +25,40 @@ for(i_scenario_results in seq_along(bisc_results_list)){
                            converged = current_results$converged,
                            silhouette_measure = current_results$silhouette_measure,
                            davies_bouldin_index =  current_results$davies_bouldin_index,
-                           BIC = Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
+                           BIC = Rmpfr::asNumeric(current_results$max_loglikelihood[[current_results$n_iterations]])
       )
       df_mp <- rbind(df_mp, new_df)
-      bics[length(bics)] <- Rmpfr::asNumeric(current_results$BIC[[current_results$n_iterations]])
+      bics[length(bics)] <- Rmpfr::asNumeric(current_results$max_loglikelihood[[current_results$n_iterations]])
     }
   }
 }
 # df_mp <- df_mp[df_mp$converged,]
 df_mp <- df_mp[,c(1,2,4,7)]
-df_mp <- df_mp %>%
-  group_by(i_scenario) %>%
-  mutate(BIC = (BIC - min(BIC)) / (max(BIC) - min(BIC))) %>%
-  ungroup() %>%
-  # Convert i_scenario to factor with correct ordering
-  mutate(i_scenario = factor(i_scenario, levels = sort(unique(i_scenario))))
+df_mp$i_scenario <- as.numeric(df_mp$i_scenario)
+df_mp$i_scenario <- as.factor(df_mp$i_scenario)
 
-bics[!is.na(bics)] <- df_mp$BIC
 
-p <- ggplot(df_mp, aes(x = BIC, y = rand_index, color = converged)) +
+
+
+# Initialize an empty vector to store the normalized BIC values
+df_mp$LL <- numeric(nrow(df_mp))
+
+# Loop through each unique scenario and normalize the BIC values
+unique_scenarios <- unique(df_mp$i_scenario)
+for (scenario in unique_scenarios) {
+  scenario_data <- df_mp[df_mp$i_scenario == scenario, ]
+  min_bic <- min(scenario_data$BIC)
+  max_bic <- max(scenario_data$BIC)
+  range_bic <- max_bic - min_bic
+
+  df_mp$LL[df_mp$i_scenario == scenario] <- (scenario_data$BIC - min_bic) / range_bic
+}
+
+df_mp <- tibble::as_tibble(df_mp)
+
+bics[!is.na(bics)] <- df_mp$LL
+
+p <- ggplot(df_mp, aes(x = LL, y = rand_index, color = converged)) +
   geom_point(size = 4, alpha = 0.5) +
   facet_wrap(~ i_scenario, scales = "free", labeller = as_labeller(function(x) {
     ifelse(as.numeric(x) <= 10,
@@ -51,9 +66,9 @@ p <- ggplot(df_mp, aes(x = BIC, y = rand_index, color = converged)) +
            paste("Complex scenario", as.numeric(x) - 10))
   })) +
   labs(
-    # title = "", # "Rand Index vs Normalised BIC by Scenario",
-    x = "Normalised BIC (within each scenario)",
-    y = "Rand Index"
+    # title = "", # "Rand Index vs Normalised LL by Scenario",
+    x = "Normalised log-likelihood (within each scenario)",
+    y = "Rand index"
   ) +
   guides(color = guide_legend(title = "Converged")) +
   theme_minimal() +
@@ -68,7 +83,7 @@ p <- ggplot(df_mp, aes(x = BIC, y = rand_index, color = converged)) +
 # scale_color_manual(values = c("TRUE" = "#0072B2", "FALSE" = "#D55E00"),
 #                    name = "Bisc converge")
 # print(p)
-ggsave(file.path(output_path, paste0("RI_vs_BIC_per_scenario.pdf")), p, width = 12, height = 8)
+ggsave(file.path(output_path, paste0("RI_vs_loglikelihood_per_scenario.pdf")), p, width = 12, height = 8)
 
 
 
@@ -293,7 +308,7 @@ cell_data <- bind_rows(
 
 cell_data <- cell_data %>%
   group_by(scenario) %>%
-  mutate(lowest_bic = ifelse(method == "bisc" & bic == min(bic[method == "bisc"]), TRUE, FALSE)) %>%
+  mutate(best_LL = ifelse(method == "bisc" & bic == max(bic[method == "bisc"]), TRUE, FALSE)) %>%
   ungroup()
 
 biclust_data <- bind_rows(
@@ -305,7 +320,7 @@ biclust_data <- bind_rows(
 
 biclust_data <- biclust_data %>%
   group_by(scenario) %>%
-  mutate(lowest_bic = ifelse(method == "bisc" & bic == min(bic[method == "bisc"]), TRUE, FALSE)) %>%
+  mutate(best_LL = ifelse(method == "bisc" & bic == min(bic[method == "bisc"]), TRUE, FALSE)) %>%
   ungroup()
 
 gene_data <- bind_rows(
@@ -317,7 +332,7 @@ gene_data <- bind_rows(
 
 gene_data <- gene_data %>%
   group_by(scenario) %>%
-  mutate(lowest_bic = ifelse(method == "bisc" & bic == min(bic[method == "bisc"]), TRUE, FALSE)) %>%
+  mutate(best_LL = ifelse(method == "bisc" & bic == min(bic[method == "bisc"]), TRUE, FALSE)) %>%
   ungroup()
 
 
@@ -515,8 +530,8 @@ p <- ggplot(cell_data, aes(x = method, y = value, color = method)) +
            paste("Complex scenario", as.numeric(x) - 10))
   })) +
   geom_point(
-    data = subset(cell_data, method == "bisc" & lowest_bic == TRUE),
-    aes(shape = "RI lowest BIC"),
+    data = subset(cell_data, method == "bisc" & best_LL == TRUE),
+    aes(shape = "Best LL"),
     color = "red",
     size = 3,
     alpha = 0.4
@@ -527,7 +542,7 @@ p <- ggplot(cell_data, aes(x = method, y = value, color = method)) +
   ) +
   guides(color = guide_legend(title = "Method"),
          shape = guide_legend(title = "")) +
-  scale_shape_manual(values = c("RI lowest BIC" = 17)) +
+  scale_shape_manual(values = c("Best LL" = 17)) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),  # X-axis label size
         axis.title.y = element_text(size = 16),  # Y-axis label size
@@ -553,8 +568,8 @@ p <- ggplot(biclust_data, aes(x = method, y = value, color = method)) +
            paste("Complex scenario", as.numeric(x) - 10))
   })) +
   geom_point(
-    data = subset(biclust_data, method == "bisc" & lowest_bic == TRUE),
-    aes(shape = "RI lowest BIC"),
+    data = subset(biclust_data, method == "bisc" & best_LL == TRUE),
+    aes(shape = "Best LL"),
     color = "red",
     size = 3,
     alpha = 0.4
@@ -566,7 +581,7 @@ p <- ggplot(biclust_data, aes(x = method, y = value, color = method)) +
   ) +
   guides(color = guide_legend(title = "Method"),
          shape = guide_legend(title = "")) +
-  scale_shape_manual(values = c("RI lowest BIC" = 17)) +
+  scale_shape_manual(values = c("Best LL" = 17)) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),  # X-axis label size
         axis.title.y = element_text(size = 16),  # Y-axis label size
@@ -586,8 +601,8 @@ ggsave(file.path(output_path, paste0("boxplot_biclust_RI_comparison_runseeds.pdf
 p <- ggplot(gene_data, aes(x = method, y = value, color = method)) +
   geom_boxplot() +
   geom_point(
-    data = subset(gene_data, method == "bisc" & lowest_bic == TRUE),
-    aes(shape = "RI lowest BIC"),
+    data = subset(gene_data, method == "bisc" & best_LL == TRUE),
+    aes(shape = "Best LL"),
     color = "red",
     size = 3,
     alpha = 0.4
@@ -605,7 +620,7 @@ p <- ggplot(gene_data, aes(x = method, y = value, color = method)) +
     color = guide_legend(title = "Method"),
     shape = guide_legend(title = "")
   ) +
-  scale_shape_manual(values = c("RI lowest BIC" = 17)) +
+  scale_shape_manual(values = c("Best LL" = 17)) +
   theme_minimal() +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),

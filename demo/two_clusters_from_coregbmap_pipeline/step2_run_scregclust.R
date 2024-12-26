@@ -24,7 +24,6 @@ output_path <- demo_path
 path_data <- here::here('data')
 
 # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
-path_coreGBmap <- file.path(path_data, "medium.rds")
 path_env_data <- file.path(path_data, "env_data_2clusters_sctransform.RData")
 path_general_env_data <- file.path(path_data, "env_data_general_2clusters_sctransform.RData")
 path_cluster1 <- file.path(path_data, "env_data_cluster1.RData")
@@ -172,7 +171,7 @@ for (i_cell_cluster in c(1,2,3)) {
                                       penalization = current_penalization_lambda,
                                       verbose = TRUE,
                                       n_cycles = 50,
-                                      compute_silhouette = TRUE,
+                                      compute_silhouette = FALSE,
                                       center = FALSE)
       results[[i_n_target_genes_clusters]][[i_penalization_lambda]] <- temp_output[['result']]
       outputs[[i_n_target_genes_clusters]][[i_penalization_lambda]] <- temp_output[['output']]

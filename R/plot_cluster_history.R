@@ -72,5 +72,4 @@ plot_cluster_history <- function(cell_cluster_history, correct_plot = TRUE) {
     print(p)
   }
 
-
 }

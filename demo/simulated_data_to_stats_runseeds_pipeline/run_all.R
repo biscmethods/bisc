@@ -30,7 +30,6 @@ set.seed(123)
 redo_flag <- F
 
 source(file.path(current_path, "step1_generate_data.R"))
-redo_flag <- F
 source(file.path(current_path, "step2_run_biclustbiclust.R"))
 source(file.path(current_path, "step3_run_bisc.R"))
 source(file.path(current_path, "step4_run_biclustbiclust_many_times.R"))

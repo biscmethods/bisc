@@ -11,8 +11,8 @@ library(stats)  # For prcomp
 
 # Scatter-plot the log-liklihood on each axis, color with true allocation
 # If more than 2 dim make pca plot
-scatter_plot_loglikelihood <- function(dat,
-                                       likelihood,
+scatter_plot_loglikelihood <- function(dat,  # cells x (target_genes + regulator_genes)
+                                       likelihood,  # cells x cell_clusters
                                        n_cell_clusters,
                                        penalization_lambda,
                                        output_path,
@@ -25,12 +25,14 @@ scatter_plot_loglikelihood <- function(dat,
     stop("True cell clusters needs to be supplied as a column in dat or as a seperate variable")
   }
 
-  colnames(likelihood) <- paste("Likelihood cell cluster", seq_len(n_cell_clusters))
+  if (is.matrix(likelihood)) {
+    colnames(likelihood) <- paste("Likelihood cell cluster", seq_len(n_cell_clusters))
+  }
   likelihood_tibble <- tibble::as_tibble(likelihood)
   data_for_plotting <- tibble::tibble(likelihood_tibble, true_cell_cluster_allocation = true_cell_cluster_allocation_vector)
 
   filename_plot <- paste0("Decision_line_lambda_", round(penalization_lambda, digits = 3), "_iteration_", i_main, ".png")
-  if (ncol(likelihood) == 0) {
+  if (!is.matrix(likelihood) || ncol(likelihood) == 0) {
     p <- ggplot2::ggplot(data = data_for_plotting, ggplot2::aes(x = "Likelihood cell cluster 1", y = "Likelihood cell cluster 2", color = true_cell_cluster_allocation)) +
       ggplot2::geom_point() +
       ggplot2::geom_abline(intercept = 0, slope = 1) +

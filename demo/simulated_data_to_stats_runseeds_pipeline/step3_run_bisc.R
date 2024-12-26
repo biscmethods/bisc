@@ -56,8 +56,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
           ind_reggenes = ind_reggenes,
           output_path = output_path,
           penalization_lambda = current_penalization_lambda,
-          use_complex_cluster_allocation = FALSE,
-          calculate_BIC = TRUE,
+          calculate_optimization_target = TRUE,
           calculate_silhoutte = TRUE,
           calculate_davies_bouldin_index = TRUE,
           plot_suffix                  = plot_suffix,
@@ -67,6 +66,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
       }
     }
   }
+
 
   print("", quote = FALSE)
   print("", quote = FALSE)
@@ -95,8 +95,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
       cell_cluster_allocation <- bisc_predict(new_data = biclust_input_data_test,     # as in scenarios[[1]]$biclust_input_data
                                               fitted_model = bisc_results[[i_res]], # as in bisc_results_list[[1]]$bisc_results[[1]]
                                               prior_cluster_proportions = NULL,
-                                              calculate_BIC = FALSE,
-                                              use_complex_cluster_allocation = FALSE,
+                                              calculate_optimization_target = FALSE,
                                               seed = info[[i_res]]$penalization_lambda
       )$cell_cluster_allocation
 
@@ -185,11 +184,16 @@ bisc_iteration <- function(plot_heatmap=FALSE,
         }else{
           keep_these_colors <- setdiff(1:odd_number_larger, (odd_number_larger + 1) / 2 + 1)
         }
+
+        my_colormap <- grDevices::colorRampPalette(c("#23373b", "#EB811B"))
+
         plots[[i_res]] <- rasterVis::levelplot(biclust_result_matrix,
                                                att = n,
                                                # col.regions = rainbow(odd_number_larger),
+                                               col.regions = my_colormap(n),
+                                               at=regions,
                                                colorkey = list(at = regions,
-                                                               # col=rainbow(odd_number_larger)[keep_these_colors],
+                                                               col=my_colormap(n), # rainbow(odd_number_larger)[keep_these_colors],
                                                                labels = list(at = middle_of_regions, labels = as.character(1:n))),
                                                xlab = 'Cells',
                                                ylab = 'Target genes',
@@ -233,49 +237,50 @@ bisc_iteration <- function(plot_heatmap=FALSE,
 # || interactive()
 if (sys.nframe() == 0) {
   # Set seed for example
+  current_scenario <- scenarios[[1]]
   res <- bisc_iteration(plot_heatmap = TRUE,
                         plot_title = "heatmap_bisc_lambda_0.2",
                         penalization_lambdas = c(0.2), # c( 0.00001, 0.1, 0.2, 0.5)
                         bisc_results = NULL, # You can feed old results or calculate new ones
-                        cell_id = scenarios[[1]]$cell_id,
-                        biclust_input_data = scenarios[[1]]$biclust_input_data,
+                        cell_id = current_scenario$cell_id,
+                        biclust_input_data = current_scenario$biclust_input_data,
                         output_path,  # Output path for bisc for alluvial plots etc
-                        n_target_genes = scenarios[[1]]$n_target_genes,
-                        n_total_cells = scenarios[[1]]$n_total_cells,
-                        n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
-                        n_cell_clusters = scenarios[[1]]$n_cell_clusters,
-                        ind_targetgenes = scenarios[[1]]$ind_targetgenes,
-                        ind_reggenes = scenarios[[1]]$ind_reggenes,
-                        generated_data = scenarios[[1]]$generated_data,
-                        correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                        disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust,
-                        itercap=20,
-                        biclust_input_data_test = scenarios[[1]]$biclust_input_data_test,
-                        n_total_cells_test = scenarios[[1]]$n_total_cells_test,
-                        correct_clustering_test = scenarios[[1]]$correct_clustering_test,
-                        seeds=1234)
+                        n_target_genes = current_scenario$n_target_genes,
+                        n_total_cells = current_scenario$n_total_cells,
+                        n_target_gene_clusters = current_scenario$n_target_gene_clusters,
+                        n_cell_clusters = current_scenario$n_cell_clusters,
+                        ind_targetgenes = current_scenario$ind_targetgenes,
+                        ind_reggenes = current_scenario$ind_reggenes,
+                        generated_data = current_scenario$generated_data,
+                        correct_clustering = current_scenario$correct_clustering,  # The correct biclustering (one unique number for each gene module)
+                        disturbed_initial_cell_clust = current_scenario$disturbed_initial_cell_clust,
+                        itercap=30,
+                        biclust_input_data_test = current_scenario$biclust_input_data_test,
+                        n_total_cells_test = current_scenario$n_total_cells_test,
+                        correct_clustering_test = current_scenario$correct_clustering_test,
+                        seeds=12314)
 
-  res <- bisc_iteration(plot_heatmap = TRUE,
-                        plot_title = "heatmap_bisc_lambda_1.0",
-                        penalization_lambdas = c(1.0), # c( 0.00001, 0.1, 0.2, 0.5)
-                        bisc_results = NULL, # You can feed old results or calculate new ones
-                        cell_id = scenarios[[1]]$cell_id,
-                        biclust_input_data = scenarios[[1]]$biclust_input_data,
-                        output_path,  # Output path for bisc for alluvial plots etc
-                        n_target_genes = scenarios[[1]]$n_target_genes,
-                        n_total_cells = scenarios[[1]]$n_total_cells,
-                        n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
-                        n_cell_clusters = scenarios[[1]]$n_cell_clusters,
-                        ind_targetgenes = scenarios[[1]]$ind_targetgenes,
-                        ind_reggenes = scenarios[[1]]$ind_reggenes,
-                        generated_data = scenarios[[1]]$generated_data,
-                        correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
-                        disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust,
-                        itercap=20,
-                        biclust_input_data_test = scenarios[[1]]$biclust_input_data_test,
-                        n_total_cells_test = scenarios[[1]]$n_total_cells_test,
-                        correct_clustering_test = scenarios[[1]]$correct_clustering_test,
-                        seeds=1234)
+  # res <- bisc_iteration(plot_heatmap = TRUE,
+  #                       plot_title = "heatmap_bisc_lambda_1.0",
+  #                       penalization_lambdas = c(1.0), # c( 0.00001, 0.1, 0.2, 0.5)
+  #                       bisc_results = NULL, # You can feed old results or calculate new ones
+  #                       cell_id = scenarios[[1]]$cell_id,
+  #                       biclust_input_data = scenarios[[1]]$biclust_input_data,
+  #                       output_path,  # Output path for bisc for alluvial plots etc
+  #                       n_target_genes = scenarios[[1]]$n_target_genes,
+  #                       n_total_cells = scenarios[[1]]$n_total_cells,
+  #                       n_target_gene_clusters = scenarios[[1]]$n_target_gene_clusters,
+  #                       n_cell_clusters = scenarios[[1]]$n_cell_clusters,
+  #                       ind_targetgenes = scenarios[[1]]$ind_targetgenes,
+  #                       ind_reggenes = scenarios[[1]]$ind_reggenes,
+  #                       generated_data = scenarios[[1]]$generated_data,
+  #                       correct_clustering = scenarios[[1]]$correct_clustering,  # The correct biclustering (one unique number for each gene module)
+  #                       disturbed_initial_cell_clust = scenarios[[1]]$disturbed_initial_cell_clust,
+  #                       itercap=20,
+  #                       biclust_input_data_test = scenarios[[1]]$biclust_input_data_test,
+  #                       n_total_cells_test = scenarios[[1]]$n_total_cells_test,
+  #                       correct_clustering_test = scenarios[[1]]$correct_clustering_test,
+  #                       seeds=1234)
 
 
   # Run for all scenarios

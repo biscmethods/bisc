@@ -17,7 +17,7 @@ library(ggraph)
 library(ggforce)
 library(concaveman)
 
-scenarios_to_plot <- c(1,12)
+scenarios_to_plot <- seq(20) # c(1,12)
 set.seed(51124)
 
 # Function to create an edge list with color-coded edges
@@ -172,7 +172,6 @@ for(i_scenario in scenarios_to_plot){
                            sapply(V(g)$name, function(name) {
                              if(grepl("Target Gene Module ", name)) {
                                module_num <- as.numeric(sub("Target Gene Module ", "", name))
-                               print(module_num)
                                module_sizes[as.character(module_num)]
                              } else {
                                10

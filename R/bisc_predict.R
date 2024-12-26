@@ -4,13 +4,12 @@
 # #
 #  fitted_model <- bisc_results_list[[1]]$bisc_results[[1]]
 #
-#  bisc_results_list[[1]]$bisc_results[[1]]$taget_genes_residual_var
+#  bisc_results_list[[1]]$bisc_results[[1]]$target_genes_residual_var
 #
 # #
 #
 # prior_cluster_proportions = NULL
-# calculate_BIC             = TRUE
-# use_complex_cluster_allocation = FALSE
+# calculate_optimization_target             = TRUE
 # seed = 1234
 #
 # #
@@ -30,7 +29,7 @@ source(file.path(R_path, "bisc.R"))
 #local standardisation
 standardize_like_scregclust_ <- function(xvals, yvals,
                                          normalisation_parameters
-                                         ) {
+) {
 
   yval_colmeans  <- normalisation_parameters$yval_colmeans
   xvals_colmeans <- normalisation_parameters$xvals_colmeans
@@ -60,7 +59,7 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
                                        # data_split_for_scregclust,
                                        # current_cell_cluster_allocation,
                                        normalisation_parameters
-                                      ) {
+) {
   # For all cells, calculate the likelihood of coming from the model corresponding to each
   n_cells <- nrow(all_genes)
   loglikelihood <- matrix(data = 0, nrow = n_cells, ncol = n_cell_clusters)
@@ -84,7 +83,7 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
 
     res <- standardize_like_scregclust_(xvals = regulator_genes, yvals = target_genes,
                                         normalisation_parameters = normalisation_parameters[[i_cell_cluster]]
-                                        )
+    )
 
     parameters[[i_cell_cluster]] <- res$params
 
@@ -106,6 +105,7 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
     # Extrude 1xt to cxt so we can divide element wise
     cell_cluster_target_genes_residual_var <- target_genes_residual_var[i_cell_cluster, , drop = FALSE]  # 1xt
     cell_cluster_target_genes_residual_var <- do.call(rbind, replicate(n_cells, cell_cluster_target_genes_residual_var, simplify = FALSE))  # cxt
+
     term1 <- log(2 * pi)                                                         # scalar
     term2 <- log(cell_cluster_target_genes_residual_var) / 2                     # 1xt -> cxt
     term3 <- cell_squared_error / (cell_cluster_target_genes_residual_var * 2)   # 1xt -> cxt
@@ -129,15 +129,15 @@ loglikelihood_calc_matrix_ <- function(all_genes, # Data
 bisc_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
                          fitted_model, # as in bisc_results_list[[1]]$bisc_results[[1]]
                          prior_cluster_proportions = NULL,
-                         calculate_BIC             = TRUE,
-                         use_complex_cluster_allocation = FALSE,
+                         calculate_optimization_target             = TRUE,
+
                          seed = 1234){
 
   set.seed(seed)
 
   # extract parameters from fit
   models                          <- fitted_model$metaparameters$likelihood_models
-  target_genes_residual_var       <- fitted_model$taget_genes_residual_var
+  target_genes_residual_var       <- fitted_model$target_genes_residual_var
   n_cell_clusters                 <- fitted_model$call$n_cell_clusters
   ind_reggenes                    <- fitted_model$call$ind_reggenes
   ind_targetgenes                 <- fitted_model$call$ind_targetgenes
@@ -200,7 +200,7 @@ bisc_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
   weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
 
-  if (calculate_BIC) {
+  if (calculate_optimization_target) {
     big_logLhat_in_BIC <- sum(log(rowSums(weights)))
     k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
     n_in_BIC <- n_total_cells
@@ -249,17 +249,8 @@ bisc_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
 
   #requires: loglikelihoods
   print(paste("  Assigning new clusters"), quote = FALSE)
-  if (use_complex_cluster_allocation) {
-    pca_likelihood <- stats::prcomp(loglikelihood, center = TRUE, scale. = TRUE)$x
-    fcm_res <- ppclust::fcm(x = pca_likelihood, centers = n_cell_clusters)
-    weights_all[[i_main]] <- fcm_res$u
-    updated_cell_clust <- fcm_res$cluster
-
-    # updated_cell_clust <- stats::kmeans(x = pca_likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
-  }else {
-    updated_cell_clust <- sapply(seq_len(nrow(loglikelihood)),
-                                 function(row) which.max(loglikelihood[row,]))
-  }
+  updated_cell_clust <- sapply(seq_len(nrow(loglikelihood)),
+                               function(row) which.max(loglikelihood[row,]))
   updated_cell_clust <- unlist(updated_cell_clust)
 
 
@@ -277,7 +268,7 @@ bisc_predict <- function(new_data,     # as in scenarios[[1]]$biclust_input_data
 # out <- bisc_predict(new_data,     # as in scenarios[[1]]$biclust_input_data
 #              fitted_model, # as in bisc_results_list[[1]]$bisc_results[[1]]
 #              prior_cluster_proportions = NULL,
-#              calculate_BIC             = TRUE,
-#              use_complex_cluster_allocation = FALSE,
+#              calculate_optimization_target             = TRUE,
+#
 #              seed = 1234)
 

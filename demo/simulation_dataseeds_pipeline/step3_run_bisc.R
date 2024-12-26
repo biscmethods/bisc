@@ -56,8 +56,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
           ind_reggenes = ind_reggenes,
           output_path = output_path,
           penalization_lambda = current_penalization_lambda,
-          use_complex_cluster_allocation = FALSE,
-          calculate_BIC = TRUE,
+          calculate_optimization_target = TRUE,
           calculate_silhoutte = TRUE,
           calculate_davies_bouldin_index = TRUE,
           plot_suffix                  = plot_suffix,
@@ -95,8 +94,7 @@ bisc_iteration <- function(plot_heatmap=FALSE,
       cell_cluster_allocation <- bisc_predict(new_data = biclust_input_data_test,     # as in scenarios[[1]]$biclust_input_data
                                               fitted_model = bisc_results[[i_res]], # as in bisc_results_list[[1]]$bisc_results[[1]]
                                               prior_cluster_proportions = NULL,
-                                              calculate_BIC = FALSE,
-                                              use_complex_cluster_allocation = FALSE,
+                                              calculate_optimization_target = FALSE,
                                               seed = info[[i_res]]$penalization_lambda
       )$cell_cluster_allocation
 

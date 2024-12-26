@@ -106,8 +106,8 @@ loglikelihood_calc_matrix <- function(all_genes,
   return(list(
     'loglikelihood' = loglikelihood,
     'parameters' = parameters
-    )
-    )
+  )
+  )
 }
 
 
@@ -132,9 +132,9 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
                 'yval_colmeans'  = yval_colmeans,
                 'xvals_colmeans' = xvals_colmeans,
                 'xval_scale'     = xval_scale
-                )
               )
-         )
+  )
+  )
 }
 
 
@@ -142,39 +142,45 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #'
 #' Cluster cells based with Classification EM based on lm with penality
 #' @param dat Main data
+#' @param cell_id
+#' @param true_cell_cluster_allocation, The tru cell cluster allocation for Rand index caluclations
 #' @param max_iter Max number of iterations to run
+#' @param n_target_gene_clusters
 #' @param initial_clustering The start clustering
-#' @param n_target_genes Number of target genes
-#' @param n_regulator_genes Number of regulator genes
-#' @param n_total_cells Number of total cells
 #' @param n_cell_clusters Number of cell clusters
 #' @param ind_targetgenes Indexes of where the target gene columns in dat are
-#' @param ind_reggenes Indexes of where the regulator gene columns in dat are
+#' @param ind_reggenes
 #' @param output_path Output path of plots
 #' @param penalization_lambda The penalization lambda
+#' @param calculate_optimization_target [TRUE] If to calculate and return eq 2.2 and 2.4 in the CEM paper. 2.4 is basically what the algo is optimizing.
+#' @param calculate_silhoutte [FALSE]
+#' @param calculate_davies_bouldin_index [FALSE]
+#' @param plot_suffix [""]
+#' @param always_use_flat_prior [FALSE]
+#' @param use_garbage_cluster_targets [FALSE]
+#' @param retain_gene_clusters [TRUE] If to remember the gene module allocation from last iteration as to try and speed up scregclust.
 #' @return Nothing yet, maybe cluster labels
 #' @export
 #'
 bisc <- function(
-  dat = dat,
-  cell_id,
-  true_cell_cluster_allocation,
-  max_iter = 50,
-  n_target_gene_clusters,
-  initial_clustering,
-  n_cell_clusters,
-  ind_targetgenes,
-  ind_reggenes,
-  output_path,
-  penalization_lambda = 0.05,
-  use_complex_cluster_allocation = FALSE,
-  calculate_BIC = FALSE,
-  calculate_silhoutte = FALSE,
-  calculate_davies_bouldin_index = FALSE,
-  plot_suffix = "",
-  always_use_flat_prior = FALSE,
-  use_garbage_cluster_targets = FALSE,
-  retain_gene_clusters        = TRUE
+    dat = dat,
+    cell_id,
+    true_cell_cluster_allocation,
+    max_iter = 50,
+    n_target_gene_clusters,
+    initial_clustering,
+    n_cell_clusters,
+    ind_targetgenes,
+    ind_reggenes,
+    output_path,
+    penalization_lambda = 0.05,
+    calculate_optimization_target = TRUE,
+    calculate_silhoutte = FALSE,
+    calculate_davies_bouldin_index = FALSE,
+    plot_suffix = "",
+    always_use_flat_prior = FALSE,
+    use_garbage_cluster_targets = FALSE,
+    retain_gene_clusters = TRUE
 ) {
 
   if (!is.factor(initial_clustering)) {
@@ -184,7 +190,6 @@ bisc <- function(
   n_regulator_genes <- length(ind_reggenes)
   converged <- FALSE
   # Preallocate cluster history
-
   cell_cluster_history <- tibble::tibble(cell_id, true_cell_cluster_allocation, initial_clustering)
   colnames(cell_cluster_history) <- c("cell_id", "True allocation", "Disturbed allocation")
   initial_column_padding <- ncol(as.matrix(initial_clustering)) + 1  # +1 Because we have an index column that is not an index column it's an ID column
@@ -196,9 +201,9 @@ bisc <- function(
 
 
   # Pre-allocate all r2 matrices for later analysis if feasible
-  likelihood_all <- vector(mode = "list", length = max_iter)
-  weights_all <- vector(mode = "list", length = max_iter)
-  BIC_all <- vector(mode = "list", length = max_iter)
+  RIs_all <- vector(mode = "numeric", length = max_iter)
+  max_loglikelihood_all <- vector(mode = "numeric", length = max_iter)
+  CML_C2_all <- vector(mode = "numeric", length = max_iter)
   target_genes_residual_var_all <- vector(mode = "list", length = max_iter)
   # Set the current cell clustering
   current_cell_cluster_allocation <- initial_clustering
@@ -472,7 +477,7 @@ bisc <- function(
       # TODO: alternatively write some predict function and use extracted variance estimates
     }
 
-     # scregclust_final_result_coeffs_neat <- models
+    # scregclust_final_result_coeffs_neat <- models
 
     #### calculate one variance for each target gene given each model ####
     ###### M.2                                                        ####
@@ -515,7 +520,6 @@ bisc <- function(
     # Calculated loglikelihoods
     # M.3
 
-
     loglikelihood <- loglikelihood_calc_matrix(all_genes = dat,
                                                models = models,
                                                target_genes_residual_var = target_genes_residual_var,
@@ -538,7 +542,7 @@ bisc <- function(
         current_cluster_proportion <- sum(current_cell_cluster_allocation == i_cell_cluster) / length(current_cell_cluster_allocation)
 
         # If some cluster has been completely omitted, give it a nonzero proportion anyway for next iteration
-        # Even without weights this is good to include for cluster allocation (though it is arbitrary)
+        # Even without posterior_probability this is good to include for cluster allocation (though it is arbitrary)
         if (current_cluster_proportion == 0) {
           cluster_proportions[i_cell_cluster] <- 0.0001
           stop_iterating_flag <- T
@@ -559,23 +563,16 @@ bisc <- function(
     # lm examples
 
 
-    print(paste("  Doing final weights calculations"), quote = FALSE)
-    loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 256)
+    print(paste("  Doing final posterior probability calculations"), quote = FALSE)
+    loglikelihood <- Rmpfr::mpfr(x = loglikelihood, precBits = 512)  # cells x cell_clusters
 
-    weights <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
+    # unnormalized_joint_posterior is a matrix (cells x cell_clusters). cluster_proportions is a vector cell_clusters long
+    unnormalized_joint_posterior <- sweep(exp(loglikelihood), 2, (cluster_proportions), "*")
 
-
-    if (calculate_BIC) {
-      big_logLhat_in_BIC <- sum(log(rowSums(weights)))
-      k_in_BIC <- (n_target_genes + n_regulator_genes) * n_cell_clusters
-      n_in_BIC <- length(current_cell_cluster_allocation)
-      BIC <- Rmpfr::asNumeric(k_in_BIC * log(n_in_BIC) - 2 * big_logLhat_in_BIC)
-    }else {
-      BIC <- 0
-    }
-
-    # Below parallizes the this calculation (e.g speeds up from 1:32 min to 12 sec)
-    # weights <- sweep(weights, 1, rowSums(weights), "/")
+    # --------------------
+    # Normalize posterior likelihood
+    # Below parallise the this calculation (e.g speeds up from 1:32 min to 12 sec)
+    # posterior_probability <- sweep(posterior_probability, 1, rowSums(posterior_probability), "/")
 
     # Define the number of cores to use
     num_cores <- max(detectCores() - 2, 1)
@@ -585,7 +582,7 @@ bisc <- function(
 
     # Register the parallel backend
     registerDoParallel(cl)
-    num_rows <- nrow(weights)
+    num_rows <- nrow(unnormalized_joint_posterior)
 
     split_indices <- split(1:num_rows, cut(1:num_rows, num_cores))
 
@@ -595,26 +592,17 @@ bisc <- function(
     }
 
     # Parallelize the operation using foreach
-    weights <- foreach(i = split_indices, .packages = c("Rmpfr"), .combine = 'rbind') %dopar% {
-      parallel_sweep(weights[i, , drop = FALSE])
+    normalized_posterior_probability <- foreach(i = split_indices, .packages = c("Rmpfr"), .combine = 'rbind') %dopar% {
+      parallel_sweep(unnormalized_joint_posterior[i, , drop = FALSE])
     }
 
     # Stop the parallel backend
     stopImplicitCluster()
     stopCluster(cl)
-
-
     # --------------------
 
-    loglikelihood <- weights
-    weights_all[[i_main]] <- weights
-
     # Clear some memory
-    rm(weights)
     gc()
-
-    BIC_all[[i_main]] <- BIC
-    likelihood_all[[i_main]] <- loglikelihood
 
     if (i_main == 1) {
       if (calculate_silhoutte | calculate_davies_bouldin_index) {
@@ -622,13 +610,13 @@ bisc <- function(
       }
       if (calculate_silhoutte) {
         print(paste("  Calculating silhoutte of likelihood-clusters for iteration 1"), quote = FALSE)
-        silhouette_measure <- mean(cluster::silhouette(no_factor_cluster, dist(loglikelihood))[, 3])
+        silhouette_measure <- mean(cluster::silhouette(no_factor_cluster, dist(normalized_posterior_probability))[, 3])
       }else {
         silhouette_measure <- 0
       }
       if (calculate_davies_bouldin_index) {
         print(paste("  Calculating Davies Bouldin's index of likelihood-clusters for iteration 1"), quote = FALSE)
-        db <- clusterSim::index.DB(loglikelihood, no_factor_cluster)$DB
+        db <- clusterSim::index.DB(normalized_posterior_probability, no_factor_cluster)$DB
       }else {
         db <- 0
       }
@@ -639,17 +627,10 @@ bisc <- function(
     ##### C-step #######################################################
     ##### update cluster allocations ###################################
     print(paste("  Assigning new clusters"), quote = FALSE)
-    if (use_complex_cluster_allocation) {
-      pca_likelihood <- stats::prcomp(loglikelihood, center = TRUE, scale. = TRUE)$x
-      fcm_res <- ppclust::fcm(x = pca_likelihood, centers = n_cell_clusters)
-      weights_all[[i_main]] <- fcm_res$u
-      updated_cell_clust <- fcm_res$cluster
 
-      # updated_cell_clust <- stats::kmeans(x = pca_likelihood, centers = n_cell_clusters, iter.max = 20, nstart = 50 + n_cell_clusters)$cluster
-    }else {
-      updated_cell_clust <- sapply(seq_len(nrow(loglikelihood)),
-                                   function(row) which.max(loglikelihood[row,]))
-    }
+      updated_cell_clust <- sapply(seq_len(nrow(normalized_posterior_probability)),
+                                   function(row) which.max(normalized_posterior_probability[row,]))
+
     updated_cell_clust <- unlist(updated_cell_clust)
 
     # Update data in cell_cluster_history
@@ -673,11 +654,28 @@ bisc <- function(
     }
 
     rand_index_true_cluster <- aricode::RI(true_cell_cluster_allocation, updated_cell_clust)
+    RIs_all[i_main] <- rand_index_true_cluster
     time_taken <- hms_span(start_time_iteration, Sys.time())
     print(paste0(" Iteration ", i_main, ", took ", time_taken, ", Rand index: ", rand_index_true_cluster), quote = FALSE)
 
-    current_cell_cluster_allocation <- as.factor(updated_cell_clust)
 
+    if(calculate_optimization_target){
+      # Calculate max loglikeihood from eq 2.2 in the CEM paper
+      # rowSums(unnormalized_joint_posterior) is n_cells long, max_loglikelihood is a scalar
+      rowsums_unnormalized_joint_posterior <- rowSums(unnormalized_joint_posterior)
+      max_loglikelihood <- Rmpfr::asNumeric(sum(log(rowsums_unnormalized_joint_posterior)))  # according to equation 2.2 in CEM paper
+      max_loglikelihood_all[i_main] <- max_loglikelihood
+      # Calculate CML_C2 from eq. 2.4 in CEM paper
+      CML_C2 <- as.numeric(as.character(current_cell_cluster_allocation))
+      CML_C2 <- Rmpfr::mpfr(x = CML_C2, precBits = 512)
+      for(i_row in seq_along(current_cell_cluster_allocation)){
+        c_col <- current_cell_cluster_allocation[i_row]
+        CML_C2[i_row] <- log(unnormalized_joint_posterior[i_row, c_col])
+      }
+      CML_C2_all[i_main] <- Rmpfr::asNumeric(sum(CML_C2))
+    }
+
+    current_cell_cluster_allocation <- as.factor(updated_cell_clust)
     if (stop_iterating_flag) {
       # Clean up cluster history
       cell_cluster_history <- cell_cluster_history[, colSums(is.na(cell_cluster_history)) == 0, drop = FALSE]
@@ -688,15 +686,16 @@ bisc <- function(
     print(paste("  Plotting for iteration."), quote = FALSE)
 
     # scatter_plot_loglikelihood(dat = dat,
-    #                            likelihood = loglikelihood,
+    #                            likelihood = normalized_posterior_probability,
     #                            n_cell_clusters = n_cell_clusters,
     #                            penalization_lambda = penalization_lambda,
     #                            output_path = output_path,
     #                            i_main = i_main,
     #                            true_cell_cluster_allocation_vector = true_cell_cluster_allocation)
-    #
+
+
     # hist_plot_loglikelihood(dat = dat,
-    #                         likelihood = loglikelihood,
+    #                         likelihood = normalized_posterior_probability,
     #                         n_cell_clusters = n_cell_clusters,
     #                         penalization_lambda = penalization_lambda,
     #                         output_path = output_path,
@@ -730,8 +729,10 @@ bisc <- function(
       "n_iterations" = i_main,
       "silhouette_measure" = silhouette_measure,
       "davies_bouldin_index" = db,
-      "BIC" = BIC_all[1:i_main],
-      "taget_genes_residual_var" = target_genes_residual_var,
+      "RIs_all" = RIs_all[1:i_main],
+      "max_loglikelihood" = max_loglikelihood_all[1:i_main],
+      "CML_C2" = CML_C2_all[1:i_main],
+      "target_genes_residual_var" = target_genes_residual_var,
       "converged" = converged,
       "call" = list(
         "cell_id" = cell_id,
@@ -744,8 +745,7 @@ bisc <- function(
         "ind_reggenes" = ind_reggenes,
         "output_path" = output_path,
         "penalization_lambda" = penalization_lambda,
-        "use_complex_cluster_allocation" = use_complex_cluster_allocation,
-        "calculate_BIC" = calculate_BIC,
+        "calculate_optimization_target" = calculate_optimization_target,
         "calculate_silhoutte" = calculate_silhoutte,
         "calculate_davies_bouldin_index" = calculate_davies_bouldin_index,
         "plot_suffix" = plot_suffix,
@@ -755,7 +755,7 @@ bisc <- function(
       ),
       "metaparameters" = list(
         "normalisation_parameters" = normalisation_parameters,          # parameters necessary to recreate normalization function
-        "likelihood_models"        = models                             # neat coefficients because i dont want to sort them out again
+        "likelihood_models"        = models                             # neat coefficients because I don't want to sort them out again
       )
     )
   )

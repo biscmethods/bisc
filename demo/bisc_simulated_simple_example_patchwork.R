@@ -139,8 +139,7 @@ if (!file.exists(file.path(path_data, "env_sim_simple_nogarb_res_biclust_sc.rds"
       ind_reggenes = ind_reggenes,
       output_path = output_path,
       penalization_lambda = penalization_lambdas[i_penalization_lambda],
-      use_complex_cluster_allocation = FALSE,
-      calculate_BIC = FALSE,
+      calculate_optimization_target = FALSE,
       calculate_silhoutte = FALSE,
       calculate_davies_bouldin_index = FALSE,
       plot_suffix = "Simple_cluster_all",
@@ -550,5 +549,5 @@ cowplot::plot_grid(plotlist = plots,  align = 'vh', axis = 'tblr')
 # print(paste("Number of iterations:", biclust_result$n_iterations), quote = FALSE)
 # print(paste("Silhoutte of first disturbed cluster likelihood (aka how complex was the first likelihood):", biclust_result$db), quote = FALSE)
 # print(paste("BIC_all:", biclust_result$BIC), quote = FALSE)
-# print(paste("taget_genes_residual_var:"), quote = FALSE)
+# print(paste("target_genes_residual_var:"), quote = FALSE)
 # print(biclust_result$taget_genes_residual_var, quote = FALSE)
