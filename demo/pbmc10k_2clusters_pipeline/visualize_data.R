@@ -24,9 +24,9 @@ output_path <- file.path(demo_path,'pbmc10k_2clusters_pipeline', 'output')
 path_data <- here::here('data')
 
 path_pbmc10k_sctransform <- file.path(path_data, "env_data_pbmc10k_sctransform.RData")
-path_labels <- file.path(path_data, "GEX Graph-Based10k.csv")
-gex_umap_path <- file.path(path_data, "GEX UMAP-Projection.csv")
-gex_labels_path <- file.path(path_data, "GEX Graph-Based.csv")
+path_labels <- file.path(path_data, "GEX-Graph-Based10k.csv")
+gex_umap_path <- file.path(path_data, "GEX-UMAP-Projection.csv")
+gex_labels_path <- file.path(path_data, "GEX-Graph-Based.csv")
 
 
 # create output folder

@@ -1,5 +1,5 @@
 #!/usr/bin/Rscript
-library(celda)
+library("celda")
 library(Seurat)
 library(sctransform)
 
@@ -20,8 +20,6 @@ library(sctransform)
 #'   \item{R}{a}
 #'   \item{S}{a}
 #'   \item{B}{a}
-#' @examples
-#' res <- generate_dummy_data_for_scregclust(50, 30, 1000, 3, 1, c(1,20,100));
 #' @export
 generate_dummy_data_for_scregclust <- function(
     n_target_genes = 200,  # Number of target genes               2193
@@ -581,24 +579,24 @@ generate_dummy_data_for_scregclust <- function(
 if (sys.nframe() == 0) {
   # ... do main stuff
 
-  n_target_genes = 10  # Number of target genes
-  n_regulator_genes = 2  # Number of regulator genes
-  n_cells = 1000 # Number of cells
-  n_target_gene_clusters = 2  # Number of target gene clusters
-  regulator_mean = 1  # Mean expression of regulator genes
-  coefficient_mean = c(1,10)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
-  coefficient_sd = c(0.1, 0.1)
-  make_regulator_network_plot = FALSE
-  plot_suffix                 = "vignette"
-  testing_penalization        = 0.1 # optional, for the screg run in the end
-  generate_counts             = FALSE
-  check_results               = FALSE
-  trivial_regulator_networks  = FALSE
-  regulator_offset            = 0
-
-  set.seed(1234)
-
-  res <- generate_dummy_data_for_scregclust()
-
-  print(str(res))
+  # n_target_genes = 10  # Number of target genes
+  # n_regulator_genes = 2  # Number of regulator genes
+  # n_cells = 1000 # Number of cells
+  # n_target_gene_clusters = 2  # Number of target gene clusters
+  # regulator_mean = 1  # Mean expression of regulator genes
+  # coefficient_mean = c(1,10)  # Mean coefficients/betas in true model, length n_target_gene_clusters)
+  # coefficient_sd = c(0.1, 0.1)
+  # make_regulator_network_plot = FALSE
+  # plot_suffix                 = "vignette"
+  # testing_penalization        = 0.1 # optional, for the screg run in the end
+  # generate_counts             = FALSE
+  # check_results               = FALSE
+  # trivial_regulator_networks  = FALSE
+  # regulator_offset            = 0
+  #
+  # set.seed(1234)
+  #
+  # res <- generate_dummy_data_for_scregclust()
+  #
+  # print(str(res))
 }

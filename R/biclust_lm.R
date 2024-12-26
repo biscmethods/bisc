@@ -14,8 +14,8 @@ library(clusterSim)  # for db
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
-source(file.path(R_path, "plot_cluster_history.R"))
-source(file.path(R_path, "plot_loglikelihood.R"))
+# source(file.path(R_path, "plot_cluster_history.R"))
+# source(file.path(R_path, "plot_loglikelihood.R"))
 
 
 # simpler regression function:
@@ -557,8 +557,8 @@ if (sys.nframe() == 0) {
   #############################################
 
   R_path <- here::here("R")
-  source(file.path(R_path, "generate_data_lm.R"))
-  source(file.path(R_path, "randomise_cluster_labels.R"))
+  # source(file.path(R_path, "generate_data_lm.R"))
+  # source(file.path(R_path, "randomise_cluster_labels.R"))
 
 
   dat <- generate_data_lm(n_cell_clusters = 3,

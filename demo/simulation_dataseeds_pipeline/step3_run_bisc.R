@@ -1,7 +1,7 @@
 # !/usr/bin/Rscript
 
-source(file.path(R_path, "bisc.R"))
-source(file.path(R_path, "bisc_predict.R"))
+# source(file.path(R_path, "bisc.R"))
+# source(file.path(R_path, "bisc_predict.R"))
 
 
 bisc_iteration <- function(plot_heatmap=FALSE,

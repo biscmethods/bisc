@@ -15,8 +15,8 @@ library(foreach)
 
 # Get absolute path where script is located, by using relative paths.
 R_path <- here::here("R")
-source(file.path(R_path, "plot_cluster_history.R"))
-source(file.path(R_path, "plot_loglikelihood.R"))
+# # source(file.path(R_path, "plot_cluster_history.R"))
+# # source(file.path(R_path, "plot_loglikelihood.R"))
 
 hms_span <- function(start, end) {
   dsec <- as.numeric(difftime(end, start, unit = "secs"))
@@ -142,14 +142,14 @@ standardize_like_scregclust <- function(xvals, yvals, training_data_ind, test_da
 #'
 #' Cluster cells based with Classification EM based on lm with penality
 #' @param dat Main data
-#' @param cell_id
-#' @param true_cell_cluster_allocation, The tru cell cluster allocation for Rand index caluclations
+#' @param cell_id The names of the cells
+#' @param true_cell_cluster_allocation The tru cell cluster allocation for Rand index caluclations
 #' @param max_iter Max number of iterations to run
-#' @param n_target_gene_clusters
+#' @param n_target_gene_clusters Vector with number of target gene modules in each cell cluster
 #' @param initial_clustering The start clustering
 #' @param n_cell_clusters Number of cell clusters
 #' @param ind_targetgenes Indexes of where the target gene columns in dat are
-#' @param ind_reggenes
+#' @param ind_reggenes Indexes of where the regulator gene columns in dat are
 #' @param output_path Output path of plots
 #' @param penalization_lambda The penalization lambda
 #' @param calculate_optimization_target [TRUE] If to calculate and return eq 2.2 and 2.4 in the CEM paper. 2.4 is basically what the algo is optimizing.

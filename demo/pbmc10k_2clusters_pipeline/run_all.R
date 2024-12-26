@@ -27,9 +27,9 @@ if (!dir.exists(local_data)) {
 set.seed(123)
 redo_flag <- F
 
-source(file.path(current_path, "step1_clean_data.R"))
-source(file.path(current_path, "step2_run_scregclust.R"))
-source(file.path(current_path, "step3_analysis_of_scregclust_runs.R"))
-source(file.path(current_path, "step4_run_bisc.R"))
-source(file.path(current_path, "step5_run_bcplaid.R"))
-source(file.path(current_path, "step6_make_tables.R"))
+# source(file.path(current_path, "step1_clean_data.R"))
+# source(file.path(current_path, "step2_run_scregclust.R"))
+# source(file.path(current_path, "step3_analysis_of_scregclust_runs.R"))
+# source(file.path(current_path, "step4_run_bisc.R"))
+# source(file.path(current_path, "step5_run_bcplaid.R"))
+# source(file.path(current_path, "step6_make_tables.R"))

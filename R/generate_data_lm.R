@@ -15,8 +15,6 @@ library(ggfortify)
 #' @param positive Checks if it's positive.
 #' @param int Checks if it's an integer.
 #' @return void, or throws an error message
-#' @examples
-#'   checks(x=1, one_element=TRUE, atomic=TRUE, numeric=TRUE, positive=TRUE, int=FALSE)
 #' @noRd
 checks <- function(x,
                    one_element = TRUE,
@@ -87,16 +85,6 @@ checks <- function(x,
 #' @param coefficients_standard_deviation = 100, 'The betas/slopes'. One per target gene. Instead of providing mean and standard deviation for each target gene, we provide the standard deviation from which these will be generated. Mean will be 0.
 #' @param target_gene_type_standard_deviation = 3, The error, the sd of the expression of the target genes.
 #' @return dat
-#' @examples
-#'   dat <- generate_data_lm(n_cell_clusters = 3,
-#'                           n_target_gene_type = 5,
-#'                           n_regulator_gene_type = 20,
-#'                           n_cells = c(1000,5000,10000),
-#'                           regulator_means = c(1,2,3),
-#'                           regulator_standard_deviations = c(0.1,0.2,0.3),
-#'                           coefficients_standard_deviation = 100,
-#'                           target_gene_type_standard_deviation = 3,
-#'                           )
 #' @export
 generate_data_lm <- function(n_cell_clusters = 3,
                              n_target_gene_type = 5,  # We have x named target genes that have one expression per cell

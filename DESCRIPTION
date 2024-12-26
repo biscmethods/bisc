@@ -1,9 +1,9 @@
 Package: bisc
 Type: Package
-Title: Cell clustering wrapper for scRegClust
+Title: Cell clustering wrapper for scregclust
 Description: Cluster cells with a Classification EM algorithm
   based on linear models of regulator genes and target genes with penalty.
-Version: 0.0.2.0
+Version: 0.0.3.0
 Authors@R: c(
     person("B", "S", email = "biclustscregclust@gmail.com", role = c("aut", "cre")))
 License: GPL (>= 3)
@@ -13,7 +13,6 @@ Depends:
     R (>= 4.4.1)
 Remotes: scmethods/scregclust
 Suggests: 
-    celda,
     cluster,
     cowplot,
     pkgbuild,
@@ -23,6 +22,8 @@ Suggests:
     devtools
 Imports: 
     aricode,
+    BiocGenerics,
+    celda,
     clusterSim,
     doParallel,
     dplyr,
@@ -43,3 +44,5 @@ Imports:
     Seurat,
     tibble,
     tidyverse
+biocViews:
+    celda

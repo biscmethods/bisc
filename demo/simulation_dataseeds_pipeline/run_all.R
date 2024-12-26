@@ -28,11 +28,11 @@ if (!dir.exists(data_path)) {
 set.seed(123)
 redo_flag <- F
 
-source(file.path(current_path, "step1_generate_data.R"))
+# source(file.path(current_path, "step1_generate_data.R"))
 redo_flag <- F
-source(file.path(current_path, "step2_run_biclustbiclust.R"))
-source(file.path(current_path, "step3_run_bisc.R"))
-source(file.path(current_path, "step4_run_biclustbiclust_many_times.R"))
-source(file.path(current_path, "step5_run_bisc_many_times.R"))
-source(file.path(current_path, "step6_boxplot.R"))
-source(file.path(current_path, "step7_make_tables.R"))
+# source(file.path(current_path, "step2_run_biclustbiclust.R"))
+# source(file.path(current_path, "step3_run_bisc.R"))
+# source(file.path(current_path, "step4_run_biclustbiclust_many_times.R"))
+# source(file.path(current_path, "step5_run_bisc_many_times.R"))
+# source(file.path(current_path, "step6_boxplot.R"))
+# source(file.path(current_path, "step7_make_tables.R"))

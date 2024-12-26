@@ -28,7 +28,7 @@ gc()  # Force clean memory
 # Data from https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c
 path_dataset <- file.path(local_data, "pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5")
 path_env_data <- file.path(local_data, "env_data_pbmc10k_sctransform.RData")
-path_gex <- file.path(local_data, "GEX Graph-Based10k.csv")  # This you need to export from Loupe browser
+path_gex <- file.path(local_data, "GEX-Graph-Based10k.csv")  # This you need to export from Loupe browser
 
 if(redo_flag){
   if (file.exists(path_env_data)) {

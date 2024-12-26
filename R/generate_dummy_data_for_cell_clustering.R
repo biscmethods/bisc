@@ -1,6 +1,6 @@
 # !/usr/bin/Rscript
 R_path <- here::here("R")
-source(paste0(R_path, "/generate_dummy_data_for_scregclust.R"))
+# source(file.path(R_path, "generate_dummy_data_for_scregclust.R"))
 library(plyr)
 library(ggmulti)
 library(ggplot2)

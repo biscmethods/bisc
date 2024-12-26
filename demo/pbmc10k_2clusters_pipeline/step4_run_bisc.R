@@ -14,9 +14,9 @@ gc()
 raw_printoutput_path <- file.path(local_data, "output_pbmc_300.txt")
 all_res_path <- file.path(local_data, "run300.rds")
 
-source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
-source(file.path(R_path, "bisc.R"))
-source(file.path(R_path, "randomise_cluster_labels.R"))
+# source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
+# source(file.path(R_path, "bisc.R"))
+# source(file.path(R_path, "randomise_cluster_labels.R"))
 
 # Set seed for example
 set.seed(250)

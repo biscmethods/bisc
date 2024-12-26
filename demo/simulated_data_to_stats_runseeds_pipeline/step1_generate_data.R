@@ -10,7 +10,7 @@ while (sink.number() > 0) {
 
 # options(warn=2)  # To convert warning messages into error messages which display row of error. For debugging.
 
-source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
+# source(file.path(R_path, "generate_dummy_data_for_cell_clustering.R"))
 
 
 construct_biclust_matrix <- function(cell_cluster_allocation,
