@@ -1,6 +1,9 @@
 # bisc
 Bisc is an abbrevation for "BI(clust) SC(regclust)". It's an iterative CEM-based (Classification Expectation Maximization) cell clusterer that wraps a method clustering genes called [scregclust](https://github.com/scmethods/scregclust).
 
+# WIP
+This is current not working as library you can install.
+
 ## Installation
 
 You can install the development version of biclust from
