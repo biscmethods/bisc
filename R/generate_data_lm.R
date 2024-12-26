@@ -1,4 +1,9 @@
+# !/usr/bin/Rscript
 library(tidyverse)
+library(ggmulti)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
 
 #' Helper function for checking arguments
 #'
@@ -258,10 +263,7 @@ generate_data_lm <- function(n_cell_clusters = 3,
                          plot_title = "Principal components of regulator genes"
     ){
 
-      library(ggmulti)
-      library(ggplot2)
-      library(dplyr)
-      library(ggfortify)
+
 
       # Apply PCA
       pca_result <- prcomp(indata, scale. = TRUE)
@@ -385,7 +387,6 @@ generate_data_lm <- function(n_cell_clusters = 3,
 # || interactive()
 if (sys.nframe() == 0) {
   # ... do main stuff
-  library(ggfortify)  # For pca-plot
 
   # Set seed for example
   set.seed(1234)

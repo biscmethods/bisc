@@ -1,8 +1,11 @@
 #!/usr/bin/Rscript
+
 rm(list = ls())
 
 library(here)  # To work with paths
 library(patchwork)
+library(scatterplot3d) # load
+library(rgl)
 
 # options(warn = 2)  # To convert warning messages into error messages which display row of error. For debugging.
 
@@ -156,8 +159,7 @@ p1 + p2 + p3 + p4 + p5 + p6 + p7
 dev.off()
 
 
-library("scatterplot3d") # load
-library('rgl')
+
 
 myColorRamp <- function(colors, values) {
   values[is.na(values)] <- min(values, na.rm=TRUE)

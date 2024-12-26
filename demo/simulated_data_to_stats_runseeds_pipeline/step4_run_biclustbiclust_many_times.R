@@ -1,3 +1,4 @@
+# !/usr/bin/Rscript
 
 # Run model fits
 if (!file.exists(file.path(output_path_rds, "biclustbiclust_results_list.rds")) | redo_flag) {

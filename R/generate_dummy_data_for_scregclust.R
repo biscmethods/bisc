@@ -1,4 +1,7 @@
 #!/usr/bin/Rscript
+library(celda)
+library(Seurat)
+library(sctransform)
 
 #' Dummy data generation for scRegClust
 #'
@@ -257,10 +260,6 @@ generate_dummy_data_for_scregclust <- function(
 
   # generate Z_r from counts simulated
   if(generate_counts){
-    # using zelda:
-    library(celda)
-    library(Seurat)
-    library(sctransform)
 
     simulated_data <- celda::simulateCells("celda_G",
                                     # S = 5,   # Number of "samples"???

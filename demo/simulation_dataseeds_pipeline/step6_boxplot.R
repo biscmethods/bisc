@@ -1,7 +1,9 @@
 # !/usr/bin/Rscript
 
 library(RColorBrewer)
-
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
 
 # Plot Rand index vs max_loglikelihood ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 df_mp <- data.frame(
@@ -285,13 +287,6 @@ for(i_current_scenario_type in seq(20)){
     biclust_biclust_var[[current_scenario_type]] <- c(biclust_biclust_var[[current_scenario_type]], var(temp_biclust_biclust_var))
   }
 }
-
-
-
-
-library(tidyverse)
-library(hrbrthemes)
-library(viridis)
 
 # Create the data frame
 

@@ -1,6 +1,5 @@
-# script that runs all scripts in this folder
+# !/usr/bin/Rscript
 
-#!/usr/bin/Rscript
 rm(list = ls())
 
 library(here)  # To work with paths

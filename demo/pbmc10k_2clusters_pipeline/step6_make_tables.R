@@ -1,9 +1,10 @@
+# !/usr/bin/Rscript
+
 library(dplyr)
 library(xtable)
 
 outfile <- 'bisc_pbmc_cellclust_RI.tex'
-
-caption = 'Rand Indexes on cell cluster allocation by convergence status'
+caption <- 'Rand Indexes on cell cluster allocation by convergence status'
 
 # Assuming you have the 'converged_RIs' and 'nonconverged_RIs' vectors
 RI_data <- data.frame(

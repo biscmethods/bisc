@@ -1,6 +1,12 @@
+# !/usr/bin/Rscript
 R_path <- here::here("R")
 source(paste0(R_path, "/generate_dummy_data_for_scregclust.R"))
 library(plyr)
+library(ggmulti)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(Rtsne)
 
 # # dev
 # n_cell_clusters <- 2
@@ -258,10 +264,6 @@ generate_dummy_data_for_cell_clustering <- function(
     R_path <- here::here("R")
     output_path <- demo_path
 
-    library(ggmulti)
-    library(ggplot2)
-    library(dplyr)
-    library(ggfortify)
 
 
     # plot regulators and targets
@@ -270,11 +272,7 @@ generate_dummy_data_for_cell_clustering <- function(
                          plot_title = "PCA plot"
     ){
 
-      library(ggmulti)
-      library(ggplot2)
-      library(dplyr)
-      library(ggfortify)
-      library(Rtsne)
+
 
       # Apply PCA
       pca_result <- stats::prcomp(indata, scale. = TRUE)

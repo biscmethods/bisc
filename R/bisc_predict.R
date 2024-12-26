@@ -1,4 +1,4 @@
-#
+# !/usr/bin/Rscript
 # # # for dev
 #  new_data <- scenarios[[1]]$biclust_input_data[1:10,]
 # #

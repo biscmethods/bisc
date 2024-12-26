@@ -1,6 +1,8 @@
 # !/usr/bin/Rscript
+
 library(ggplot2) # To access a color palette
 library(scales)  # For additional palettes
+library(dplyr)
 # df_si <- data.frame(
 #   simple = logical(),
 #   n_cell_clusters = integer(),
@@ -92,7 +94,7 @@ for(i_scenario_results in seq_along(bisc_results_list)){
 #   ungroup() %>%
 #   # Convert i_scenario to factor with correct ordering
 #   mutate(i_scenario = factor(i_scenario, levels = sort(unique(i_scenario))))
-library(dplyr)
+
 df_means <- df_mp %>%
   group_by(i_scenario) %>%
   summarise(across(everything(), mean, na.rm = TRUE))

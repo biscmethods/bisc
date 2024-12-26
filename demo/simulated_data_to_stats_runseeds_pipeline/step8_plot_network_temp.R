@@ -1,3 +1,5 @@
+# !/usr/bin/Rscript
+
 # This plots which regulators are affecting which target gene modules in the generated data
 # Basically we want to translate the guessed labels to the true labels in our guesses to start with
 # (in a cell cluster we guess which target genes belong to which gene module)

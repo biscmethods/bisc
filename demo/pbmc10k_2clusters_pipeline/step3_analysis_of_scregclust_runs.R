@@ -1,4 +1,5 @@
 #!/usr/bin/Rscript
+
 # This script is for producing plots and informaiton for multiple runs of scregclust
 # Multiple runs are: n_modules varies and lambda varies
 Sys.setlocale("LC_CTYPE", "en_US.UTF-8")

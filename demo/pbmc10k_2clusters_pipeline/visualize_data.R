@@ -1,4 +1,5 @@
 #!/usr/bin/Rscript
+
 rm(list = ls())
 
 library(here)  # To work with paths

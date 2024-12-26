@@ -1,3 +1,5 @@
+# !/usr/bin/Rscript
+
 # Install and load required packages
 if (!require(clue)) install.packages("clue")
 library(clue)
@@ -136,16 +138,6 @@ for(scenario_number in seq_along(scenarios)){
     ratios_df <- rbind(ratios_df, ratios_df_tmp)
   }
 }
-
-# library(dplyr)
-# # Calculate the mean of the ratios for each scenario
-# ratios_df <- ratios_df %>%
-#   group_by(scenario) %>%
-#   summarize(TP_rate = mean(TP_rate),
-#             FP_rate = mean(FP_rate)) %>%
-#   arrange(desc(TP_rate), FP_rate)
-
-print(ratios_df)
 
 # # Create the ROC curve
 # library(ggplot2)

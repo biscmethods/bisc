@@ -1,7 +1,9 @@
 # !/usr/bin/Rscript
 
 library(RColorBrewer)
-
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
 
 # Plot Rand index vs LL ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 df_mp <- data.frame(
@@ -273,12 +275,6 @@ for(i in seq_along(bisc_results_list)){
   }
 }
 
-
-
-
-library(tidyverse)
-library(hrbrthemes)
-library(viridis)
 
 # Create the data frame
 
